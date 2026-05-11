@@ -10,6 +10,7 @@ import { Reveal } from "@/components/publi/Reveal";
 
 type TabId =
   | "crear-publicacion"
+  | "asistente-ia"
   | "calendario-mensual"
   | "calendario-semanal"
   | "vista-publicaciones"
@@ -26,6 +27,11 @@ const tabs: FeatureTab[] = [
     id: "crear-publicacion",
     label: "Crear publicación",
     icon: <ComposeIcon />,
+  },
+  {
+    id: "asistente-ia",
+    label: "Asistente IA",
+    icon: <AIIcon />,
   },
   {
     id: "calendario-mensual",
@@ -142,6 +148,7 @@ export function FeatureTabs() {
                   </div>
                   <div className="min-h-[420px] bg-[linear-gradient(180deg,rgba(204,238,245,0.25),rgba(255,255,255,1))] p-5 sm:p-7">
                     {activeTab === "crear-publicacion" && <CreatePostPreview />}
+                    {activeTab === "asistente-ia" && <AIAssistantPreview />}
                     {activeTab === "calendario-mensual" && <MonthlyCalendarPreview />}
                     {activeTab === "calendario-semanal" && <WeeklyCalendarPreview />}
                     {activeTab === "vista-publicaciones" && <PostsOverviewPreview />}
@@ -535,6 +542,144 @@ function SocialPill({ label, color }: { label: string; color: string }) {
       <span className={cn("h-2.5 w-2.5 rounded-full", color)} />
       {label}
     </span>
+  );
+}
+
+function AIIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path d="M12 2l1.09 3.36L16.45 6l-2.72 2.18L14.54 12 12 9.82 9.46 12l.81-3.82L7.55 6l3.36-.64L12 2z" fill="currentColor" />
+      <path d="M5 16l.73 2.27L8 19l-2.27.73L5 22l-.73-2.27L2 19l2.27-.73L5 16z" fill="currentColor" opacity="0.7" />
+      <path d="M19 13l.55 1.7L21.25 15.25l-1.7.55L19 17.5l-.55-1.7-1.7-.55 1.7-.55L19 13z" fill="currentColor" opacity="0.7" />
+    </svg>
+  );
+}
+
+const aiPrompts = [
+  { label: "Generar copy", description: "Creá un caption para Instagram sobre un nuevo producto de skincare", active: true },
+  { label: "Mejor horario", description: "¿Cuál es el mejor horario para publicar en Instagram para una tienda de ropa?", active: false },
+  { label: "Hashtags", description: "Sugerí 10 hashtags para un post de café artesanal", active: false },
+];
+
+const aiSuggestions = [
+  { type: "copy" as const, text: "Tu piel merece lo mejor ✨ Descubrí nuestra nueva línea de skincare natural. Hidratación profunda, ingredientes limpios y resultados visibles en 14 días. #SkincareNuevo #BellezaNatural #CuidadoFacial" },
+  { type: "time" as const, text: "Mejor horario: 18:30 - 19:00", detail: "Tu audiencia de moda tiene un pico de actividad los martes y jueves a esta hora." },
+  { type: "hashtags" as const, text: "#CafeArtesanal #SpecialtyCoffee #CaféDeEspecialidad #Barista #CoffeeLovers #CafeCulture #Cafetería #MorningRitual #CafeConLeche #ThirdWaveCoffee", detail: "Estimación de alcance: 12K - 45K impresiones" },
+];
+
+function AIAssistantPreview() {
+  const [selectedPrompt, setSelectedPrompt] = useState(0);
+  const [generating, setGenerating] = useState(false);
+  const [showResult, setShowResult] = useState(true);
+
+  const handleGenerate = () => {
+    setShowResult(false);
+    setGenerating(true);
+    setTimeout(() => {
+      setGenerating(false);
+      setShowResult(true);
+    }, 1200);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Asistente IA</p>
+          <p className="text-xs text-muted-foreground">
+            Generá copys, horarios y hashtags con un click
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          IA Activa
+        </span>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <div className="space-y-3">
+          <div className="rounded-[24px] border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+                  <path d="M12 2l1.09 3.36L16.45 6l-2.72 2.18L14.54 12 12 9.82 9.46 12l.81-3.82L7.55 6l3.36-.64L12 2z" fill="currentColor" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">¿Qué querés generar?</p>
+                <p className="text-[10px] text-muted-foreground">Elegí una opción o escribí tu prompt</p>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {aiPrompts.map((prompt, i) => (
+                <button
+                  key={prompt.label}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPrompt(i);
+                    handleGenerate();
+                  }}
+                  className={cn(
+                    "w-full rounded-2xl border px-3 py-2.5 text-left transition-all duration-200",
+                    selectedPrompt === i
+                      ? "border-primary/40 bg-primary/10 text-foreground"
+                      : "border-border/50 bg-white text-muted-foreground hover:border-primary/20 hover:bg-primary/5",
+                  )}
+                >
+                  <p className="text-[11px] font-semibold">{prompt.label}</p>
+                  <p className="mt-0.5 text-[10px] leading-relaxed opacity-70">{prompt.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-border/50 bg-white p-4">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold text-foreground">Resultado</p>
+            {generating && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary">
+                <span className="h-1.5 w-1.5 animate-ping rounded-full bg-primary" />
+                Generando...
+              </span>
+            )}
+          </div>
+
+          {generating && (
+            <div className="mt-4 space-y-2">
+              <div className="h-3 w-3/4 animate-pulse rounded-full bg-primary/10" />
+              <div className="h-3 w-full animate-pulse rounded-full bg-primary/10" />
+              <div className="h-3 w-2/3 animate-pulse rounded-full bg-primary/10" />
+            </div>
+          )}
+
+          {showResult && !generating && (
+            <div className="mt-3 animate-in fade-in duration-300">
+              <div className="rounded-2xl bg-[hsl(var(--hero-background))] p-3">
+                <p className="text-[11px] leading-relaxed text-foreground/85">
+                  {aiSuggestions[selectedPrompt].text}
+                </p>
+                {aiSuggestions[selectedPrompt].detail && (
+                  <p className="mt-2 text-[10px] text-primary">
+                    {aiSuggestions[selectedPrompt].detail}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <button type="button" className="flex-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-semibold text-white transition-all hover:bg-primary/90">
+                  Usar este resultado
+                </button>
+                <button type="button" onClick={handleGenerate} className="rounded-xl border border-border/50 px-3 py-2 text-[11px] font-medium text-muted-foreground transition-all hover:bg-primary/5">
+                  Regenerar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

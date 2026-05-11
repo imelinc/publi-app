@@ -13,31 +13,38 @@ interface FeatureCard {
 
 const featureCards: FeatureCard[] = [
   {
+    title: "Asistente de IA",
+    description:
+      "Generá copys persuasivos, descubrí el mejor horario para publicar y obtené hashtags optimizados con un solo click. Tu contenido, potenciado por inteligencia artificial.",
+    align: "left",
+    iconSrc: "/ai-icon.svg",
+  },
+  {
     title: "Programación",
     description:
       "Planificá y programá tu contenido con una interfaz visual e intuitiva. Automatizá la publicación y olvidate de hacerlo a mano.",
-    align: "left",
+    align: "right",
     iconSrc: "/schedule.svg",
   },
   {
     title: "Analytics",
     description:
       "Accedé a métricas claras y accionables sobre el rendimiento de cada cuenta. Generá reportes para tus clientes en minutos.",
-    align: "right",
+    align: "left",
     iconSrc: "/analytics.svg",
   },
   {
     title: "Gestión de clientes",
     description:
       "Un workspace dedicado por cliente. Cambiá de contexto de forma clara y deliberada. Sin errores, sin confusiones.",
-    align: "left",
+    align: "right",
     iconSrc: "/clients.svg",
   },
   {
     title: "Colaboración",
     description:
       "Invitá a tu equipo, compartí borradores con clientes y gestioná aprobaciones antes de publicar.",
-    align: "right",
+    align: "left",
     iconSrc: "/collaboration.svg",
     badge: "Próximamente",
   },

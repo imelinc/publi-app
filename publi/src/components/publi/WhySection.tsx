@@ -14,6 +14,18 @@ const cards: WhyCard[] = [
   {
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" aria-hidden="true">
+        <path d="M12 2l1.09 3.36L16.45 6l-2.72 2.18L14.54 12 12 9.82 9.46 12l.81-3.82L7.55 6l3.36-.64L12 2z" fill="#0095b6" />
+        <path d="M5 16l.73 2.27L8 19l-2.27.73L5 22l-.73-2.27L2 19l2.27-.73L5 16z" fill="#0095b6" opacity="0.7" />
+        <path d="M19 13l.55 1.7L21.25 15.25l-1.7.55L19 17.5l-.55-1.7-1.7-.55 1.7-.55L19 13z" fill="#0095b6" opacity="0.7" />
+      </svg>
+    ),
+    title: "IA que trabaja por vos",
+    description:
+      "Generá copys, descubrí los mejores horarios y obtené hashtags optimizados automáticamente. publIA escribe, sugiere y aprende de tus resultados.",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="w-7 h-7" aria-hidden="true">
         <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#0095b6" strokeWidth="1.8" />
         <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#0095b6" strokeWidth="1.8" strokeDasharray="2 1.5" />
         <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#0095b6" strokeWidth="1.8" strokeDasharray="2 1.5" />
@@ -122,11 +134,10 @@ export function WhySection() {
           )}
         >
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-            ¿Por qué elegir una plataforma unificada?
+            ¿Por qué elegir publi?
           </h2>
           <p className="text-[16px] text-muted-foreground max-w-2xl mx-auto">
-            Operar con herramientas dispersas tiene un costo real: tiempo perdido,
-            errores evitables y un techo de crecimiento concreto.
+            IA integrada, gestión centralizada y herramientas pensadas para Community Managers que quieren escalar sin caos.
           </p>
         </div>
 
@@ -138,10 +149,10 @@ export function WhySection() {
               className={cn(
                 "group bg-white border border-border rounded-2xl p-6",
                 "border-l-[3px] border-l-border",
+                i === 0 ? "border-l-primary bg-gradient-to-br from-primary/5 to-transparent" : "",
                 "hover:border-l-primary hover:shadow-md",
                 "transition-all duration-200",
-                // Center the 5th card in desktop layout
-                i === 4 && "md:col-span-2 md:max-w-[calc(50%-10px)] md:mx-auto",
+                i === cards.length - 1 && "md:col-span-2 md:max-w-[calc(50%-10px)] md:mx-auto",
                 // Entrance animation
                 "transition-[opacity,transform] duration-500",
                 visible

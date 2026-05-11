@@ -1,52 +1,26 @@
+"use client";
+
+import { cn } from "@/lib/utils";
 import { FloatingSquares } from "@/components/publi/FloatingSquares";
 import { Reveal } from "@/components/publi/Reveal";
-import { cn } from "@/lib/utils";
 
-const platformCells = [
-  {
-    type: "platform",
-    name: "Instagram",
-    iconSrc: "/icons/instagram-color.svg",
-  },
-  {
-    type: "platform",
-    name: "Facebook",
-    iconSrc: "/icons/facebook-color.svg",
-  },
-  {
-    type: "platform",
-    name: "TikTok",
-    iconSrc: "/icons/tiktok-color.svg",
-  },
-  { type: "text", title: "1 dashboard unificado" },
-  {
-    type: "platform",
-    name: "LinkedIn",
-    iconSrc: "/icons/linkedin-color.svg",
-  },
-  {
-    type: "platform",
-    name: "X",
-    iconSrc: "/icons/twitter-color.svg",
-  },
-  {
-    type: "platform",
-    name: "YouTube",
-    iconSrc: "/icons/yt-color.svg",
-  },
-  {
-    type: "platform",
-    name: "Threads",
-    iconSrc: "/icons/threads-color.svg",
-  },
-  {
-    type: "platform",
-    name: "Pinterest",
-    iconSrc: "/icons/pinterest-color.svg",
-  },
-  { type: "text", title: "Cuentas ilimitadas por plataforma" },
-  { type: "text", title: "Más plataformas próximamente" },
-] as const;
+interface Platform {
+  name: string;
+  iconSrc: string;
+  color: string;
+  handle: string;
+}
+
+const platforms: Platform[] = [
+  { name: "Instagram", iconSrc: "/icons/instagram-color.svg", color: "from-[#f09433]/10 via-[#e6683c]/10 to-[#bc1888]/10", handle: "@cliente.ok" },
+  { name: "Facebook", iconSrc: "/icons/facebook-color.svg", color: "from-[#1877F2]/10 to-[#1877F2]/5", handle: "@cliente.ok" },
+  { name: "TikTok", iconSrc: "/icons/tiktok-color.svg", color: "from-[#111111]/10 to-[#25F4EE]/10", handle: "@cliente.ok" },
+  { name: "LinkedIn", iconSrc: "/icons/linkedin-color.svg", color: "from-[#0A66C2]/10 to-[#0A66C2]/5", handle: "/in/cliente-ok" },
+  { name: "X", iconSrc: "/icons/twitter-color.svg", color: "from-black/10 to-[#1DA1F2]/10", handle: "@cliente_ok" },
+  { name: "YouTube", iconSrc: "/icons/yt-color.svg", color: "from-[#FF0000]/10 to-[#FF0000]/5", handle: "@clienteok" },
+  { name: "Threads", iconSrc: "/icons/threads-color.svg", color: "from-[#000000]/10 to-[#000000]/5", handle: "@cliente.ok" },
+  { name: "Pinterest", iconSrc: "/icons/pinterest-color.svg", color: "from-[#E60023]/10 to-[#E60023]/5", handle: "@clienteok" },
+];
 
 export function MultiPlatform() {
   return (
@@ -76,56 +50,98 @@ export function MultiPlatform() {
       />
 
       <div className="relative mx-auto max-w-7xl">
-        <Reveal className="max-w-3xl">
-          <h2 className="text-4xl font-bold tracking-[-0.03em] text-foreground sm:text-5xl">
-            Soporte multi-plataforma
-          </h2>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-            Gestioná todas tus cuentas desde un único dashboard. publi soporta
-            las redes que tus clientes realmente usan.
-          </p>
-        </Reveal>
+        <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <div>
+            <Reveal>
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                Multi-plataforma
+              </span>
+            </Reveal>
 
-        <div className="mt-14 grid overflow-hidden rounded-[34px] border border-[#e8f4f7] bg-white shadow-[0_24px_70px_-48px_rgba(10,31,47,0.35)] sm:grid-cols-2 lg:grid-cols-4">
-          {platformCells.map((cell, index) => (
-            <Reveal
-              key={`${cell.type}-${index}`}
-              delayMs={index * 55}
-              className="h-full"
-            >
-              <div
-                className={cn(
-                  "flex min-h-[220px] h-full border-b border-r border-[#e8f4f7] p-8 transition-colors hover:bg-[#f0fafc]",
-                  cell.type === "text"
-                    ? "items-center justify-center text-center"
-                    : "items-center justify-center",
-                )}
-              >
-                {cell.type === "platform" ? (
-                  <div className="flex flex-col items-center">
-                    <div className="flex h-24 w-24 items-center justify-center">
-                      <img
-                        src={cell.iconSrc}
-                        alt={cell.name}
-                        className="h-20 w-20 object-contain"
-                        width={80}
-                        height={80}
-                      />
-                    </div>
-                    <p className="mt-6 text-[13px] font-medium text-muted-foreground">
-                      {cell.name}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="max-w-[14ch] text-2xl font-semibold leading-tight text-foreground">
-                    {cell.title}
-                  </p>
-                )}
+            <Reveal delayMs={60}>
+              <h2 className="mt-5 text-4xl font-bold tracking-[-0.03em] text-foreground sm:text-5xl">
+                Todas las redes,
+                <br />
+                <span className="text-primary">un solo dashboard.</span>
+              </h2>
+            </Reveal>
+
+            <Reveal delayMs={120}>
+              <p className="mt-5 max-w-lg text-base leading-8 text-muted-foreground sm:text-lg">
+                Gestioná todas tus cuentas desde un único lugar. publi soporta
+                las redes que tus clientes realmente usan.
+              </p>
+            </Reveal>
+
+            <Reveal delayMs={180}>
+              <div className="mt-8 flex flex-col gap-4">
+                <StatLine value="8+" label="plataformas integradas" />
+                <StatLine value="∞" label="cuentas por plataforma" />
+                <StatLine value="+3" label="plataformas en camino" />
               </div>
             </Reveal>
-          ))}
+          </div>
+
+          <Reveal delayMs={100}>
+            <div className="rounded-[32px] border border-primary/10 bg-white/80 p-4 shadow-[0_24px_70px_-48px_rgba(10,31,47,0.35)] backdrop-blur">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3 pl-2">
+                <p className="text-sm font-semibold text-foreground">Cuentas conectadas</p>
+                <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
+                  8 activas
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
+                {platforms.map((platform, index) => (
+                  <PlatformCard key={platform.name} platform={platform} index={index} />
+                ))}
+              </div>
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>
+  );
+}
+
+function PlatformCard({ platform, index }: { platform: Platform; index: number }) {
+  return (
+    <Reveal delayMs={140 + index * 40}>
+      <div
+        className={cn(
+          "group flex items-center gap-3 rounded-[20px] border border-border/50 bg-gradient-to-br p-3.5 transition-all duration-200 hover:scale-[1.03] hover:shadow-md hover:border-primary/30",
+          platform.color,
+        )}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-border/40 transition-transform duration-200 group-hover:scale-110">
+          <img
+            src={platform.iconSrc}
+            alt={platform.name}
+            width={22}
+            height={22}
+            className="h-[22px] w-[22px] object-contain"
+          />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">{platform.name}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{platform.handle}</p>
+        </div>
+        <div className="ml-auto flex shrink-0">
+          <span className="h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-green-400/30" />
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+function StatLine({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-lg font-bold text-primary">
+        {value}
+      </span>
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+    </div>
   );
 }

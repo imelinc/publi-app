@@ -79,7 +79,7 @@ export function CTASection() {
           style={{ transitionDelay: "0ms" }}
         >
           Empezá a gestionar tus redes<br />
-          como un profesional.
+          con IA, como un profesional.
         </h2>
 
         <p
@@ -89,7 +89,7 @@ export function CTASection() {
           )}
           style={{ color: "#cceef5", transitionDelay: "120ms" }}
         >
-          Probá publi gratis durante 14 días. Sin tarjeta de crédito. Sin límites.
+          Probá publi y su asistente de IA gratis durante 14 días. Sin tarjeta de crédito. Sin límites.
         </p>
 
         <div
