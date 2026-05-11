@@ -27,18 +27,19 @@ const featureCards: FeatureCard[] = [
     iconSrc: "/schedule.svg",
   },
   {
-    title: "Analytics",
-    description:
-      "Accedé a métricas claras y accionables sobre el rendimiento de cada cuenta. Generá reportes para tus clientes en minutos.",
-    align: "left",
-    iconSrc: "/analytics.svg",
-  },
-  {
     title: "Gestión de clientes",
     description:
       "Un workspace dedicado por cliente. Cambiá de contexto de forma clara y deliberada. Sin errores, sin confusiones.",
-    align: "right",
+    align: "left",
     iconSrc: "/clients.svg",
+  },
+  {
+    title: "Analytics",
+    description:
+      "Accedé a métricas claras y accionables sobre el rendimiento de cada cuenta. Generá reportes para tus clientes en minutos.",
+    align: "right",
+    iconSrc: "/analytics.svg",
+    badge: "Próximamente",
   },
   {
     title: "Colaboración",
