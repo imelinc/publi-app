@@ -1,121 +1,79 @@
-import { create } from "zustand";
+import { create } from 'zustand'
+import {
+  Post,
+  CalendarEvent,
+  POSTS,
+  CALENDAR_EVENTS,
+} from '@/lib/mock-data'
 
-export type PostStatus = "programada" | "publicada" | "fallida";
+export type { Post, CalendarEvent } from '@/lib/mock-data'
 
-export interface Post {
-  id: string;
-  caption: string;
-  imageUrl: string;
-  scheduledAt: Date;
-  status: PostStatus;
-  account: string;
+interface AppState {
+  activeWorkspaceId: string
+  setActiveWorkspace: (id: string) => void
+
+  posts: Post[]
+  addPost: (post: Omit<Post, 'id' | 'createdAt'>) => void
+  updatePost: (id: string, updates: Partial<Post>) => void
+  deletePost: (id: string) => void
+
+  events: CalendarEvent[]
+  addEvent: (event: Omit<CalendarEvent, 'id'>) => void
+  deleteEvent: (id: string) => void
 }
 
-export interface Account {
-  id: string;
-  username: string;
-  avatarUrl: string;
-  platform: "instagram";
-}
+export const useAppStore = create<AppState>((set) => ({
+  activeWorkspaceId: 'ws-cafe-bruna',
+  setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
 
-export interface Client {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  platform: "instagram" | "facebook" | "linkedin" | "tiktok" | "x";
-  username: string;
-  postsCount: number;
-  nextPost: Date | null;
-}
-
-export interface UserProfile {
-  name: string;
-  email: string;
-  role: string;
-  avatarUrl: string;
-  joinedAt: Date;
-}
-
-interface AppStore {
-  accounts: Account[];
-  clients: Client[];
-  profile: UserProfile;
-  posts: Post[];
-  addPost: (post: Post) => void;
-  deletePost: (id: string) => void;
-  addClient: (client: Client) => void;
-  deleteClient: (id: string) => void;
-  updateProfile: (profile: Partial<UserProfile>) => void;
-}
-
-export const useAppStore = create<AppStore>((set) => ({
-  accounts: [
-    {
-      id: "1",
-      username: "@cafeelmolino",
-      avatarUrl: "https://i.pravatar.cc/40?img=1",
-      platform: "instagram",
-    },
-    {
-      id: "2",
-      username: "@studiolucia",
-      avatarUrl: "https://i.pravatar.cc/40?img=5",
-      platform: "instagram",
-    },
-  ],
-  clients: [
-    {
-      id: "1",
-      name: "Café El Molino",
-      avatarUrl: "https://api.dicebear.com/7.x/initials/svg?seed=CafeElMolino",
-      platform: "instagram",
-      username: "@cafeelmolino",
-      postsCount: 3,
-      nextPost: new Date(Date.now() + 1000 * 60 * 60 * 2),
-    },
-    {
-      id: "2",
-      name: "Studio Lucía",
-      avatarUrl: "https://api.dicebear.com/7.x/initials/svg?seed=StudioLucia",
-      platform: "instagram",
-      username: "@studiolucia",
-      postsCount: 5,
-      nextPost: new Date(Date.now() + 1000 * 60 * 60 * 24),
-    },
-  ],
-  profile: {
-    name: "Usuario Demo",
-    email: "ignacio@publi.com",
-    role: "Community Manager Freelance",
-    avatarUrl: "https://api.dicebear.com/7.x/initials/svg?seed=UsuarioDemo",
-    joinedAt: new Date("2025-01-15"),
-  },
-  posts: [
-    {
-      id: "1",
-      caption: "¡Nueva colección disponible! 🎉",
-      imageUrl: "https://picsum.photos/seed/post1/400/400",
-      scheduledAt: new Date(Date.now() + 1000 * 60 * 60 * 2),
-      status: "programada",
-      account: "@cafeelmolino",
-    },
-    {
-      id: "2",
-      caption: "Detrás de escena de nuestro último shoot 📸",
-      imageUrl: "https://picsum.photos/seed/post2/400/400",
-      scheduledAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      status: "publicada",
-      account: "@studiolucia",
-    },
-  ],
+  posts: POSTS,
   addPost: (post) =>
-    set((state) => ({ posts: [...state.posts, post] })),
+    set((state) => ({
+      posts: [
+        ...state.posts,
+        {
+          ...post,
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    })),
+  updatePost: (id, updates) =>
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    })),
   deletePost: (id) =>
-    set((state) => ({ posts: state.posts.filter((post) => post.id !== id) })),
-  addClient: (client) =>
-    set((state) => ({ clients: [...state.clients, client] })),
-  deleteClient: (id) =>
-    set((state) => ({ clients: state.clients.filter((client) => client.id !== id) })),
-  updateProfile: (profile) =>
-    set((state) => ({ profile: { ...state.profile, ...profile } })),
-}));
+    set((state) => ({ posts: state.posts.filter((p) => p.id !== id) })),
+
+  events: CALENDAR_EVENTS,
+  addEvent: (event) =>
+    set((state) => ({
+      events: [
+        ...state.events,
+        { ...event, id: crypto.randomUUID() },
+      ],
+    })),
+  deleteEvent: (id) =>
+    set((state) => ({ events: state.events.filter((e) => e.id !== id) })),
+}))
+
+// ─── Utility functions ────────────────────────────────────────────────────────
+
+export function getPostsByWorkspace(posts: Post[], workspaceId: string): Post[] {
+  return posts.filter((p) => p.workspaceId === workspaceId)
+}
+
+export function getScheduledPosts(posts: Post[]): Post[] {
+  return posts.filter((p) => p.status === 'scheduled')
+}
+
+export function getDraftPosts(posts: Post[]): Post[] {
+  return posts.filter((p) => p.status === 'draft')
+}
+
+export function getPostsForDate(posts: Post[], date: Date): Post[] {
+  const dateStr = date.toISOString().split('T')[0]
+  return posts.filter(
+    (p) => p.scheduledAt !== null && p.scheduledAt.startsWith(dateStr)
+  )
+}
