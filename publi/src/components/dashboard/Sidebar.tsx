@@ -1,207 +1,212 @@
-"use client"
+'use client'
 
-import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import {
-  LayoutGrid,
+  LayoutDashboard,
   Users,
-  CalendarDays,
-  BarChart3,
+  Calendar,
+  BarChart2,
   Settings,
-  LogOut,
   Plus,
-  ChevronRight,
-} from "lucide-react"
-import { useAppStore } from "@/store/use-app-store"
-import { cn } from "@/lib/utils"
-
-// ─── Nav config ───────────────────────────────────────────────────────────────
+  ChevronDown,
+  LogOut,
+  Check,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store/use-app-store'
+import { WORKSPACES } from '@/lib/mock-data'
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", Icon: LayoutGrid, badge: 0 },
-  { label: "Clientes", href: "/clientes", Icon: Users, badge: 7 },
-  { label: "Calendario", href: "/calendario", Icon: CalendarDays, badge: 3 },
-  { label: "Métricas", href: "/metricas", Icon: BarChart3, badge: 0 },
+  { label: 'Inicio', href: '/dashboard', Icon: LayoutDashboard },
+  { label: 'Clientes', href: '/clientes', Icon: Users },
+  { label: 'Calendario', href: '/calendario', Icon: Calendar },
+  { label: 'Métricas', href: '/metricas', Icon: BarChart2 },
 ]
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-}
-
-// ─── NavItem ──────────────────────────────────────────────────────────────────
-
-function NavItem({
-  label,
-  Icon,
-  active,
-  badge,
-  onClick,
-}: {
-  label: string
-  href?: string
-  Icon: typeof LayoutGrid
-  active: boolean
-  badge?: number
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 rounded-[10px] px-4 py-2.5 text-left transition-all duration-150",
-        active
-          ? "bg-primary-light text-primary font-semibold border-l-[3px] border-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-      )}
-    >
-      <Icon className="h-[18px] w-[18px] shrink-0" />
-      <span className="flex-1 text-[14px]">{label}</span>
-      {badge !== undefined && badge > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">
-          {badge}
-        </span>
-      )}
-    </button>
-  )
-}
-
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
-
-interface SidebarProps {
-  isOpen: boolean
-  onClose: () => void
-}
-
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const pathname = usePathname()
+export function Sidebar() {
   const router = useRouter()
-  const profile = useAppStore((s) => s.profile)
+  const pathname = usePathname()
+  const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
+  const setActiveWorkspace = useAppStore((s) => s.setActiveWorkspace)
 
-  function navigate(href: string) {
-    router.push(href)
-    onClose()
-  }
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const sidebarContent = (
-    <aside className="flex h-full w-[280px] flex-col border-r border-primary-light/60 bg-white">
-      {/* Logo */}
-      <div className="shrink-0 px-6 pb-4 pt-6">
-        <span className="text-[22px] font-bold leading-none text-primary">
+  const activeWorkspace = WORKSPACES.find((w) => w.id === activeWorkspaceId) ?? WORKSPACES[0]
+
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [dropdownOpen])
+
+  return (
+    <aside className="fixed left-0 top-0 w-[280px] h-screen bg-white border-r border-gray-100 flex flex-col z-30">
+      {/* ZONA TOP */}
+      <div className="px-5 pt-6 pb-4">
+        <span className="font-bold text-xl" style={{ color: '#0095b6' }}>
           publi
         </span>
+
+        {/* Workspace selector */}
+        <div className="relative mt-4" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen((v) => !v)}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
+              style={{
+                backgroundColor: activeWorkspace.color,
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              {activeWorkspace.initials}
+            </div>
+            <span className="flex-1 text-sm font-medium text-gray-900 text-left truncate">
+              {activeWorkspace.name}
+            </span>
+            <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+          </button>
+
+          {/* Dropdown */}
+          {dropdownOpen && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg z-50 py-1">
+              {WORKSPACES.map((ws) => (
+                <button
+                  key={ws.id}
+                  onClick={() => {
+                    setActiveWorkspace(ws.id)
+                    setDropdownOpen(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors"
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
+                    style={{
+                      backgroundColor: ws.color,
+                      fontSize: '11px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {ws.initials}
+                  </div>
+                  <span className="flex-1 text-sm text-gray-800 text-left truncate">
+                    {ws.name}
+                  </span>
+                  {ws.id === activeWorkspaceId && (
+                    <Check className="w-4 h-4 shrink-0" style={{ color: '#0095b6' }} />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Client selector */}
-      <div className="shrink-0 border-b border-primary-light/60 px-4 pb-4">
+      {/* ZONA MIDDLE */}
+      <div className="flex-1 px-4 pb-4 flex flex-col overflow-y-auto">
+        {/* Nueva publicación button */}
         <button
-          className={cn(
-            "flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left",
-            "transition-colors duration-150 hover:bg-primary-light/40"
-          )}
+          onClick={() => router.push('/nueva-publicacion')}
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-white text-sm font-medium mb-3 hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: '#0095b6' }}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-light text-[13px] font-bold text-primary">
-            NI
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold text-foreground">
-              Neon Inc.
-            </p>
-            <p className="text-[11px] text-muted-foreground">Cliente activo</p>
-          </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </button>
-      </div>
-
-      {/* Nueva Publicación CTA */}
-      <div className="shrink-0 px-4 pb-2 pt-4">
-        <button
-          onClick={() => navigate("/nueva-publicacion")}
-          className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-[10px]",
-            "bg-primary px-5 py-3.5 text-[15px] font-bold text-white",
-            "transition-colors duration-150 hover:bg-primary/90"
-          )}
-        >
-          <Plus className="h-5 w-5" />
+          <Plus className="w-4 h-4" />
           Nueva Publicación
         </button>
+
+        {/* Nav items */}
+        <nav className="flex flex-col gap-0.5">
+          {navItems.map(({ label, href, Icon }) => {
+            const isActive = pathname.startsWith(href)
+            return (
+              <button
+                key={href}
+                onClick={() => router.push(href)}
+                className={cn(
+                  'w-full flex items-center gap-3 py-2 px-3 rounded-lg text-sm text-left transition-colors',
+                  isActive
+                    ? 'font-medium'
+                    : 'text-gray-600 hover:bg-gray-50'
+                )}
+                style={
+                  isActive
+                    ? { backgroundColor: '#cceef5', color: '#0095b6' }
+                    : undefined
+                }
+              >
+                <Icon
+                  className="w-[18px] h-[18px] shrink-0"
+                  style={{ color: isActive ? '#0095b6' : undefined }}
+                />
+                {label}
+              </button>
+            )
+          })}
+
+          {/* Separador */}
+          <div className="border-t border-gray-100 my-2" />
+
+          {/* Configuración */}
+          {(() => {
+            const isActive = pathname.startsWith('/configuracion')
+            return (
+              <button
+                onClick={() => router.push('/configuracion')}
+                className={cn(
+                  'w-full flex items-center gap-3 py-2 px-3 rounded-lg text-sm text-left transition-colors',
+                  isActive
+                    ? 'font-medium'
+                    : 'text-gray-600 hover:bg-gray-50'
+                )}
+                style={
+                  isActive
+                    ? { backgroundColor: '#cceef5', color: '#0095b6' }
+                    : undefined
+                }
+              >
+                <Settings
+                  className="w-[18px] h-[18px] shrink-0"
+                  style={{ color: isActive ? '#0095b6' : undefined }}
+                />
+                Configuración
+              </button>
+            )
+          })()}
+        </nav>
       </div>
 
-      {/* Main nav */}
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-2">
-        {navItems.map(({ label, href, Icon, badge }) => (
-          <NavItem
-            key={href}
-            label={label}
-            href={href}
-            Icon={Icon}
-            active={pathname === href}
-            badge={badge}
-            onClick={() => navigate(href)}
-          />
-        ))}
-      </nav>
-
-      {/* Footer */}
-      <div className="shrink-0 border-t border-primary-light/60 px-4 pb-5 pt-4">
-        <div className="flex flex-col gap-3">
-          {/* Configuración */}
-          <NavItem
-            label="Configuración"
-            href="/configuracion"
-            Icon={Settings}
-            active={pathname === "/configuracion"}
-            onClick={() => navigate("/configuracion")}
-          />
-
-          {/* User mini card */}
-          <div className="flex items-center gap-3 rounded-[10px] bg-muted px-3 py-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-light text-[13px] font-bold text-primary">
-              {getInitials(profile.name)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-bold text-foreground">
-                {profile.name}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {profile.email}
-              </p>
-            </div>
-            <button
-              onClick={() => router.push("/login")}
-              title="Cerrar sesión"
-              className="text-muted-foreground transition-colors duration-150 hover:text-red-500"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+      {/* ZONA BOTTOM */}
+      <div className="px-4 pb-5 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+            style={{ backgroundColor: '#0095b6' }}
+          >
+            NM
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">Nacho Melinc</p>
+            <p className="text-xs text-gray-400 truncate">nacho@publi.app</p>
+          </div>
+          <button
+            onClick={() => router.push('/login')}
+            className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>
-  )
-
-  return (
-    <>
-      {/* Desktop: fixed sidebar */}
-      <div className="fixed left-0 top-0 z-30 hidden h-screen md:flex">
-        {sidebarContent}
-      </div>
-
-      {/* Mobile: overlay sidebar */}
-      {isOpen && (
-        <div
-          className="fixed left-0 top-0 z-40 h-screen md:hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {sidebarContent}
-        </div>
-      )}
-    </>
   )
 }
