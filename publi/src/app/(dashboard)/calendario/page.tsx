@@ -1,298 +1,252 @@
-"use client";
+"use client"
 
-import { useMemo, useState } from "react";
-
-type ViewMode = "mensual" | "semanal";
-type Platform = "instagram" | "facebook" | "tiktok" | "linkedin";
-
-interface CalendarPost {
-  id: string;
-  title: string;
-  day: number;
-  time: string;
-  platform: Platform;
-}
-
-const dayLabels = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"] as const;
-
-// Posts hardcodeados — se muestran en cualquier mes
-const posts: CalendarPost[] = [
-  { id: "1", title: "Campaña otoño", day: 3, time: "09:00", platform: "instagram" },
-  { id: "2", title: "Promo stories", day: 5, time: "11:30", platform: "facebook" },
-  { id: "3", title: "Tip del día", day: 8, time: "16:00", platform: "tiktok" },
-  { id: "4", title: "Caso de éxito", day: 12, time: "10:15", platform: "linkedin" },
-  { id: "5", title: "Lanzamiento reel", day: 14, time: "18:30", platform: "instagram" },
-  { id: "6", title: "Post institucional", day: 18, time: "13:00", platform: "facebook" },
-  { id: "7", title: "Behind the scenes", day: 22, time: "17:00", platform: "tiktok" },
-  { id: "8", title: "Resultados Q1", day: 27, time: "08:45", platform: "linkedin" },
-];
-
-const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
-
-/** Retorna el índice del día de la semana (0=Lu … 6=Do) para el 1ro del mes */
-function firstWeekdayOfMonth(year: number, month: number): number {
-  const jsDay = new Date(year, month, 1).getDay(); // 0=Dom
-  return jsDay === 0 ? 6 : jsDay - 1; // convertir a Lu=0
-}
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
+import { useState, useMemo } from "react"
+import { WORKSPACES, Post } from "@/lib/mock-data"
+import { useAppStore } from "@/store/use-app-store"
+import { CalendarGrid } from "@/components/dashboard/CalendarGrid"
+import { DraftPanel } from "@/components/dashboard/DraftPanel"
+import { EventModal } from "@/components/dashboard/EventModal"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  PanelRightOpen,
+  PanelRightClose,
+} from "lucide-react"
 
 export default function CalendarioPage() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth()); // 0-based
-  const [viewMode, setViewMode] = useState<ViewMode>("mensual");
-  const [activeDay, setActiveDay] = useState<number | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null)
+  const [eventModalOpen, setEventModalOpen] = useState(false)
+  const [draftPanelOpen, setDraftPanelOpen] = useState(true)
+  const [viewMode, setViewMode] = useState<"month" | "week">("month")
+  const [clientFilter, setClientFilter] = useState("all")
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
-  const today = isCurrentMonth ? now.getDate() : -1;
+  const { posts, events } = useAppStore()
+
+  const filteredPosts = useMemo(() => {
+    if (clientFilter === "all") return posts
+    return posts.filter((p) => p.workspaceId === clientFilter)
+  }, [posts, clientFilter])
+
+  const filteredEvents = useMemo(() => {
+    if (clientFilter === "all") return events
+    return events.filter((e) => e.workspaceId === clientFilter)
+  }, [events, clientFilter])
 
   function prevMonth() {
-    if (month === 0) { setYear((y) => y - 1); setMonth(11); }
-    else setMonth((m) => m - 1);
-    setActiveDay(null);
+    setCurrentMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+    )
   }
 
   function nextMonth() {
-    if (month === 11) { setYear((y) => y + 1); setMonth(0); }
-    else setMonth((m) => m + 1);
-    setActiveDay(null);
+    setCurrentMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+    )
   }
 
-  const monthLabel = `${MONTH_NAMES[month]} ${year}`;
-  const totalDays = daysInMonth(year, month);
-  const startOffset = firstWeekdayOfMonth(year, month);
+  function handleDayClick(date: Date) {
+    setSelectedDate(date)
+    setEventModalOpen(true)
+  }
 
-  // Grilla: celdas vacías al inicio + días del mes
-  const gridCells = useMemo(() => {
-    const cells: Array<{ day: number | null }> = [];
-    for (let i = 0; i < startOffset; i++) cells.push({ day: null });
-    for (let d = 1; d <= totalDays; d++) cells.push({ day: d });
-    // Rellenar hasta múltiplo de 7
-    while (cells.length % 7 !== 0) cells.push({ day: null });
-    return cells;
-  }, [startOffset, totalDays]);
+  function handlePostClick(post: Post) {
+    setSelectedPost(post)
+  }
 
-  const postsByDay = useMemo(() => {
-    return posts.reduce<Record<number, CalendarPost[]>>((acc, post) => {
-      acc[post.day] = [...(acc[post.day] ?? []), post];
-      return acc;
-    }, {});
-  }, []);
+  const monthLabel = currentMonth.toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  })
+  const capitalizedMonthLabel =
+    monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
 
-  // Vista semanal: semana que contiene el día activo (o la primera semana)
-  const weekStart = useMemo(() => {
-    const baseDay = activeDay ?? 1;
-    const jsDay = new Date(year, month, baseDay).getDay();
-    const lunesOffset = jsDay === 0 ? 6 : jsDay - 1;
-    return new Date(year, month, baseDay - lunesOffset);
-  }, [activeDay, year, month]);
-
-  const weekDays = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      return d;
-    });
-  }, [weekStart]);
-
-  const weeklyPosts: Array<{ dayIndex: number; title: string; time: string; platform: Platform }> = [
-    { dayIndex: 0, title: "Campaña otoño", time: "09:00", platform: "instagram" },
-    { dayIndex: 1, title: "Promo stories", time: "11:30", platform: "facebook" },
-    { dayIndex: 2, title: "Tip del día", time: "16:00", platform: "tiktok" },
-    { dayIndex: 4, title: "Caso de éxito", time: "10:15", platform: "linkedin" },
-    { dayIndex: 5, title: "Reel destacado", time: "18:30", platform: "instagram" },
-  ];
+  const selectedPostWorkspace = selectedPost
+    ? WORKSPACES.find((w) => w.id === selectedPost.workspaceId)
+    : null
 
   return (
-    <main className="min-h-screen bg-[#f5f0e8] p-6 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <section className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-[-0.03em] text-foreground">
-              Calendario
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Visualizá tu planificación por mes o por semana.
-            </p>
+    <div className="flex gap-4 h-[calc(100vh-112px)]">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={prevMonth}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-semibold text-gray-900 min-w-[180px] text-center">
+              {capitalizedMonthLabel}
+            </span>
+            <Button variant="ghost" size="icon" onClick={nextMonth}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 rounded-xl border border-[#e8f4f7] bg-white px-4 py-3">
-              <button type="button" onClick={prevMonth} className="rounded-lg p-1 text-muted-foreground transition hover:bg-[#f5f0e8] hover:text-foreground">
-                <ChevronLeftIcon className="h-4 w-4" />
-              </button>
-              <span className="min-w-[140px] text-center text-sm font-semibold text-foreground">
-                {monthLabel}
-              </span>
-              <button type="button" onClick={nextMonth} className="rounded-lg p-1 text-muted-foreground transition hover:bg-[#f5f0e8] hover:text-foreground">
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex rounded-full bg-white p-1 ring-1 ring-[#e8f4f7]">
-              <button
-                type="button"
-                onClick={() => setViewMode("mensual")}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  viewMode === "mensual"
-                    ? "bg-primary text-white"
-                    : "bg-transparent text-muted-foreground"
-                }`}
-              >
-                Mensual
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("semanal")}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  viewMode === "semanal"
-                    ? "bg-primary text-white"
-                    : "bg-transparent text-muted-foreground"
-                }`}
-              >
-                Semanal
-              </button>
-            </div>
+          <div className="flex rounded-full bg-[#f5f0e8] p-1 ring-1 ring-[#e8f4f7]">
+            <button
+              type="button"
+              onClick={() => setViewMode("month")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                viewMode === "month"
+                  ? "bg-[#0095b6] text-white"
+                  : "bg-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Mes
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("week")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                viewMode === "week"
+                  ? "bg-[#0095b6] text-white"
+                  : "bg-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Semana
+            </button>
           </div>
-        </section>
 
-        <section className="rounded-xl border border-[#e8f4f7] bg-white p-4 md:p-6">
-          {viewMode === "mensual" ? (
-            <div>
-              <div className="grid grid-cols-7 gap-2">
-                {dayLabels.map((label) => (
+          <div className="flex gap-2 items-center">
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700 outline-none"
+            >
+              <option value="all">Todos los clientes</option>
+              {WORKSPACES.map((ws) => (
+                <option key={ws.id} value={ws.id}>
+                  {ws.name}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              onClick={() => {
+                setSelectedDate(new Date())
+                setEventModalOpen(true)
+              }}
+              className="bg-[#0095b6] text-white text-sm hover:opacity-90"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar evento
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setDraftPanelOpen(!draftPanelOpen)}
+            >
+              {draftPanelOpen ? (
+                <PanelRightClose className="h-4 w-4" />
+              ) : (
+                <PanelRightOpen className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <CalendarGrid
+          currentMonth={currentMonth}
+          posts={filteredPosts}
+          events={filteredEvents}
+          viewMode={viewMode}
+          onDayClick={handleDayClick}
+          onPostClick={handlePostClick}
+        />
+      </div>
+
+      {draftPanelOpen && (
+        <DraftPanel posts={filteredPosts} workspaces={WORKSPACES} />
+      )}
+
+      <EventModal
+        open={eventModalOpen}
+        onClose={() => setEventModalOpen(false)}
+        selectedDate={selectedDate}
+      />
+
+      {selectedPost && (
+        <Dialog
+          open={!!selectedPost}
+          onOpenChange={(open) => {
+            if (!open) setSelectedPost(null)
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{selectedPost.title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {selectedPostWorkspace && (
+                <div className="flex items-center gap-2">
                   <div
-                    key={label}
-                    className="py-2 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                    style={{ backgroundColor: selectedPostWorkspace.color }}
                   >
-                    {label}
+                    {selectedPostWorkspace.initials}
                   </div>
+                  <span className="text-sm text-gray-600">
+                    {selectedPostWorkspace.name}
+                  </span>
+                </div>
+              )}
+              <p className="text-sm text-gray-600">
+                {selectedPost.description}
+              </p>
+              <div className="flex gap-2">
+                {selectedPost.networks.map((n) => (
+                  <span
+                    key={n}
+                    className="text-xs bg-gray-100 px-2 py-1 rounded"
+                  >
+                    {n}
+                  </span>
                 ))}
               </div>
-
-              <div className="mt-2 grid grid-cols-7 gap-2">
-                {gridCells.map((cell, i) => {
-                  const dayPosts = cell.day ? postsByDay[cell.day] ?? [] : [];
-                  const isToday = cell.day === today;
-                  const isActive = cell.day !== null && cell.day === activeDay;
-
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => cell.day && setActiveDay(cell.day)}
-                      disabled={cell.day === null}
-                      className={`min-h-[100px] rounded-xl border p-3 text-left transition ${
-                        cell.day === null
-                          ? "border-transparent bg-transparent cursor-default"
-                          : isActive
-                          ? "border-primary bg-[#f0fafc]"
-                          : "border-[#e8f4f7] bg-white hover:border-primary/40"
-                      }`}
-                    >
-                      {cell.day !== null && (
-                        <>
-                          <div className="flex items-center">
-                            {isToday ? (
-                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                                {cell.day}
-                              </span>
-                            ) : (
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {cell.day}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-2 space-y-1.5">
-                            {dayPosts.slice(0, 2).map((post) => (
-                              <span
-                                key={post.id}
-                                className={`block truncate rounded-full px-2.5 py-1 text-[11px] font-semibold ${platformPillClasses(post.platform)}`}
-                              >
-                                {post.title}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              {selectedPost.scheduledAt && (
+                <p className="text-xs text-gray-400">
+                  {new Date(
+                    selectedPost.scheduledAt
+                  ).toLocaleDateString("es-AR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              )}
+              <span
+                className={`inline-block text-xs px-2 py-1 rounded ${
+                  selectedPost.status === "scheduled"
+                    ? "bg-blue-100 text-blue-700"
+                    : selectedPost.status === "published"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {selectedPost.status === "scheduled"
+                  ? "Programada"
+                  : selectedPost.status === "published"
+                    ? "Publicada"
+                    : "Borrador"}
+              </span>
             </div>
-          ) : (
-            <div className="grid gap-3 xl:grid-cols-7">
-              {weekDays.map((date, index) => {
-                const dateLabel = `${date.getDate()} ${MONTH_NAMES[date.getMonth()].slice(0, 3)}`;
-                const isToday =
-                  date.getDate() === now.getDate() &&
-                  date.getMonth() === now.getMonth() &&
-                  date.getFullYear() === now.getFullYear();
-                return (
-                <div
-                  key={index}
-                  className={`rounded-xl border p-3 ${isToday ? "border-primary bg-[#f0fafc]" : "border-[#e8f4f7] bg-[#fbfdfe]"}`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    {dayLabels[index]}
-                  </p>
-                  <p className={`mt-1 text-sm font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>{dateLabel}</p>
-
-                  <div className="mt-4 space-y-3">
-                    {weeklyPosts
-                      .filter((post) => post.dayIndex === index)
-                      .map((post) => (
-                        <article
-                          key={`${post.title}-${post.time}`}
-                          className={`rounded-xl p-3 ${platformPillClasses(post.platform)}`}
-                        >
-                          <p className="text-xs font-bold">{post.time}</p>
-                          <p className="mt-1 text-sm font-semibold">{post.title}</p>
-                        </article>
-                      ))}
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function platformPillClasses(platform: Platform) {
-  if (platform === "instagram") {
-    return "bg-[#fce7f3] text-[#9d174d]";
-  }
-  if (platform === "facebook") {
-    return "bg-[#dbeafe] text-[#1e40af]";
-  }
-  if (platform === "tiktok") {
-    return "bg-[#f3f4f6] text-[#111827]";
-  }
-  return "bg-[#dbeafe] text-[#1e3a5f]";
-}
-
-function ChevronLeftIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="m14.5 6.5-5 5 5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="m9.5 6.5 5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  )
 }

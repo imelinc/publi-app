@@ -1,0 +1,209 @@
+"use client"
+
+import { useMemo } from "react"
+import { Post, CalendarEvent, WORKSPACES } from "@/lib/mock-data"
+
+interface CalendarGridProps {
+  currentMonth: Date
+  posts: Post[]
+  events: CalendarEvent[]
+  viewMode: "month" | "week"
+  onDayClick: (date: Date) => void
+  onPostClick: (post: Post) => void
+}
+
+const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
+const NETWORK_ICON_MAP: Record<string, string> = {
+  instagram: "/icons/instagram.svg",
+  facebook: "/icons/facebook.svg",
+  tiktok: "/icons/tiktok.svg",
+  linkedin: "/icons/linkedin.svg",
+  twitter: "/icons/twitter.svg",
+  youtube: "/icons/youtube.svg",
+  threads: "/icons/theads.svg",
+}
+
+function getDaysInGrid(month: Date): Date[] {
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1)
+  let startDow = firstDay.getDay()
+  startDow = startDow === 0 ? 6 : startDow - 1
+  const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0)
+  const days: Date[] = []
+  for (let i = startDow; i > 0; i--) {
+    days.push(new Date(month.getFullYear(), month.getMonth(), 1 - i))
+  }
+  for (let i = 1; i <= lastDay.getDate(); i++) {
+    days.push(new Date(month.getFullYear(), month.getMonth(), i))
+  }
+  while (days.length % 7 !== 0) {
+    days.push(
+      new Date(
+        month.getFullYear(),
+        month.getMonth() + 1,
+        days.length - lastDay.getDate() - startDow + 1
+      )
+    )
+  }
+  return days
+}
+
+function getWeekDays(): Date[] {
+  const today = new Date()
+  const day = today.getDay()
+  const mondayOffset = day === 0 ? -6 : 1 - day
+  const monday = new Date(today)
+  monday.setDate(today.getDate() + mondayOffset)
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d
+  })
+}
+
+function formatDateKey(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-")
+}
+
+function getPostsForDay(posts: Post[], date: Date): Post[] {
+  const dateStr = formatDateKey(date)
+  return posts.filter(
+    (p) => p.scheduledAt !== null && p.scheduledAt.startsWith(dateStr)
+  )
+}
+
+function getEventsForDay(events: CalendarEvent[], date: Date): CalendarEvent[] {
+  const dateStr = formatDateKey(date)
+  return events.filter((e) => e.date === dateStr)
+}
+
+function getWorkspaceColor(workspaceId: string): string {
+  return WORKSPACES.find((w) => w.id === workspaceId)?.color ?? "#0095b6"
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+export function CalendarGrid({
+  currentMonth,
+  posts,
+  events,
+  viewMode,
+  onDayClick,
+  onPostClick,
+}: CalendarGridProps) {
+  const today = useMemo(() => new Date(), [])
+
+  const monthDays = useMemo(() => getDaysInGrid(currentMonth), [currentMonth])
+  const weekDays = useMemo(() => getWeekDays(), [])
+
+  const days = viewMode === "month" ? monthDays : weekDays
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+        {DAY_LABELS.map((label) => (
+          <div
+            key={label}
+            className="text-xs font-semibold text-gray-500 text-center py-2.5 uppercase tracking-wider"
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 flex-1 overflow-auto">
+        {days.map((date, i) => {
+          const isCurrentMonth =
+            date.getMonth() === currentMonth.getMonth() &&
+            date.getFullYear() === currentMonth.getFullYear()
+          const isToday = isSameDay(date, today)
+          const dayPosts = getPostsForDay(posts, date)
+          const dayEvents = getEventsForDay(events, date)
+          const maxChips = 3
+          const overflow =
+            dayPosts.length > maxChips ? dayPosts.length - maxChips : 0
+
+          return (
+            <div
+              key={i}
+              onClick={() => onDayClick(date)}
+              className={`border border-gray-200 min-h-[100px] p-1.5 cursor-pointer hover:bg-[#cceef5]/30 transition-colors bg-white ${
+                !isCurrentMonth && viewMode === "month" ? "bg-gray-50/60 opacity-40" : ""
+              }`}
+            >
+              <div className="flex items-center mb-1">
+                {isToday ? (
+                  <span className="bg-[#0095b6] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">
+                    {date.getDate()}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-700 font-medium">
+                    {date.getDate()}
+                  </span>
+                )}
+                {viewMode === "week" && (
+                  <span className="text-xs text-gray-400 ml-1">
+                    {date.toLocaleDateString("es-AR", { month: "short" })}
+                  </span>
+                )}
+              </div>
+              {dayPosts.slice(0, maxChips).map((post) => {
+                const color = getWorkspaceColor(post.workspaceId)
+                const iconPath =
+                  NETWORK_ICON_MAP[post.networks[0]] ||
+                  `/icons/${post.networks[0]}.svg`
+                return (
+                  <div
+                    key={post.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onPostClick(post)
+                    }}
+                    className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 mb-0.5 cursor-pointer truncate"
+                    style={{ backgroundColor: color + "33", color }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={iconPath}
+                      alt=""
+                      width={10}
+                      height={10}
+                      className="shrink-0"
+                    />
+                    <span className="truncate">{post.title}</span>
+                  </div>
+                )
+              })}
+              {overflow > 0 && (
+                <div className="text-[10px] text-gray-400 px-1.5">
+                  +{overflow} más
+                </div>
+              )}
+              {dayEvents.length > 0 && (
+                <div className="flex gap-1 mt-0.5">
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: event.color }}
+                      title={event.title}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
