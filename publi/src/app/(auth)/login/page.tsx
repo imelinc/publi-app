@@ -1,150 +1,8 @@
-import Link from "next/link";
-
-export default function LoginPage() {
-  return (
-    <main className="min-h-screen bg-[hsl(var(--hero-background))] text-foreground">
-      <div className="flex min-h-screen flex-col lg:flex-row">
-        <section className="flex w-full items-center justify-center bg-white px-6 py-12 sm:px-10 lg:min-h-screen lg:w-3/5 lg:px-16">
-          <div className="w-full max-w-[420px]">
-            <div className="flex items-center justify-between gap-4">
-              <Link
-                href="/"
-                className="inline-block text-2xl font-bold tracking-tight text-primary transition-opacity hover:opacity-80"
-              >
-                publi
-              </Link>
-              <Link
-                href="/"
-                className="rounded-full border border-primary-light bg-[hsl(var(--hero-background))] px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary"
-              >
-                Volver al inicio
-              </Link>
-            </div>
-
-            <div className="mt-12">
-              <h1 className="text-[28px] font-bold tracking-[-0.02em] text-foreground">
-                Bienvenido de nuevo
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Ingresá a tu cuenta para continuar gestionando tus redes.
-              </p>
-            </div>
-
-            <form className="mt-10 space-y-6">
-              <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  autoComplete="email"
-                  className="w-full rounded-lg border border-primary-light bg-white px-4 py-3 text-sm text-foreground outline-none transition duration-150 placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,149,182,0.10)]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-4">
-                  <label
-                    htmlFor="password"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Contraseña
-                  </label>
-                  <Link
-                    href="#"
-                    className="text-xs font-medium text-primary transition hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  className="w-full rounded-lg border border-primary-light bg-white px-4 py-3 text-sm text-foreground outline-none transition duration-150 placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_3px_rgba(0,149,182,0.10)]"
-                />
-              </div>
-
-              <Link
-                href="/dashboard"
-                className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3.5 text-[15px] font-bold text-white transition duration-150 hover:bg-[#007a97]"
-              >
-                Ingresar
-              </Link>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#e8f4f7]" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-muted-foreground">
-                    o continuá con
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-3 rounded-lg border border-[#e8f4f7] bg-white px-4 py-3.5 text-sm font-medium text-foreground transition hover:bg-[#f9f9f9]"
-              >
-                <GoogleIcon />
-                <span>Continuar con Google</span>
-              </button>
-            </form>
-
-            <p className="mt-8 text-sm text-muted-foreground">
-              ¿Todavía no tenés cuenta?{" "}
-              <Link
-                href="/waitlist"
-                className="font-bold text-primary transition hover:underline"
-              >
-                Solicitar acceso
-              </Link>
-            </p>
-          </div>
-        </section>
-
-        <aside className="relative hidden overflow-hidden bg-[#0f2a33] lg:flex lg:min-h-screen lg:w-2/5 lg:items-center lg:justify-center">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute left-10 top-12 h-10 w-10 rotate-6 bg-primary/70" />
-            <div className="absolute right-10 top-16 h-20 w-20 bg-accent/65" />
-            <div className="absolute left-20 top-40 h-6 w-6 -rotate-6 bg-primary-light/70" />
-            <div className="absolute right-24 top-1/3 h-12 w-12 rotate-3 bg-primary/45" />
-            <div className="absolute bottom-32 left-16 h-16 w-16 bg-primary-light/45" />
-            <div className="absolute bottom-16 right-20 h-8 w-8 -rotate-3 bg-accent/55" />
-            <div className="absolute right-14 top-24 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
-            <div className="absolute bottom-20 left-10 h-32 w-32 rounded-full bg-primary-light/10 blur-3xl" />
-          </div>
-
-          <div className="relative z-10 max-w-md px-10 text-center">
-            <p className="text-[22px] italic leading-10 text-primary-light">
-              &quot;publi me permitió pasar de gestionar
-              <br />
-              5 clientes con caos a 10 clientes
-              <br />
-              con claridad.&quot;
-            </p>
-            <p className="mt-6 text-sm text-primary-light/60">
-              — Lucía M., Community Manager Freelance
-            </p>
-          </div>
-
-          <div className="absolute bottom-8 right-8 rounded-lg bg-accent px-4 py-2.5 text-[13px] font-bold text-foreground shadow-lg">
-            Beta cerrada · 500+ CMs en lista
-          </div>
-        </aside>
-      </div>
-    </main>
-  );
-}
+import Link from "next/link"
+import { AuthLayout } from "@/components/publi/AuthLayout"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 
 function GoogleIcon() {
   return (
@@ -171,5 +29,89 @@ function GoogleIcon() {
         fill="#EA4335"
       />
     </svg>
-  );
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <AuthLayout>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Ingresá a tu cuenta
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Gestioná tus redes desde un solo lugar.
+        </p>
+      </div>
+
+      <form className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="tu@email.com"
+            autoComplete="email"
+            required
+            className="h-11 px-4"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Contraseña</Label>
+            <Link
+              href="#"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+            className="h-11 px-4"
+          />
+        </div>
+
+        <Button asChild className="mt-2 h-11 w-full text-[15px] font-semibold">
+          <Link href="/dashboard">Ingresar</Link>
+        </Button>
+      </form>
+
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-card px-4 text-xs text-muted-foreground">
+            o continuá con
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+      >
+        <GoogleIcon />
+        <span>Continuar con Google</span>
+      </button>
+
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        ¿Todavía no tenés cuenta?{" "}
+        <Link
+          href="/waitlist"
+          className="font-semibold text-primary hover:underline"
+        >
+          Solicitar acceso
+        </Link>
+      </p>
+    </AuthLayout>
+  )
 }
