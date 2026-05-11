@@ -7,13 +7,6 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const navigationLinks = [
-  { href: "#inicio", label: "Inicio" },
-  { href: "#funcionalidades", label: "Funcionalidades" },
-  { href: "#precios", label: "Precios" },
-  { href: "#recursos", label: "Recursos" },
-];
-
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -27,18 +20,6 @@ export function Navbar() {
         >
           publi
         </Link>
-
-        <nav className="hidden items-center gap-8 md:flex">
-          {navigationLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
 
         <div className="hidden items-center gap-3 md:flex">
           <Button
@@ -76,37 +57,24 @@ export function Navbar() {
           isOpen ? "block" : "hidden",
         )}
       >
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6">
-          {navigationLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="rounded-2xl px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-primary/10 hover:text-primary"
-              onClick={() => setIsOpen(false)}
-            >
-              {link.label}
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 sm:px-6">
+          <Button
+            asChild
+            variant="ghost"
+            className="h-11 rounded-full text-sm font-semibold text-foreground hover:bg-primary/10 hover:text-primary"
+          >
+            <Link href="/login" onClick={() => setIsOpen(false)}>
+              Iniciar sesión
             </Link>
-          ))}
-
-          <div className="mt-2 flex flex-col gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              className="h-11 rounded-full text-sm font-semibold text-foreground hover:bg-primary/10 hover:text-primary"
-            >
-              <Link href="/login" onClick={() => setIsOpen(false)}>
-                Iniciar sesión
-              </Link>
-            </Button>
-            <Button
-              asChild
-              className="h-11 rounded-full text-sm font-semibold hover:bg-primary/90"
-            >
-              <Link href="/waitlist" onClick={() => setIsOpen(false)}>
-                Registrarse
-              </Link>
-            </Button>
-          </div>
+          </Button>
+          <Button
+            asChild
+            className="h-11 rounded-full text-sm font-semibold hover:bg-primary/90"
+          >
+            <Link href="/waitlist" onClick={() => setIsOpen(false)}>
+              Registrarse
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
