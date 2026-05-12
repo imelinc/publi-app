@@ -10,6 +10,7 @@ interface CalendarGridProps {
   viewMode: "month" | "week"
   onDayClick: (date: Date) => void
   onPostClick: (post: Post) => void
+  onEventClick: (event: CalendarEvent) => void
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
@@ -93,6 +94,11 @@ function isSameDay(a: Date, b: Date): boolean {
   )
 }
 
+const EVENT_TYPE_ICONS: Record<string, string> = {
+  event: "📅",
+  deadline: "⏰",
+}
+
 export function CalendarGrid({
   currentMonth,
   posts,
@@ -100,6 +106,7 @@ export function CalendarGrid({
   viewMode,
   onDayClick,
   onPostClick,
+  onEventClick,
 }: CalendarGridProps) {
   const today = useMemo(() => new Date(), [])
 
@@ -129,8 +136,10 @@ export function CalendarGrid({
           const dayPosts = getPostsForDay(posts, date)
           const dayEvents = getEventsForDay(events, date)
           const maxChips = 3
-          const overflow =
-            dayPosts.length > maxChips ? dayPosts.length - maxChips : 0
+          const totalItems = dayPosts.length + dayEvents.length
+          const postsToShow = Math.min(dayPosts.length, maxChips)
+          const eventsToShow = Math.min(dayEvents.length, maxChips - postsToShow)
+          const overflow = totalItems > maxChips ? totalItems - maxChips : 0
 
           return (
             <div
@@ -156,7 +165,7 @@ export function CalendarGrid({
                   </span>
                 )}
               </div>
-              {dayPosts.slice(0, maxChips).map((post) => {
+              {dayPosts.slice(0, postsToShow).map((post) => {
                 const color = getWorkspaceColor(post.workspaceId)
                 const iconPath =
                   NETWORK_ICON_MAP[post.networks[0]] ||
@@ -188,18 +197,20 @@ export function CalendarGrid({
                   +{overflow} más
                 </div>
               )}
-              {dayEvents.length > 0 && (
-                <div className="flex gap-1 mt-0.5">
-                  {dayEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: event.color }}
-                      title={event.title}
-                    />
-                  ))}
+              {dayEvents.slice(0, eventsToShow).map((event) => (
+                <div
+                  key={event.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEventClick(event)
+                  }}
+                  className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 mb-0.5 cursor-pointer truncate"
+                  style={{ backgroundColor: event.color + "25", color: event.color }}
+                >
+                  <span className="shrink-0 text-[9px]">{EVENT_TYPE_ICONS[event.type] ?? "📅"}</span>
+                  <span className="truncate font-medium">{event.title}</span>
                 </div>
-              )}
+              ))}
             </div>
           )
         })}

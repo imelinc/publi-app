@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { WORKSPACES, Post } from "@/lib/mock-data"
+import { WORKSPACES, Post, CalendarEvent } from "@/lib/mock-data"
 import { useAppStore } from "@/store/use-app-store"
 import { CalendarGrid } from "@/components/dashboard/CalendarGrid"
 import { DraftPanel } from "@/components/dashboard/DraftPanel"
@@ -19,6 +19,9 @@ import {
   Plus,
   PanelRightOpen,
   PanelRightClose,
+  Calendar,
+  Clock,
+  Trash2,
 } from "lucide-react"
 
 export default function CalendarioPage() {
@@ -29,8 +32,9 @@ export default function CalendarioPage() {
   const [viewMode, setViewMode] = useState<"month" | "week">("month")
   const [clientFilter, setClientFilter] = useState("all")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
-  const { posts, events } = useAppStore()
+  const { posts, events, deleteEvent } = useAppStore()
 
   const filteredPosts = useMemo(() => {
     if (clientFilter === "all") return posts
@@ -63,6 +67,10 @@ export default function CalendarioPage() {
     setSelectedPost(post)
   }
 
+  function handleEventClick(event: CalendarEvent) {
+    setSelectedEvent(event)
+  }
+
   const monthLabel = currentMonth.toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
@@ -72,6 +80,10 @@ export default function CalendarioPage() {
 
   const selectedPostWorkspace = selectedPost
     ? WORKSPACES.find((w) => w.id === selectedPost.workspaceId)
+    : null
+
+  const selectedEventWorkspace = selectedEvent
+    ? WORKSPACES.find((w) => w.id === selectedEvent.workspaceId)
     : null
 
   return (
@@ -164,6 +176,7 @@ export default function CalendarioPage() {
           viewMode={viewMode}
           onDayClick={handleDayClick}
           onPostClick={handlePostClick}
+          onEventClick={handleEventClick}
         />
       </div>
 
@@ -243,6 +256,87 @@ export default function CalendarioPage() {
                     ? "Publicada"
                     : "Borrador"}
               </span>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {selectedEvent && (
+        <Dialog
+          open={!!selectedEvent}
+          onOpenChange={(open) => {
+            if (!open) setSelectedEvent(null)
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: selectedEvent.color }}
+                />
+                {selectedEvent.title}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedEventWorkspace && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                    style={{ backgroundColor: selectedEventWorkspace.color }}
+                  >
+                    {selectedEventWorkspace.initials}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {selectedEventWorkspace.name}
+                  </span>
+                </div>
+              )}
+
+              {selectedEvent.description && (
+                <p className="text-sm text-gray-600">
+                  {selectedEvent.description}
+                </p>
+              )}
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {new Date(selectedEvent.date + "T12:00:00").toLocaleDateString("es-AR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+
+                <span
+                  className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium ${
+                    selectedEvent.type === "deadline"
+                      ? "bg-red-50 text-red-600"
+                      : "bg-blue-50 text-blue-600"
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  {selectedEvent.type === "deadline" ? "Deadline" : "Evento"}
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                  onClick={() => {
+                    deleteEvent(selectedEvent.id)
+                    setSelectedEvent(null)
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" />
+                  Eliminar evento
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
