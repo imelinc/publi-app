@@ -19,9 +19,10 @@ interface ClientCardProps {
   posts: Post[]
   onEdit: (workspace: Workspace) => void
   onDelete: (id: string) => void
+  onViewWorkspace: (workspace: Workspace) => void
 }
 
-export function ClientCard({ workspace, posts, onEdit, onDelete }: ClientCardProps) {
+export function ClientCard({ workspace, posts, onEdit, onDelete, onViewWorkspace }: ClientCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   useEffect(() => {
@@ -129,7 +130,10 @@ export function ClientCard({ workspace, posts, onEdit, onDelete }: ClientCardPro
         </div>
       </div>
 
-      <button className="mt-4 w-full border border-[#0095b6] text-[#0095b6] rounded-lg py-2 text-sm font-medium hover:bg-[#cceef5] transition-colors">
+      <button
+        onClick={() => onViewWorkspace(workspace)}
+        className="mt-4 w-full border border-[#0095b6] text-[#0095b6] rounded-lg py-2 text-sm font-medium hover:bg-[#cceef5] transition-colors"
+      >
         Ver workspace
       </button>
     </div>

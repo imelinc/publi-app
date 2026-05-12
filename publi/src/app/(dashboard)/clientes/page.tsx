@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { WORKSPACES, Workspace } from '@/lib/mock-data'
 import { useAppStore, getPostsByWorkspace } from '@/store/use-app-store'
 import { ClientCard } from '@/components/dashboard/ClientCard'
@@ -13,7 +14,9 @@ export default function ClientesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null)
 
+  const router = useRouter()
   const posts = useAppStore((s) => s.posts)
+  const setActiveWorkspace = useAppStore((s) => s.setActiveWorkspace)
   const { toast } = useToast()
 
   function handleEdit(workspace: Workspace) {
@@ -24,6 +27,11 @@ export default function ClientesPage() {
   function handleDelete(id: string) {
     setWorkspaces((prev) => prev.filter((ws) => ws.id !== id))
     toast({ title: 'Cliente eliminado' })
+  }
+
+  function handleViewWorkspace(workspace: Workspace) {
+    setActiveWorkspace(workspace.id)
+    router.push('/dashboard')
   }
 
   function handleSave(data: Omit<Workspace, 'id' | 'clientSince'>) {
@@ -73,6 +81,7 @@ export default function ClientesPage() {
             posts={getPostsByWorkspace(posts, workspace.id)}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onViewWorkspace={handleViewWorkspace}
           />
         ))}
       </div>
