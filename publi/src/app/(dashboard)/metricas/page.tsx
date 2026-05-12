@@ -219,33 +219,33 @@ export default function MetricasPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 bg-white rounded-xl border border-gray-100 p-5">
+      <div className="grid grid-cols-5 gap-6">
+        <div className="col-span-3 bg-white rounded-xl border border-gray-100 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Publicaciones por semana</h3>
           <StatsChart posts={filteredPosts} period={periodFilter} />
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="font-semibold text-gray-900 mb-3">Distribución por red</h3>
-          <div className="space-y-3">
+        <div className="col-span-2 bg-white rounded-xl border border-gray-100 p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Distribución por red</h3>
+          <div className="space-y-4">
             {allNetworks.map((net) => {
               const count = networkCounts[net]
               if (count === 0) return null
               const pct = (count / maxNetworkCount) * 100
               return (
-                <div key={net} className="flex items-center gap-2">
-                  <div className="w-20 flex items-center gap-1.5">
+                <div key={net} className="flex items-center gap-3">
+                  <div className="w-24 flex items-center gap-2">
                     <img
                       src={`/icons/${net}-color.svg`}
                       alt={net}
-                      width={14}
-                      height={14}
+                      width={16}
+                      height={16}
                     />
-                    <span className="text-xs font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700">
                       {NETWORK_LABELS[net]}
                     </span>
                   </div>
-                  <div className="flex-1 h-5 rounded-md relative" style={{ backgroundColor: `${NETWORK_COLORS[net]}15` }}>
+                  <div className="flex-1 h-6 rounded-md relative" style={{ backgroundColor: `${NETWORK_COLORS[net]}15` }}>
                     <div
                       className="h-full rounded-md flex items-center justify-center text-xs text-white font-semibold"
                       style={{
@@ -269,14 +269,14 @@ export default function MetricasPage() {
           <p className="text-sm text-gray-400 text-center py-4">No hay publicaciones</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Red</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Título</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Estado</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Fecha</th>
-                  <th className="text-right text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Acción</th>
+                  <th className="w-[15%] text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Red</th>
+                  <th className="w-[35%] text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Título</th>
+                  <th className="w-[15%] text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Estado</th>
+                  <th className="w-[20%] text-left text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Fecha</th>
+                  <th className="w-[15%] text-right text-xs font-medium text-gray-400 uppercase tracking-wide pb-3">Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -291,7 +291,7 @@ export default function MetricasPage() {
 
                   return (
                     <tr key={post.id} className="border-b border-gray-50 last:border-0">
-                      <td className="py-3">
+                      <td className="py-2.5">
                         <div className="flex items-center gap-2">
                           <img
                             src={`/icons/${primaryNetwork}.svg`}
@@ -304,18 +304,18 @@ export default function MetricasPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 text-sm text-gray-900 line-clamp-1 max-w-[200px]">
+                      <td className="py-2.5 text-sm text-gray-900 truncate pr-4">
                         {post.title}
                       </td>
-                      <td className="py-3">
+                      <td className="py-2.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${st.bg} ${st.text}`}>
                           {st.label}
                         </span>
                       </td>
-                      <td className="py-3 text-sm text-gray-500">
+                      <td className="py-2.5 text-sm text-gray-500 whitespace-nowrap">
                         {formatDateShort(post.scheduledAt ?? post.createdAt)}
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-2.5 text-right">
                         <button className="text-sm text-[#0095b6] border-0 bg-transparent cursor-pointer hover:underline">
                           Ver
                         </button>

@@ -97,7 +97,7 @@ export function StatsChart({ posts, period }: StatsChartProps) {
       </div>
 
       <div className="ml-8">
-        <div className="h-64 flex items-end justify-between gap-2 px-2 py-4 relative">
+        <div className="h-80 flex items-end justify-around gap-6 px-4 py-4 relative">
           {Array.from({ length: ySteps + 1 }, (_, i) => (
             <div
               key={`line-${i}`}
@@ -107,11 +107,11 @@ export function StatsChart({ posts, period }: StatsChartProps) {
           ))}
 
           {bars.map((bar) => (
-            <div key={bar.label} className="flex flex-col items-center gap-1 flex-1">
+            <div key={bar.label} className="flex flex-col items-center gap-2 flex-1 max-w-[60px]">
               <div
-                className="rounded-t-lg transition-shadow hover:shadow-md w-full min-w-[24px]"
+                className="rounded-t-lg transition-shadow hover:shadow-md w-full min-w-[28px]"
                 style={{
-                  height: `${Math.max((bar.value / yMax) * 200, bar.value > 0 ? 8 : 0)}px`,
+                  height: `${Math.max((bar.value / yMax) * 260, bar.value > 0 ? 10 : 0)}px`,
                   background:
                     bar.value > 0
                       ? 'linear-gradient(to top, #0095b6, #cceef5)'
