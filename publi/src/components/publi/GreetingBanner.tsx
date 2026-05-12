@@ -4,12 +4,23 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Plus, AlertTriangle, Clock } from "lucide-react"
-import { useAppStore } from "@/store/use-app-store"
-import { todaySummary } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 
+interface TodaySummary {
+  scheduledCount: number
+  pendingReviewCount: number
+  failedCount: number
+}
+
+const todaySummary: TodaySummary = {
+  scheduledCount: 4,
+  pendingReviewCount: 2,
+  failedCount: 1,
+}
+
+const profile = { name: "Usuario" }
+
 export function GreetingBanner() {
-  const profile = useAppStore((s) => s.profile)
   const firstName = profile.name.split(" ")[0]
   const today = format(new Date(), "EEEE d 'de' MMMM", { locale: es })
 

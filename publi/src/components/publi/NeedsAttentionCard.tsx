@@ -1,7 +1,16 @@
 import Link from "next/link"
 import { AlertTriangle, Clock, XCircle, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { AttentionItem, AttentionType } from "@/lib/mock-data"
+type AttentionType = "failed" | "pending_review" | "overdue" | "info"
+
+interface AttentionItem {
+  id: string
+  type: AttentionType
+  title: string
+  description: string
+  cta: string
+  ctaHref: string
+}
 
 const config: Record<
   AttentionType,

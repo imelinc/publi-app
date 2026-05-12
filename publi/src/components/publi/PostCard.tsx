@@ -8,8 +8,26 @@ import {
   Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { DashboardPost, PostStatus, Platform } from "@/lib/mock-data"
-import { platformLabels } from "@/lib/mock-data"
+type Platform = "instagram" | "facebook" | "linkedin" | "tiktok" | "x"
+type PostStatus = "programada" | "borrador" | "publicada" | "fallida"
+
+interface DashboardPost {
+  id: string
+  client: string
+  clientInitials: string
+  platform: Platform
+  caption: string
+  status: PostStatus
+  scheduledAt: string
+}
+
+const platformLabels: Record<Platform, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  linkedin: "LinkedIn",
+  tiktok: "TikTok",
+  x: "X",
+}
 
 // ─── Platform icon map ────────────────────────────────────────────────────────
 

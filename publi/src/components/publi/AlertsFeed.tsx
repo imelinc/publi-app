@@ -7,7 +7,16 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { AlertItem, AlertSeverity } from "@/lib/mock-data"
+type AlertSeverity = "success" | "warning" | "error" | "info"
+
+interface AlertItem {
+  id: string
+  severity: AlertSeverity
+  text: string
+  time: string
+  cta?: string
+  ctaHref?: string
+}
 
 const severityConfig: Record<
   AlertSeverity,

@@ -8,7 +8,15 @@ import {
   Minus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { KpiData, TrendDirection } from "@/lib/mock-data"
+type TrendDirection = "up" | "down" | "neutral"
+
+interface KpiData {
+  icon: keyof typeof iconMap
+  label: string
+  value: string
+  trend: string
+  trendDirection: TrendDirection
+}
 
 const iconMap = {
   calendar: Calendar,
