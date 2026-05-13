@@ -1,19 +1,24 @@
 # publi — Managing Communities
 
-Plataforma de gestión unificada de redes sociales para Community Managers.
-
-Permite programar publicaciones, visualizar calendarios de contenido y gestionar múltiples cuentas desde un único lugar.
+Plataforma de gestión unificada de redes sociales para Community Managers freelance.
+Permite programar publicaciones en Instagram, visualizar calendarios de contenido y gestionar múltiples clientes desde un único dashboard.
 
 ---
 
 ## Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Lenguaje**: TypeScript
-- **Estilos**: Tailwind CSS + shadcn/ui
-- **Estado global**: Zustand
-- **Base de datos**: Supabase (PostgreSQL)
-- **Deploy**: Vercel (frontend) · Render (backend) · Supabase (DB)
+| Capa | Tecnología |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Lenguaje | TypeScript (strict) |
+| Estilos | Tailwind CSS + shadcn/ui |
+| Estado global | Zustand |
+| Base de datos | Supabase (PostgreSQL + Auth) |
+| Storage | Vercel Blob |
+| Scheduling | Upstash QStash |
+| IA | Groq (llama-3.3-70b-versatile) |
+| Red social | Instagram Graph API |
+| Deploy | Vercel |
 
 ---
 
@@ -25,16 +30,13 @@ Alves Mendes · D'Astolfo · Gavotti · Gonzalez Miel · Melinc · Young Christi
 
 ## Levantar el proyecto localmente
 
-### Requisitos
+**Requisitos:** Node.js 18+
 
-- Node.js 18+
-- npm o yarn
-
-### Instalación
 ```bash
-git clone https://github.com/tu-org/publi.git
-cd publi
+git clone https://github.com/imelinc/publi-app.git
+cd publi-app
 npm install
+cp .env.example .env.local   # completar variables
 npm run dev
 ```
 
@@ -42,19 +44,35 @@ Abrí [http://localhost:3000](http://localhost:3000) en el navegador.
 
 ---
 
-## Estado del proyecto
+## Variables de entorno
 
-> Prototipo funcional — MVP frontend con datos hardcodeados.  
-> El backend y la integración con la API de Instagram se desarrollan en una etapa posterior.
+| Variable | Descripción |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave anon pública de Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio (solo servidor) |
+| `GROQ_API_KEY` | API key de Groq (solo servidor) |
+| `META_APP_ID` | App ID de Meta Developers |
+| `META_APP_SECRET` | App Secret de Meta (solo servidor) |
+| `META_REDIRECT_URI` | Callback URL del OAuth de Meta |
+| `QSTASH_TOKEN` | Token de Upstash QStash |
+| `QSTASH_CURRENT_SIGNING_KEY` | Firma QStash actual |
+| `QSTASH_NEXT_SIGNING_KEY` | Firma QStash siguiente |
+| `BLOB_READ_WRITE_TOKEN` | Token de Vercel Blob |
+| `NEXT_PUBLIC_APP_URL` | URL base de la app |
+
+> Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El resto son exclusivas del servidor.
 
 ---
 
-## Variables de entorno
+## Documentación
 
-Copiá `.env.example` a `.env.local` y completá los valores:
-```bash
-cp .env.example .env.local
-```
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+- [Arquitectura del sistema](docs/ARCHITECTURE.md) — stack, base de datos, autenticación, scheduling, IA, deploy e infraestructura
+- [Endpoints de la API](docs/api-endpoints.md) — referencia completa de los Route Handlers de Next.js
+
+---
+
+## Estado del proyecto
+
+> MVP en desarrollo — actualmente el frontend trabaja con datos hardcodeados (mock data).
+> La integración con Supabase, Instagram Graph API y el resto de servicios se desarrolla en la etapa actual.
