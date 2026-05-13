@@ -13,14 +13,11 @@
 2. [Usuarios](#2-usuarios)
 3. [Clientes (Workspaces)](#3-clientes-workspaces)
 4. [Publicaciones](#4-publicaciones)
-5. [Calendario](#5-calendario)
-6. [Métricas](#6-métricas)
-7. [Configuración](#7-configuración)
-8. [IA — Asistente (Groq)](#8-ia--asistente-groq)
-9. [Waitlist](#9-waitlist)
-10. [Notificaciones](#10-notificaciones)
-11. [Instagram — OAuth & Publicación](#11-instagram--oauth--publicación)
-12. [Jobs internos (QStash)](#12-jobs-internos-qstash)
+5. [Métricas](#5-métricas)
+6. [IA — Asistente (Groq)](#6-ia--asistente-groq)
+7. [Waitlist](#7-waitlist)
+8. [Instagram — OAuth & Publicación](#8-instagram--oauth--publicación)
+9. [Jobs internos (QStash)](#9-jobs-internos-qstash)
 
 ---
 
@@ -48,10 +45,10 @@ Cierra la sesión del usuario actual.
 
 ## 2. Usuarios
 
-> Los datos extendidos del usuario (nombre del workspace, timezone, idioma) se guardan en una tabla `profiles` en Supabase, vinculada a `auth.users` por `user_id`.
+> Los datos extendidos del usuario (nombre del workspace, timezone, idioma, preferencias de notificaciones) se guardan en la tabla `profiles` en Supabase, vinculada a `auth.users` por `user_id`. No hay endpoints separados de "settings" — todo el perfil y la configuración pasan por `/api/users/me`.
 
 ### `GET /api/users/me`
-Devuelve el perfil completo del usuario autenticado.
+Devuelve el perfil completo del usuario autenticado, incluyendo configuración general y preferencias de notificaciones.
 
 **Auth:** Sesión Supabase activa  
 **Response `200`**
@@ -64,6 +61,13 @@ Devuelve el perfil completo del usuario autenticado.
   "workspaceName": "string",
   "language": "es | en",
   "timezone": "string",
+  "notifications": {
+    "onPostScheduled": true,
+    "onPostPublished": true,
+    "onPostFailed": true,
+    "reminderBeforePost": false,
+    "weeklySummary": false
+  },
   "createdAt": "ISO 8601"
 }
 ```
@@ -71,7 +75,7 @@ Devuelve el perfil completo del usuario autenticado.
 ---
 
 ### `PATCH /api/users/me`
-Actualiza el perfil del usuario (nombre, workspace, idioma, timezone).
+Actualiza el perfil del usuario: datos generales y/o preferencias de notificaciones. Todos los campos son opcionales; solo se actualiza lo que se envía.
 
 **Auth:** Sesión Supabase activa  
 **Request Body** (todos opcionales)
@@ -80,7 +84,14 @@ Actualiza el perfil del usuario (nombre, workspace, idioma, timezone).
   "name": "string",
   "workspaceName": "string",
   "language": "es | en",
-  "timezone": "string"
+  "timezone": "string",
+  "notifications": {
+    "onPostScheduled": true,
+    "onPostPublished": true,
+    "onPostFailed": true,
+    "reminderBeforePost": false,
+    "weeklySummary": false
+  }
 }
 ```
 **Response `200`** — perfil actualizado
@@ -109,24 +120,6 @@ Elimina la cuenta del usuario. Acción irreversible. Elimina también todos sus 
 
 **Auth:** Sesión Supabase activa  
 **Response `204`** — sin body
-
----
-
-### `PATCH /api/users/me/notifications`
-Guarda las preferencias de notificaciones in-app del usuario.
-
-**Auth:** Sesión Supabase activa  
-**Request Body**
-```json
-{
-  "onPostScheduled": true,
-  "onPostPublished": true,
-  "onPostFailed": true,
-  "reminderBeforePost": false,
-  "weeklySummary": false
-}
-```
-**Response `200`** — preferencias actualizadas
 
 ---
 
@@ -213,6 +206,8 @@ Elimina un cliente y todas sus publicaciones (cascade).
 
 ## 4. Publicaciones
 
+> Este endpoint es el núcleo del sistema. También cubre la vista de **Calendario**: usando los parámetros `from`, `to` y `view` se obtienen las publicaciones agrupadas por día sin necesidad de un endpoint separado. La creación de eventos desde el calendario usa directamente `POST /api/posts`.
+
 ### `GET /api/posts`
 Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
 
@@ -224,6 +219,7 @@ Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
 | `status` | string | `draft \| scheduled \| published \| failed` |
 | `from` | ISO date | Fecha inicio |
 | `to` | ISO date | Fecha fin |
+| `view` | string | `month \| week` — agrupa resultados por día cuando se indica |
 | `page` | number | Default: 1 |
 | `limit` | number | Default: 20 |
 
@@ -264,7 +260,7 @@ Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
 ---
 
 ### `POST /api/posts`
-Crea una publicación nueva (borrador, programada o inmediata).
+Crea una publicación nueva (borrador, programada o inmediata). También se usa para agregar eventos desde la vista de Calendario (pasando `scheduledAt`).
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -342,69 +338,12 @@ Sube una imagen o video a Vercel Blob y devuelve la URL pública.
 
 ---
 
-## 5. Calendario
+## 5. Métricas
 
-### `GET /api/calendar`
-Publicaciones agrupadas por día para la vista de calendario.
-
-**Auth:** Sesión Supabase activa  
-**Query Params**
-| Param | Tipo | Descripción |
-|---|---|---|
-| `clientId` | string | UUID o `all` |
-| `month` | number | Mes (1–12) |
-| `year` | number | Año (ej: 2026) |
-| `view` | string | `month \| week` |
-| `weekStart` | ISO date | Solo para `view=week` |
-
-**Response `200`**
-```json
-{
-  "view": "month | week",
-  "period": { "from": "ISO 8601", "to": "ISO 8601" },
-  "days": [
-    {
-      "date": "YYYY-MM-DD",
-      "posts": [
-        {
-          "id": "uuid",
-          "title": "string",
-          "clientId": "uuid",
-          "clientColor": "string",
-          "networks": ["instagram"],
-          "status": "scheduled | published | draft",
-          "scheduledAt": "ISO 8601"
-        }
-      ]
-    }
-  ]
-}
-```
-
----
-
-### `POST /api/calendar/events`
-Crea un evento/publicación desde el botón "+ Agregar evento" del calendario.
-
-**Auth:** Sesión Supabase activa  
-**Request Body**
-```json
-{
-  "clientId": "uuid",
-  "title": "string",
-  "networks": ["instagram"],
-  "scheduledAt": "ISO 8601",
-  "description": "string | null"
-}
-```
-**Response `201`** — publicación creada con `status: "scheduled"`
-
----
-
-## 6. Métricas
+> Endpoint único que cubre tanto la página de Métricas como el resumen del Dashboard. El frontend lo consume con distintos parámetros según el contexto: `period=7d` para el inicio del dashboard, períodos más amplios para la página de Métricas.
 
 ### `GET /api/metrics`
-Estadísticas agregadas para la página de Métricas.
+Estadísticas agregadas para la página de Métricas y el resumen del dashboard.
 
 **Auth:** Sesión Supabase activa  
 **Query Params**
@@ -451,118 +390,7 @@ Estadísticas agregadas para la página de Métricas.
 
 ---
 
-### `GET /api/metrics/dashboard`
-Resumen compacto para el Inicio del dashboard (KPIs + mini-calendario semanal + actividad reciente).
-
-**Auth:** Sesión Supabase activa  
-**Query Params:** `clientId` (uuid, el cliente activo en el sidebar)
-
-**Response `200`**
-```json
-{
-  "greeting": {
-    "userName": "string",
-    "clientName": "string",
-    "date": "ISO 8601"
-  },
-  "kpis": {
-    "thisWeek": 3,
-    "thisWeekDelta": 2,
-    "scheduled": 2,
-    "scheduledPending": 2,
-    "drafts": 1,
-    "published": 1,
-    "publishedDelta": -1
-  },
-  "weekCalendar": {
-    "weekRange": { "from": "ISO 8601", "to": "ISO 8601" },
-    "days": [
-      { "date": "YYYY-MM-DD", "hasPost": true }
-    ]
-  },
-  "upcomingPosts": [
-    {
-      "id": "uuid",
-      "title": "string",
-      "clientColor": "string",
-      "networks": ["instagram"],
-      "scheduledAt": "ISO 8601"
-    }
-  ],
-  "recentActivity": [
-    {
-      "type": "published | draft_saved | client_added",
-      "clientName": "string",
-      "description": "string",
-      "timestamp": "ISO 8601"
-    }
-  ]
-}
-```
-
----
-
-## 7. Configuración
-
-### `GET /api/settings`
-Obtiene toda la configuración del usuario.
-
-**Auth:** Sesión Supabase activa  
-**Response `200`**
-```json
-{
-  "general": {
-    "workspaceName": "string",
-    "language": "es | en",
-    "timezone": "string"
-  },
-  "notifications": {
-    "onPostScheduled": true,
-    "onPostPublished": true,
-    "onPostFailed": true,
-    "reminderBeforePost": false,
-    "weeklySummary": false
-  }
-}
-```
-
----
-
-### `PATCH /api/settings/general`
-Guarda la sección General.
-
-**Auth:** Sesión Supabase activa  
-**Request Body**
-```json
-{
-  "workspaceName": "string",
-  "language": "es | en",
-  "timezone": "string"
-}
-```
-**Response `200`** — configuración actualizada
-
----
-
-### `PATCH /api/settings/notifications`
-Guarda preferencias de notificaciones.
-
-**Auth:** Sesión Supabase activa  
-**Request Body**
-```json
-{
-  "onPostScheduled": true,
-  "onPostPublished": true,
-  "onPostFailed": true,
-  "reminderBeforePost": false,
-  "weeklySummary": false
-}
-```
-**Response `200`** — preferencias actualizadas
-
----
-
-## 8. IA — Asistente (Groq)
+## 6. IA — Asistente (Groq)
 
 > Todos los endpoints llaman a la **Groq API** con un system prompt fijo definido por el equipo. El "pre-entrenamiento" se logra mediante **prompt engineering** en el system prompt: se incluye el contexto del CM, el cliente activo, instrucciones de tono y comportamiento esperado. No hay entrenamiento real del modelo.
 >
@@ -680,7 +508,7 @@ Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrate
 
 ---
 
-## 9. Waitlist
+## 7. Waitlist
 
 ### `POST /api/waitlist`
 Registra a alguien en la lista de espera (beta cerrada).
@@ -706,57 +534,9 @@ Registra a alguien en la lista de espera (beta cerrada).
 
 ---
 
-## 10. Notificaciones
+## 8. Instagram — OAuth & Publicación
 
-> Notificaciones in-app (campanita del header). Se generan desde los jobs de QStash al publicar o fallar. No se envían emails.
-
-### `GET /api/notifications`
-Lista las notificaciones del usuario.
-
-**Auth:** Sesión Supabase activa  
-**Query Params:** `unreadOnly=true | false`  
-**Response `200`**
-```json
-{
-  "unreadCount": 3,
-  "notifications": [
-    {
-      "id": "uuid",
-      "type": "post_published | post_failed | post_scheduled",
-      "title": "string",
-      "body": "string",
-      "read": false,
-      "createdAt": "ISO 8601",
-      "metadata": {
-        "postId": "uuid | null",
-        "clientId": "uuid | null"
-      }
-    }
-  ]
-}
-```
-
----
-
-### `PATCH /api/notifications/:notificationId/read`
-Marca una notificación como leída.
-
-**Auth:** Sesión Supabase activa  
-**Response `200`** — `{ "read": true }`
-
----
-
-### `PATCH /api/notifications/read-all`
-Marca todas como leídas.
-
-**Auth:** Sesión Supabase activa  
-**Response `200`** — `{ "updatedCount": 3 }`
-
----
-
-## 11. Instagram — OAuth & Publicación
-
-> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta).
+> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta). El refresh del token se maneja automáticamente dentro del proceso de publicación: antes de publicar, el endpoint verifica si el token expira en menos de 10 días y lo renueva si es necesario.
 
 ### `GET /api/instagram/connect`
 Genera la URL de autorización de Meta OAuth y redirige al usuario.
@@ -780,14 +560,6 @@ Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda en
 
 ---
 
-### `DELETE /api/clients/:clientId/instagram`
-Desconecta la cuenta de Instagram de un cliente.
-
-**Auth:** Sesión Supabase activa  
-**Response `204`** — sin body
-
----
-
 ### `GET /api/clients/:clientId/instagram`
 Estado de la cuenta de Instagram conectada a un cliente.
 
@@ -806,8 +578,16 @@ Estado de la cuenta de Instagram conectada a un cliente.
 
 ---
 
+### `DELETE /api/clients/:clientId/instagram`
+Desconecta la cuenta de Instagram de un cliente.
+
+**Auth:** Sesión Supabase activa  
+**Response `204`** — sin body
+
+---
+
 ### `POST /api/instagram/publish`
-Publica un post en Instagram via Graph API. Llamado directamente (publicación inmediata) o desde el job de QStash (publicación programada).
+Publica un post en Instagram via Graph API. Llamado directamente (publicación inmediata) o desde el job de QStash (publicación programada). Refresca el token automáticamente si está próximo a vencer.
 
 **Auth:** Sesión Supabase activa (directo) o header `x-qstash-signature` (desde QStash)  
 **Request Body**
@@ -818,11 +598,11 @@ Publica un post en Instagram via Graph API. Llamado directamente (publicación i
 }
 ```
 **Lógica interna:**
-1. Obtiene el post y el access token desde Supabase
-2. Sube la imagen al Container de Instagram (paso 1 de la Graph API)
-3. Publica el container (paso 2 de la Graph API)
-4. Actualiza el post en Supabase: `status = "published"`, guarda `instagramPostId`
-5. Crea una notificación in-app
+1. Verifica el token de Instagram; si expira en menos de 10 días lo renueva automáticamente
+2. Obtiene el post y el access token desde Supabase
+3. Sube la imagen al Container de Instagram (paso 1 de la Graph API)
+4. Publica el container (paso 2 de la Graph API)
+5. Actualiza el post en Supabase: `status = "published"`, guarda `instagramPostId`
 
 **Response `200`**
 ```json
@@ -836,16 +616,7 @@ Publica un post en Instagram via Graph API. Llamado directamente (publicación i
 
 ---
 
-### `POST /api/instagram/refresh-token`
-Refresca el long-lived token antes de que expire (los tokens duran 60 días).
-
-**Auth:** Sesión Supabase activa  
-**Request Body:** `{ "clientId": "uuid" }`  
-**Response `200`** — `{ "expiresAt": "ISO 8601" }`
-
----
-
-## 12. Jobs internos (QStash)
+## 9. Jobs internos (QStash)
 
 > Estos endpoints son llamados automáticamente por **Upstash QStash** en el momento programado. No son accesibles desde el frontend. Validan la firma con el header `x-qstash-signature`.
 
@@ -874,26 +645,25 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 | Login (email/password) | Supabase Auth SDK — sin endpoint propio |
 | Login (Google OAuth) | Supabase Auth SDK → `GET /api/auth/callback` |
 | Waitlist | `POST /api/waitlist` |
-| Dashboard / Inicio | `GET /api/metrics/dashboard` |
+| Dashboard / Inicio | `GET /api/metrics?period=7d` · `GET /api/posts?view=week` |
 | Clientes — listado | `GET /api/clients` |
 | Clientes — crear | `POST /api/clients` |
 | Clientes — editar | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
 | Clientes — eliminar | `DELETE /api/clients/:id` |
 | Clientes — conectar Instagram | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
 | Clientes — estado Instagram | `GET /api/clients/:id/instagram` |
-| Calendario | `GET /api/calendar` · `POST /api/calendar/events` · `GET /api/posts` |
+| Calendario | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` |
 | Métricas | `GET /api/metrics` |
 | Nueva publicación — crear | `POST /api/posts` · `POST /api/posts/media` |
 | Nueva publicación — editar borrador | `PATCH /api/posts/:id` |
 | Nueva publicación — IA reescribir | `POST /api/ai/rewrite` |
 | Nueva publicación — IA hashtags | `POST /api/ai/hashtags` |
 | Nueva publicación — IA horario | `POST /api/ai/best-time` |
-| Configuración — General | `GET /api/settings` · `PATCH /api/settings/general` |
-| Configuración — Notificaciones | `PATCH /api/settings/notifications` |
-| Configuración — Cuenta | `PATCH /api/users/me` · `PATCH /api/users/me/password` |
+| Configuración — General | `GET /api/users/me` · `PATCH /api/users/me` |
+| Configuración — Notificaciones | `PATCH /api/users/me` |
+| Configuración — Cuenta | `PATCH /api/users/me/password` |
 | Configuración — Cerrar sesión | `POST /api/auth/logout` |
 | Configuración — Eliminar cuenta | `DELETE /api/users/me` |
-| Notificaciones (header) | `GET /api/notifications` · `PATCH /api/notifications/:id/read` · `PATCH /api/notifications/read-all` |
 | Chat IA (sidebar) | `POST /api/ai/chat` |
 | Job scheduling (interno) | `POST /api/jobs/publish` ← llamado por QStash |
 
@@ -915,4 +685,4 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 - **Fechas:** ISO 8601 con timezone. El servidor convierte según el timezone guardado en `profiles`.
 - **Paginación:** `page` + `limit` en endpoints de listado.
 - **Jobs QStash:** validados con HMAC signature. Si falla, QStash reintenta automáticamente hasta 3 veces con backoff exponencial.
-- **Tokens de Instagram:** long-lived tokens (60 días), guardados encriptados en Supabase. Se refrescan a los 50 días.
+- **Tokens de Instagram:** long-lived tokens (60 días), guardados encriptados en Supabase. El refresh es automático dentro de `/api/instagram/publish` cuando quedan menos de 10 días.

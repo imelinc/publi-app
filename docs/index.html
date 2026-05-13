@@ -687,7 +687,7 @@
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-num">5</div><div class="hero-stat-label">Servicios</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">34</div><div class="hero-stat-label">Endpoints</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">29</div><div class="hero-stat-label">Endpoints</div></div>
       <div class="hero-stat"><div class="hero-stat-num">6</div><div class="hero-stat-label">Tablas DB</div></div>
       <div class="hero-stat"><div class="hero-stat-num">$0</div><div class="hero-stat-label">Costo</div></div>
     </div>
@@ -995,10 +995,9 @@
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/auth/callback</div><div class="ep-desc">Callback de Google OAuth — intercambia code por sesión de Supabase</div></div></div>
           <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/auth/logout</div><div class="ep-desc">Cierra la sesión activa</div></div></div>
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Perfil completo del usuario autenticado</div></div></div>
-          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Actualiza nombre, workspace, idioma, timezone</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Actualiza nombre, workspace, idioma, timezone y preferencias de notificaciones</div></div></div>
           <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me/password</div><div class="ep-desc">Actualiza la contraseña via Supabase Auth</div></div></div>
           <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Elimina la cuenta permanentemente (cascade en DB)</div></div></div>
-          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me/notifications</div><div class="ep-desc">Guarda preferencias de notificaciones in-app</div></div></div>
         </div>
       </div>
       <div class="endpoints-group">
@@ -1014,8 +1013,8 @@
       <div class="endpoints-group">
         <div class="endpoints-group-title" onclick="toggleGroup(this)">Publicaciones <span class="toggle-icon">▾</span></div>
         <div class="endpoints-group-content">
-          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/posts</div><div class="ep-desc">Lista publicaciones con filtros: status, fecha, cliente, red social</div></div></div>
-          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/posts</div><div class="ep-desc">Crea publicación — draft, scheduled (→ QStash) o inmediata (→ Instagram)</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/posts</div><div class="ep-desc">Lista publicaciones con filtros — también cubre la vista de calendario (parámetros from, to, view)</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/posts</div><div class="ep-desc">Crea publicación o evento del calendario — draft, scheduled (→ QStash) o inmediata (→ Instagram)</div></div></div>
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/posts/:postId</div><div class="ep-desc">Detalle de una publicación</div></div></div>
           <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/posts/:postId</div><div class="ep-desc">Edita publicación — si cambia scheduledAt cancela y reencola en QStash</div></div></div>
           <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/posts/:postId</div><div class="ep-desc">Elimina publicación — si era scheduled cancela el job de QStash</div></div></div>
@@ -1023,12 +1022,9 @@
         </div>
       </div>
       <div class="endpoints-group">
-        <div class="endpoints-group-title" onclick="toggleGroup(this)">Calendario & Métricas <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Métricas <span class="toggle-icon">▾</span></div>
         <div class="endpoints-group-content">
-          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/calendar</div><div class="ep-desc">Publicaciones agrupadas por día — vista mensual o semanal</div></div></div>
-          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/calendar/events</div><div class="ep-desc">Crea evento desde el botón "+ Agregar evento" del calendario</div></div></div>
-          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/metrics</div><div class="ep-desc">Estadísticas agregadas — filtros por cliente, período y red</div></div></div>
-          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/metrics/dashboard</div><div class="ep-desc">Resumen compacto para el Home — KPIs, mini-calendario, actividad reciente</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/metrics</div><div class="ep-desc">Estadísticas agregadas — filtros por cliente, período y red. Cubre tanto el dashboard como la página de métricas.</div></div></div>
         </div>
       </div>
       <div class="endpoints-group">
@@ -1047,8 +1043,7 @@
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/instagram/callback</div><div class="ep-desc">Intercambia code → short-lived → long-lived token (60 días)</div></div></div>
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/clients/:clientId/instagram</div><div class="ep-desc">Estado de la cuenta de Instagram conectada al cliente</div></div></div>
           <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/clients/:clientId/instagram</div><div class="ep-desc">Desconecta la cuenta de Instagram del cliente</div></div></div>
-          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/instagram/publish</div><div class="ep-desc">Publica en Instagram — 2 pasos: container + media_publish</div></div></div>
-          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/instagram/refresh-token</div><div class="ep-desc">Refresca el long-lived token antes de que expire</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/instagram/publish</div><div class="ep-desc">Publica en Instagram — 2 pasos: container + media_publish. Refresca el token automáticamente si está por vencer.</div></div></div>
           <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/jobs/publish</div><div class="ep-desc">Receiver de QStash — solo acepta llamadas con firma HMAC válida</div></div></div>
           <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/waitlist</div><div class="ep-desc">Registro en la lista de espera — endpoint público (sin auth)</div></div></div>
         </div>

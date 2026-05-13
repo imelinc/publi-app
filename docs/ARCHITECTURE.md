@@ -168,19 +168,16 @@ publi/                              ← raíz del proyecto Next.js
 │   │   │   ├── auth/
 │   │   │   │   ├── callback/       ← Google OAuth callback (Supabase)
 │   │   │   │   └── logout/
-│   │   │   ├── users/me/           ← perfil, contraseña, notificaciones
+│   │   │   ├── users/me/           ← perfil, contraseña, configuración
 │   │   │   ├── clients/            ← CRUD clientes
 │   │   │   │   └── [clientId]/
 │   │   │   │       └── instagram/  ← estado cuenta Instagram por cliente
-│   │   │   ├── posts/              ← CRUD publicaciones
+│   │   │   ├── posts/              ← CRUD publicaciones + vista calendario
 │   │   │   │   ├── media/          ← upload a Vercel Blob
 │   │   │   │   └── [postId]/
-│   │   │   ├── calendar/           ← vista calendario + crear evento
-│   │   │   ├── metrics/            ← estadísticas + resumen dashboard
-│   │   │   ├── settings/           ← configuración general + notificaciones
+│   │   │   ├── metrics/            ← estadísticas (dashboard + detalle)
 │   │   │   ├── ai/                 ← rewrite, hashtags, best-time, chat
-│   │   │   ├── instagram/          ← OAuth connect/callback, publish, refresh
-│   │   │   ├── notifications/      ← listado + marcar leídas
+│   │   │   ├── instagram/          ← OAuth connect/callback, publish
 │   │   │   ├── waitlist/           ← registro de waitlist
 │   │   │   └── jobs/publish/       ← receiver de QStash (scheduling)
 │   │   ├── layout.tsx              ← layout raíz (fonts, providers)
@@ -664,7 +661,7 @@ Los long-lived tokens de Instagram duran **60 días** y se pueden refrescar ante
 
 - Al guardar un token, registrar `token_expires_at = now() + 60 días`
 - Antes de cada publicación, verificar si el token expira en menos de 10 días
-- Si está por expirar, refrescarlo automáticamente llamando a `/api/instagram/refresh-token`
+- Si está por expirar, refrescarlo automáticamente dentro de `/api/instagram/publish` antes de proceder
 
 ---
 
