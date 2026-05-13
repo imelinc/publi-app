@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>publi — Arquitectura técnica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #0095b6;
+    --primary-dark: #007a96;
+    --primary-light: #cceef5;
+    --primary-ghost: rgba(0,149,182,0.06);
+    --accent: #ffb703;
+    --accent-dark: #e5a300;
+    --bg: #f5f0e8;
+    --white: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #5a5a5a;
+    --text-tertiary: #9a9a9a;
+    --border: rgba(0,0,0,0.07);
+    --border-strong: rgba(0,0,0,0.12);
+    --surface: #ffffff;
+    --surface-alt: #f9f7f3;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-glow: 0 0 30px rgba(0,149,182,0.15);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.08s; }
+  .reveal-delay-2 { transition-delay: 0.16s; }
+  .reveal-delay-3 { transition-delay: 0.24s; }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--primary));
+    z-index: 9999;
+    transition: width 0.1s linear;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* HEADER */
+  .header {
+    background: rgba(0,149,182,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .logo { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .header-nav { display: flex; gap: 2px; }
+  .nav-link {
+    color: rgba(255,255,255,0.65);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-weight: 400;
+    position: relative;
+  }
+  .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .nav-link.active-nav { background: rgba(255,255,255,0.15); color: #fff; font-weight: 500; }
+  .header-badge {
+    background: rgba(255,183,3,0.15);
+    border: 1px solid rgba(255,183,3,0.35);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #0095b6 0%, #006a85 50%, #004d63 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+    padding: 5rem 2rem 4.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -80px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,183,3,0.12) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: -60px;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+    animation: float 8s ease-in-out infinite reverse;
+  }
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+  .hero-content { position: relative; z-index: 2; max-width: 700px; margin: 0 auto; }
+  .hero-eyebrow {
+    display: inline-block;
+    background: rgba(255,183,3,0.15);
+    border: 1px solid rgba(255,183,3,0.35);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: 5px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+    animation: fadeInUp 0.6s 0.1s both;
+  }
+  .hero h1 {
+    font-size: 44px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 1.25rem;
+    letter-spacing: -1px;
+    animation: fadeInUp 0.6s 0.2s both;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero-desc {
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    max-width: 560px;
+    margin: 0 auto 2rem;
+    line-height: 1.75;
+    animation: fadeInUp 0.6s 0.3s both;
+  }
+  .hero-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; animation: fadeInUp 0.6s 0.4s both; }
+  .hero-chip {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+  }
+  .hero-chip:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); color: #fff; transform: translateY(-1px); }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 2.5rem;
+    animation: fadeInUp 0.6s 0.5s both;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat-num { font-size: 28px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .hero-stat-label { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+  .hero-divider {
+    position: relative;
+    z-index: 2;
+    max-width: 1100px;
+    margin: -2rem auto 0;
+    padding: 0 2rem;
+  }
+  .hero-divider-inner {
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    border-radius: 2px;
+    opacity: 0.4;
+  }
+
+  /* MAIN LAYOUT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem 1rem; }
+  .section { margin-bottom: 5rem; }
+  .section-header { margin-bottom: 2rem; position: relative; }
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 10px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label-line { flex: 1; height: 1px; background: var(--border); }
+  .section-title { font-size: 28px; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem; letter-spacing: -0.5px; }
+  .section-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; max-width: 640px; line-height: 1.7; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  .card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+  .card-padded { padding: 1.75rem; }
+
+  /* SERVICES GRID */
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .service-card {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .service-card:hover::before, .service-card.active::before { opacity: 1; }
+  .service-card.vercel::before { background: #000; }
+  .service-card.supabase::before { background: #3ecf8e; }
+  .service-card.upstash::before { background: #00E9A3; }
+  .service-card.groq::before { background: #f55036; }
+  .service-card.meta::before { background: #1877F2; }
+  .service-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .service-card.active { border-color: var(--primary); border-width: 2px; box-shadow: 0 0 0 3px rgba(0,149,182,0.1), var(--shadow-md); transform: translateY(-2px); }
+  .service-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.75rem;
+    font-size: 18px;
+    transition: transform 0.25s;
+  }
+  .service-card:hover .service-icon { transform: scale(1.08); }
+  .service-name { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+  .service-role { font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px; }
+  .service-badge {
+    display: inline-block;
+    background: #eaf3de;
+    color: #3b6d11;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .detail-panel {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    padding: 1.75rem;
+    min-height: 180px;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    opacity: 0.5;
+  }
+  .detail-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .detail-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .detail-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .detail-body { font-size: 13px; color: var(--text-secondary); line-height: 1.85; }
+  .detail-body strong { color: var(--text-primary); font-weight: 600; }
+  .detail-body code { font-family: 'Courier New', monospace; font-size: 11px; background: var(--surface-alt); padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border); color: var(--primary-dark); }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .pill { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid; transition: transform 0.15s; }
+  .pill:hover { transform: translateY(-1px); }
+  .pill-blue { background: #e6f1fb; color: #185fa5; border-color: #b5d4f4; }
+  .pill-green { background: #eaf3de; color: #3b6d11; border-color: #c0dd97; }
+  .pill-amber { background: #faeeda; color: #854f0b; border-color: #fac775; }
+  .pill-teal { background: #e1f5ee; color: #0f6e56; border-color: #9fe1cb; }
+  .pill-red { background: #fcebeb; color: #a32d2d; border-color: #f7c1c1; }
+
+  /* TABS */
+  .tab-bar {
+    display: flex; gap: 4px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    flex: 1; min-width: max-content;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--text-primary);
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text-primary); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.3s; }
+
+  /* FLOW */
+  .flow-tabs { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .flow-tab {
+    padding: 7px 18px;
+    border-radius: 24px;
+    border: 1.5px solid var(--border-strong);
+    background: var(--surface);
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .flow-tab.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); box-shadow: 0 0 0 3px rgba(0,149,182,0.1); }
+  .flow-tab:hover:not(.active) { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
+  .flow-wrap { background: var(--surface); border-radius: var(--radius-xl); border: 1px solid var(--border); padding: 1.5rem; overflow-x: auto; box-shadow: var(--shadow-sm); }
+  svg.flow { display: block; width: 100%; min-width: 540px; }
+
+  /* ENDPOINTS */
+  .endpoints-group { margin-bottom: 1.25rem; }
+  .endpoints-group-title {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    padding: 8px 0 6px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: color 0.2s;
+  }
+  .endpoints-group-title:hover { color: var(--primary-dark); }
+  .endpoints-group-title .toggle-icon {
+    display: inline-block;
+    transition: transform 0.25s;
+    font-size: 14px;
+    font-weight: 400;
+  }
+  .endpoints-group-title.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .endpoints-group-content {
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s;
+    max-height: 600px;
+    opacity: 1;
+  }
+  .endpoints-group-content.collapsed { max-height: 0; opacity: 0; }
+  .endpoint-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid transparent;
+    margin-bottom: 4px;
+    background: var(--surface-alt);
+    transition: all 0.15s;
+  }
+  .endpoint-row:hover { background: #ede9e0; transform: translateX(2px); }
+  .endpoint-row.get { border-left-color: #3b6d11; }
+  .endpoint-row.post { border-left-color: #185fa5; }
+  .endpoint-row.patch { border-left-color: #854f0b; }
+  .endpoint-row.del { border-left-color: #a32d2d; }
+  .method-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 5px;
+    min-width: 44px; text-align: center;
+    flex-shrink: 0; margin-top: 2px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.03em;
+  }
+  .badge-get { background: #eaf3de; color: #3b6d11; }
+  .badge-post { background: #e6f1fb; color: #185fa5; }
+  .badge-patch { background: #faeeda; color: #854f0b; }
+  .badge-del { background: #fcebeb; color: #a32d2d; }
+  .ep-path { font-size: 12px; font-family: 'Courier New', monospace; color: var(--text-primary); font-weight: 600; }
+  .ep-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* DB */
+  .db-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .db-table {
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: all 0.25s;
+  }
+  .db-table:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .db-header {
+    padding: 10px 14px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .db-table-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .db-field {
+    padding: 7px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .db-field:last-child { border-bottom: none; }
+  .db-field:hover { background: var(--primary-ghost); }
+  .field-name { font-family: 'Courier New', monospace; color: var(--text-primary); font-weight: 600; }
+  .field-type { color: var(--text-tertiary); }
+  .badge-pk { background: #faeeda; color: #854f0b; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+  .badge-fk { background: #e6f1fb; color: #185fa5; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+
+  /* STACK TABLE */
+  .stack-table { width: 100%; border-collapse: collapse; }
+  .stack-table th {
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stack-table td {
+    padding: 12px 16px; font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary); vertical-align: middle;
+    transition: background 0.15s;
+  }
+  .stack-table tr:last-child td { border-bottom: none; }
+  .stack-table tr:hover td { background: var(--primary-ghost); }
+  .stack-table td:first-child { color: var(--text-primary); font-weight: 600; }
+  .free-pill { background: #eaf3de; color: #3b6d11; border-radius: 10px; padding: 3px 10px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+
+  /* NOTE BOX */
+  .note {
+    background: linear-gradient(135deg, var(--primary-light), #e8f8fa);
+    border: 1px solid rgba(0,149,182,0.2);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--primary-dark);
+    margin-top: 14px;
+    line-height: 1.7;
+    position: relative;
+    overflow: hidden;
+  }
+  .note::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+    background: var(--primary);
+    border-radius: 4px 0 0 4px;
+  }
+  .note strong { font-weight: 600; }
+
+  /* FOOTER */
+  .footer {
+    background: linear-gradient(135deg, var(--primary) 0%, #004d63 100%);
+    padding: 3rem 2rem;
+    text-align: center;
+    margin-top: 5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .footer::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -80px;
+    width: 250px; height: 250px;
+    border-radius: 50%;
+    background: rgba(255,183,3,0.06);
+  }
+  .footer-logo { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 0.5rem; }
+  .footer-logo span { color: var(--accent); }
+  .footer-text { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .footer-links { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; }
+  .footer-links a { font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: rgba(255,255,255,0.8); }
+
+  /* ARCH DIAGRAM */
+  .arch-wrap { background: var(--surface); border-radius: var(--radius-xl); border: 1px solid var(--border); padding: 1.5rem; overflow-x: auto; box-shadow: var(--shadow-sm); }
+
+  /* BACK TO TOP */
+  .back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 90;
+  }
+  .back-to-top.visible { opacity: 1; transform: translateY(0); }
+  .back-to-top:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+  /* SECTION DIVIDER */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 5rem 0 0;
+    opacity: 0.4;
+  }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+
+  @media (max-width: 768px) {
+    .header-nav { display: none; }
+    .hero h1 { font-size: 32px; }
+    .hero-stats { gap: 1.5rem; }
+    .hero-stat-num { font-size: 22px; }
+    .section-title { font-size: 22px; }
+    .services-grid { grid-template-columns: 1fr 1fr; }
+    .db-grid { grid-template-columns: 1fr; }
+    .hero { padding: 3rem 1.5rem 2.5rem; }
+    .main { padding: 2rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">publi<span>.</span></div>
+    <nav class="header-nav">
+      <a href="#servicios" class="nav-link" data-section="servicios">Servicios</a>
+      <a href="#arquitectura" class="nav-link" data-section="arquitectura">Arquitectura</a>
+      <a href="#flujos" class="nav-link" data-section="flujos">Flujos</a>
+      <a href="#endpoints" class="nav-link" data-section="endpoints">Endpoints</a>
+      <a href="#db" class="nav-link" data-section="db">Base de datos</a>
+      <a href="#stack" class="nav-link" data-section="stack">Stack</a>
+    </nav>
+    <div class="header-badge">MVP · 100% gratis</div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Documentación técnica</div>
+    <h1>Arquitectura de <span>publi</span></h1>
+    <p class="hero-desc">Plataforma de gestión de redes sociales para Community Managers. Un solo proyecto Next.js que integra cinco servicios externos para cubrir auth, base de datos, scheduling, IA y publicación en Instagram.</p>
+    <div class="hero-chips">
+      <span class="hero-chip">Next.js 14</span>
+      <span class="hero-chip">Supabase</span>
+      <span class="hero-chip">Vercel</span>
+      <span class="hero-chip">Upstash QStash</span>
+      <span class="hero-chip">Groq API</span>
+      <span class="hero-chip">Instagram Graph API</span>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-num">5</div><div class="hero-stat-label">Servicios</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">34</div><div class="hero-stat-label">Endpoints</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">6</div><div class="hero-stat-label">Tablas DB</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">$0</div><div class="hero-stat-label">Costo</div></div>
+    </div>
+  </div>
+</section>
+<div class="hero-divider"><div class="hero-divider-inner"></div></div>
+
+<main class="main">
+
+  <!-- SERVICIOS -->
+  <section class="section" id="servicios">
+    <div class="section-header reveal">
+      <div class="section-label">Infraestructura <span class="section-number">01</span> <span class="section-label-line"></span></div>
+      <div class="section-title">Servicios externos</div>
+      <p class="section-desc">publi conecta cinco servicios gratuitos. Hacé click en cada uno para ver cómo se integra en el proyecto.</p>
+    </div>
+
+    <div class="services-grid reveal reveal-delay-1">
+      <div class="service-card vercel active" onclick="selectService('vercel',this)">
+        <div class="service-icon" style="background:#f0f0f0;font-size:16px;font-weight:800;color:#000">▲</div>
+        <div class="service-name">Vercel</div>
+        <div class="service-role">Frontend + API backend juntos</div>
+        <span class="service-badge">Gratis</span>
+      </div>
+      <div class="service-card supabase" onclick="selectService('supabase',this)">
+        <div class="service-icon" style="background:#eaf3de">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M11.9 1.036c-.015-.986-1.26-1.41-1.874-.637L.764 12.05C.141 12.88.763 14 1.79 14h7.577l.516 8.927c.015.986 1.26 1.41 1.874.637l9.262-11.649c.623-.831 0-1.951-1.026-1.951l-7.58.05-.513-9.978z" fill="#3ECF8E"/></svg>
+        </div>
+        <div class="service-name">Supabase</div>
+        <div class="service-role">PostgreSQL + Auth + RLS</div>
+        <span class="service-badge">Gratis</span>
+      </div>
+      <div class="service-card upstash" onclick="selectService('upstash',this)">
+        <div class="service-icon" style="background:#e1f5ee;font-size:18px">⚡</div>
+        <div class="service-name">Upstash QStash</div>
+        <div class="service-role">Scheduling de publicaciones</div>
+        <span class="service-badge">500 msgs/día gratis</span>
+      </div>
+      <div class="service-card groq" onclick="selectService('groq',this)">
+        <div class="service-icon" style="background:#fcebeb;font-size:18px">🤖</div>
+        <div class="service-name">Groq API</div>
+        <div class="service-role">IA — llama-3.3-70b</div>
+        <span class="service-badge">Gratis</span>
+      </div>
+      <div class="service-card meta" onclick="selectService('meta',this)">
+        <div class="service-icon" style="background:#e6f1fb">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.34 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10 10 0 0 0 22 12.06C22 6.53 17.5 2.04 12 2.04Z"/></svg>
+        </div>
+        <div class="service-name">Meta / Instagram</div>
+        <div class="service-role">Instagram Graph API</div>
+        <span class="service-badge">Gratis</span>
+      </div>
+    </div>
+
+    <div class="detail-panel reveal reveal-delay-2" id="service-detail">
+      <div class="detail-header">
+        <div class="detail-icon" id="d-icon" style="background:#f0f0f0;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#000">▲</div>
+        <div>
+          <div class="detail-title" id="d-title">Vercel</div>
+          <div class="detail-subtitle" id="d-sub">Deploy y hosting — frontend + backend</div>
+        </div>
+      </div>
+      <div class="detail-body" id="d-body">
+        <strong>publi vive 100% en Vercel.</strong> El frontend (React, Next.js) y el backend (API Routes en <code>app/api/</code>) se deployean juntos desde el mismo repo de GitHub. Cada push a <code>main</code> dispara un deploy automático. Los PRs generan URLs de preview. No hay servidor separado — todo son Serverless Functions con timeout de 10 segundos en el tier gratuito.
+        <div class="pills">
+          <span class="pill pill-blue">Serverless Functions</span>
+          <span class="pill pill-green">Auto-deploy desde GitHub</span>
+          <span class="pill pill-amber">Preview por PR</span>
+          <span class="pill pill-teal">10s timeout (tier free)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARQUITECTURA GENERAL -->
+  <section class="section" id="arquitectura">
+    <div class="section-header reveal">
+      <div class="section-label">Visión general <span class="section-number">02</span> <span class="section-label-line"></span></div>
+      <div class="section-title">Cómo se conecta todo</div>
+      <p class="section-desc">El usuario interactúa con Next.js en Vercel. El backend llama a Supabase para datos, Vercel Blob para archivos, QStash para scheduling, Groq para IA, e Instagram para publicar.</p>
+    </div>
+    <div class="arch-wrap reveal reveal-delay-1">
+      <svg class="flow" viewBox="0 0 660 440" role="img" aria-label="Diagrama de arquitectura general de publi">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <rect x="260" y="20" width="140" height="48" rx="10" fill="#0095b6" stroke="#007a96" stroke-width="1"/>
+        <text x="330" y="40" text-anchor="middle" font-family="Poppins,sans-serif" font-size="13" font-weight="600" fill="#fff" dominant-baseline="central">Usuario</text>
+        <text x="330" y="58" text-anchor="middle" font-family="Poppins,sans-serif" font-size="11" fill="rgba(255,255,255,0.8)" dominant-baseline="central">Browser / publi.vercel.app</text>
+
+        <line x1="330" y1="68" x2="330" y2="108" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)"/>
+
+        <rect x="60" y="108" width="540" height="100" rx="12" fill="#f9f7f3" stroke="#d0cdc6" stroke-width="1.5" stroke-dasharray="6 3"/>
+        <text x="80" y="128" font-family="Poppins,sans-serif" font-size="11" font-weight="600" fill="#5a5a5a">▲ VERCEL</text>
+        <rect x="90" y="136" width="200" height="52" rx="8" fill="#fff" stroke="#d0cdc6" stroke-width="1"/>
+        <text x="190" y="157" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Next.js Frontend</text>
+        <text x="190" y="175" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#5a5a5a" dominant-baseline="central">React · App Router · Tailwind</text>
+        <rect x="370" y="136" width="200" height="52" rx="8" fill="#fff" stroke="#d0cdc6" stroke-width="1"/>
+        <text x="470" y="157" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Next.js API Routes</text>
+        <text x="470" y="175" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#5a5a5a" dominant-baseline="central">Serverless Functions · /api/...</text>
+        <line x1="290" y1="162" x2="370" y2="162" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)"/>
+
+        <rect x="40" y="248" width="130" height="60" rx="10" fill="#eaf3de" stroke="#c0dd97" stroke-width="1"/>
+        <text x="105" y="270" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#3b6d11" dominant-baseline="central">Supabase</text>
+        <text x="105" y="288" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#639922" dominant-baseline="central">DB + Auth + RLS</text>
+
+        <rect x="190" y="248" width="130" height="60" rx="10" fill="#f0f0f0" stroke="#d0d0d0" stroke-width="1"/>
+        <text x="255" y="270" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#333" dominant-baseline="central">Vercel Blob</text>
+        <text x="255" y="288" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#666" dominant-baseline="central">Storage imágenes</text>
+
+        <rect x="340" y="248" width="130" height="60" rx="10" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/>
+        <text x="405" y="270" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#0f6e56" dominant-baseline="central">QStash</text>
+        <text x="405" y="288" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#1d9e75" dominant-baseline="central">Scheduling</text>
+
+        <rect x="490" y="248" width="130" height="60" rx="10" fill="#fcebeb" stroke="#f7c1c1" stroke-width="1"/>
+        <text x="555" y="270" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#a32d2d" dominant-baseline="central">Groq API</text>
+        <text x="555" y="288" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#e24b4a" dominant-baseline="central">llama-3.3-70b</text>
+
+        <line x1="105" y1="208" x2="105" y2="246" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="105" y1="208" x2="470" y2="208" stroke="#9a9a9a" stroke-width="0.5"/>
+        <line x1="255" y1="208" x2="255" y2="246" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="405" y1="208" x2="405" y2="246" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="555" y1="208" x2="555" y2="246" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="470" y1="208" x2="470" y2="210" stroke="#9a9a9a" stroke-width="0.5"/>
+
+        <rect x="215" y="370" width="230" height="56" rx="10" fill="#e6f1fb" stroke="#b5d4f4" stroke-width="1"/>
+        <text x="330" y="392" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#185fa5" dominant-baseline="central">Instagram Graph API</text>
+        <text x="330" y="410" text-anchor="middle" font-family="Poppins,sans-serif" font-size="10" fill="#378add" dominant-baseline="central">Única red social del MVP</text>
+
+        <line x1="405" y1="308" x2="405" y2="338" stroke="#9a9a9a" stroke-width="1"/>
+        <line x1="405" y1="338" x2="330" y2="338" stroke="#9a9a9a" stroke-width="1"/>
+        <line x1="330" y1="338" x2="330" y2="368" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="5 3"/>
+        <text x="380" y="330" font-family="Poppins,sans-serif" font-size="9" fill="#9a9a9a" text-anchor="middle">HTTP callback</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- FLUJOS -->
+  <section class="section" id="flujos">
+    <div class="section-header reveal">
+      <div class="section-label">Paso a paso <span class="section-number">03</span> <span class="section-label-line"></span></div>
+      <div class="section-title">Flujos principales</div>
+      <p class="section-desc">Los tres flujos más importantes del sistema, desde que el usuario hace click hasta que el dato llega a destino.</p>
+    </div>
+
+    <div class="flow-tabs reveal reveal-delay-1">
+      <button class="flow-tab active" onclick="switchFlow('pub',this)">📸 Publicar en Instagram</button>
+      <button class="flow-tab" onclick="switchFlow('auth',this)">🔐 Autenticación</button>
+      <button class="flow-tab" onclick="switchFlow('ia',this)">🤖 Asistente IA</button>
+    </div>
+
+    <div class="flow-wrap reveal reveal-delay-2">
+
+      <div id="flow-pub">
+        <svg class="flow" viewBox="0 0 760 620" role="img" aria-label="Flujo de publicación en Instagram">
+          <defs><marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+          <rect x="40" y="20" width="180" height="60" rx="10" fill="#0095b6" stroke="#007a96" stroke-width="1"/>
+          <text x="130" y="44" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#fff" dominant-baseline="central">Usuario</text>
+          <text x="130" y="66" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="rgba(255,255,255,0.8)" dominant-baseline="central">Completa /nueva-publicacion</text>
+
+          <line x1="130" y1="80" x2="130" y2="135" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr2)"/>
+          <text x="202" y="110" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">POST /api/posts</text>
+
+          <rect x="40" y="135" width="180" height="60" rx="10" fill="#f9f7f3" stroke="#d0cdc6" stroke-width="1"/>
+          <text x="130" y="159" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Next.js API Route</text>
+          <text x="130" y="181" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#5a5a5a" dominant-baseline="central">Valida sesión + crea post</text>
+
+          <line x1="220" y1="165" x2="298" y2="165" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr2)"/>
+          <text x="258" y="154" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a" text-anchor="middle">INSERT</text>
+
+          <rect x="298" y="135" width="150" height="60" rx="10" fill="#eaf3de" stroke="#c0dd97" stroke-width="1"/>
+          <text x="373" y="159" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#3b6d11" dominant-baseline="central">Supabase</text>
+          <text x="373" y="181" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#639922" dominant-baseline="central">status = scheduled</text>
+
+          <line x1="220" y1="180" x2="220" y2="265" stroke="#9a9a9a" stroke-width="1"/>
+          <line x1="220" y1="265" x2="498" y2="265" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr2)"/>
+          <text x="358" y="254" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a" text-anchor="middle">Encola job con delay hasta la fecha</text>
+
+          <rect x="498" y="240" width="150" height="60" rx="10" fill="#e1f5ee" stroke="#9fe1cb" stroke-width="1"/>
+          <text x="573" y="264" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#0f6e56" dominant-baseline="central">QStash</text>
+          <text x="573" y="286" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#1d9e75" dominant-baseline="central">Espera hasta la hora ⏰</text>
+
+          <line x1="573" y1="300" x2="573" y2="375" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arr2)"/>
+          <text x="595" y="340" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">HTTP callback</text>
+
+          <rect x="448" y="375" width="220" height="60" rx="10" fill="#f9f7f3" stroke="#d0cdc6" stroke-width="1"/>
+          <text x="558" y="399" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#1a1a1a" dominant-baseline="central">POST /api/jobs/publish</text>
+          <text x="558" y="421" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#5a5a5a" dominant-baseline="central">Valida firma HMAC de QStash</text>
+
+          <line x1="573" y1="435" x2="573" y2="495" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr2)"/>
+          <text x="595" y="467" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">Graph API</text>
+
+          <rect x="448" y="495" width="220" height="60" rx="10" fill="#e6f1fb" stroke="#b5d4f4" stroke-width="1"/>
+          <text x="558" y="519" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#185fa5" dominant-baseline="central">Instagram Graph API</text>
+          <text x="558" y="541" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#378add" dominant-baseline="central">Post publicado ✓</text>
+
+          <path d="M448 525 L385 525 L385 195 L448 195" fill="none" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#arr2)"/>
+          <text x="362" y="430" font-family="Poppins,sans-serif" font-size="11" fill="#9a9a9a" transform="rotate(-90,362,430)">status → published</text>
+        </svg>
+      </div>
+
+      <div id="flow-auth" style="display:none">
+        <svg class="flow" viewBox="0 0 760 440" role="img" aria-label="Flujo de autenticación con Supabase">
+          <defs><marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+          <text x="380" y="28" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#1a1a1a">Dos formas de entrar a publi</text>
+
+          <rect x="40" y="52" width="200" height="60" rx="10" fill="#f9f7f3" stroke="#d0cdc6" stroke-width="1"/>
+          <text x="140" y="76" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Email + contraseña</text>
+          <text x="140" y="98" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#5a5a5a" dominant-baseline="central">Formulario en /login</text>
+
+          <rect x="520" y="52" width="200" height="60" rx="10" fill="#e6f1fb" stroke="#b5d4f4" stroke-width="1"/>
+          <text x="620" y="76" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#185fa5" dominant-baseline="central">Google OAuth</text>
+          <text x="620" y="98" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#378add" dominant-baseline="central">Botón "Continuar con Google"</text>
+
+          <line x1="140" y1="112" x2="140" y2="200" stroke="#9a9a9a" stroke-width="1"/>
+          <line x1="140" y1="200" x2="320" y2="200" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr3)"/>
+          <text x="140" y="162" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">signInWithPassword()</text>
+
+          <line x1="620" y1="112" x2="620" y2="200" stroke="#9a9a9a" stroke-width="1"/>
+          <line x1="620" y1="200" x2="420" y2="200" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr3)"/>
+          <text x="530" y="168" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">signInWithOAuth() → /api/auth/callback</text>
+
+          <rect x="320" y="178" width="100" height="60" rx="10" fill="#eaf3de" stroke="#c0dd97" stroke-width="1"/>
+          <text x="370" y="202" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#3b6d11" dominant-baseline="central">Supabase</text>
+          <text x="370" y="224" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#639922" dominant-baseline="central">Auth</text>
+
+          <line x1="370" y1="238" x2="370" y2="305" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr3)"/>
+          <text x="396" y="274" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">JWT → cookie</text>
+
+          <rect x="240" y="305" width="260" height="60" rx="10" fill="#0095b6" stroke="#007a96" stroke-width="1"/>
+          <text x="370" y="329" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#fff" dominant-baseline="central">Sesión activa</text>
+          <text x="370" y="351" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="rgba(255,255,255,0.8)" dominant-baseline="central">@supabase/ssr maneja las cookies</text>
+
+          <line x1="370" y1="365" x2="370" y2="410" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr3)"/>
+          <text x="370" y="428" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#0095b6">/dashboard ✓</text>
+        </svg>
+      </div>
+
+      <div id="flow-ia" style="display:none">
+        <svg class="flow" viewBox="0 0 760 440" role="img" aria-label="Flujo del asistente IA con Groq">
+          <defs><marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+          <rect x="30" y="20" width="150" height="60" rx="10" fill="#0095b6" stroke="#007a96" stroke-width="1"/>
+          <text x="105" y="44" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#fff" dominant-baseline="central">✨ Reescribir</text>
+          <text x="105" y="66" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="rgba(255,255,255,0.8)" dominant-baseline="central">copy del post</text>
+
+          <rect x="200" y="20" width="150" height="60" rx="10" fill="#0095b6" stroke="#007a96" stroke-width="1"/>
+          <text x="275" y="44" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#fff" dominant-baseline="central"># Hashtags</text>
+          <text x="275" y="66" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="rgba(255,255,255,0.8)" dominant-baseline="central">sugeridos por IA</text>
+
+          <rect x="370" y="20" width="150" height="60" rx="10" fill="#0095b6" stroke="#007a96" stroke-width="1"/>
+          <text x="445" y="44" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#fff" dominant-baseline="central">⏰ Horario</text>
+          <text x="445" y="66" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="rgba(255,255,255,0.8)" dominant-baseline="central">óptimo de publicación</text>
+
+          <line x1="275" y1="80" x2="275" y2="140" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr4)"/>
+          <text x="318" y="113" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">POST /api/ai/...</text>
+
+          <rect x="185" y="140" width="180" height="60" rx="10" fill="#f9f7f3" stroke="#d0cdc6" stroke-width="1"/>
+          <text x="275" y="164" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Next.js API Route</text>
+          <text x="275" y="186" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#5a5a5a" dominant-baseline="central">Valida sesión → fetch cliente</text>
+
+          <line x1="185" y1="170" x2="110" y2="170" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr4)"/>
+          <rect x="45" y="140" width="65" height="60" rx="8" fill="#eaf3de" stroke="#c0dd97" stroke-width="1"/>
+          <text x="77" y="164" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="600" fill="#3b6d11" dominant-baseline="central">Supa</text>
+          <text x="77" y="186" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#639922" dominant-baseline="central">base</text>
+
+          <line x1="275" y1="200" x2="275" y2="265" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr4)"/>
+          <text x="328" y="236" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a">buildSystemPrompt(client)</text>
+
+          <rect x="145" y="265" width="260" height="60" rx="10" fill="#faeeda" stroke="#fac775" stroke-width="1"/>
+          <text x="275" y="289" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#854f0b" dominant-baseline="central">System prompt custom</text>
+          <text x="275" y="311" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" fill="#ba7517" dominant-baseline="central">Contexto del cliente + instrucciones</text>
+
+          <line x1="275" y1="325" x2="275" y2="378" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr4)"/>
+
+          <rect x="175" y="378" width="200" height="52" rx="10" fill="#fcebeb" stroke="#f7c1c1" stroke-width="1"/>
+          <text x="275" y="408" text-anchor="middle" font-family="Poppins,sans-serif" font-size="14" font-weight="600" fill="#a32d2d" dominant-baseline="central">Groq API — llama-3.3-70b</text>
+
+          <line x1="375" y1="404" x2="580" y2="404" stroke="#9a9a9a" stroke-width="1"/>
+          <line x1="580" y1="404" x2="580" y2="170" stroke="#9a9a9a" stroke-width="1"/>
+          <line x1="580" y1="170" x2="365" y2="170" stroke="#9a9a9a" stroke-width="1" marker-end="url(#arr4)"/>
+          <text x="590" y="292" font-family="Poppins,sans-serif" font-size="12" fill="#9a9a9a" transform="rotate(-90,590,292)">respuesta JSON</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENDPOINTS -->
+  <section class="section" id="endpoints">
+    <div class="section-header reveal">
+      <div class="section-label">API <span class="section-number">04</span> <span class="section-label-line"></span></div>
+      <div class="section-title">Endpoints del backend</div>
+      <p class="section-desc">Todos los endpoints de publi. Cada uno vive en <code style="font-family:monospace;font-size:12px;background:#f0ece4;padding:2px 6px;border-radius:5px">src/app/api/.../route.ts</code> y valida la sesión de Supabase antes de ejecutar.</p>
+    </div>
+
+    <div class="card card-padded reveal reveal-delay-1">
+      <div class="endpoints-group">
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Auth & Usuarios <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-content">
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/auth/callback</div><div class="ep-desc">Callback de Google OAuth — intercambia code por sesión de Supabase</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/auth/logout</div><div class="ep-desc">Cierra la sesión activa</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Perfil completo del usuario autenticado</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Actualiza nombre, workspace, idioma, timezone</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me/password</div><div class="ep-desc">Actualiza la contraseña via Supabase Auth</div></div></div>
+          <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/users/me</div><div class="ep-desc">Elimina la cuenta permanentemente (cascade en DB)</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/users/me/notifications</div><div class="ep-desc">Guarda preferencias de notificaciones in-app</div></div></div>
+        </div>
+      </div>
+      <div class="endpoints-group">
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Clientes (Workspaces) <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-content">
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/clients</div><div class="ep-desc">Lista todos los clientes del CM con sus estadísticas</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/clients</div><div class="ep-desc">Crea un nuevo cliente — nombre, color, redes, plan</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Detalle de un cliente específico</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Edita nombre, color, redes o plan</div></div></div>
+          <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Elimina cliente y todas sus publicaciones (cascade)</div></div></div>
+        </div>
+      </div>
+      <div class="endpoints-group">
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Publicaciones <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-content">
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/posts</div><div class="ep-desc">Lista publicaciones con filtros: status, fecha, cliente, red social</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/posts</div><div class="ep-desc">Crea publicación — draft, scheduled (→ QStash) o inmediata (→ Instagram)</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/posts/:postId</div><div class="ep-desc">Detalle de una publicación</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/posts/:postId</div><div class="ep-desc">Edita publicación — si cambia scheduledAt cancela y reencola en QStash</div></div></div>
+          <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/posts/:postId</div><div class="ep-desc">Elimina publicación — si era scheduled cancela el job de QStash</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/posts/media</div><div class="ep-desc">Sube imagen/video a Vercel Blob — devuelve URL pública</div></div></div>
+        </div>
+      </div>
+      <div class="endpoints-group">
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Calendario & Métricas <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-content">
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/calendar</div><div class="ep-desc">Publicaciones agrupadas por día — vista mensual o semanal</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/calendar/events</div><div class="ep-desc">Crea evento desde el botón "+ Agregar evento" del calendario</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/metrics</div><div class="ep-desc">Estadísticas agregadas — filtros por cliente, período y red</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/metrics/dashboard</div><div class="ep-desc">Resumen compacto para el Home — KPIs, mini-calendario, actividad reciente</div></div></div>
+        </div>
+      </div>
+      <div class="endpoints-group">
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Asistente IA (Groq) <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-content">
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/ai/rewrite</div><div class="ep-desc">Reescribe el copy del post con el contexto del cliente via Groq</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/ai/hashtags</div><div class="ep-desc">Genera hashtags agrupados por alcance (alto, medio, nicho)</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/ai/best-time</div><div class="ep-desc">Sugiere horario óptimo basado en historial del cliente</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/ai/chat</div><div class="ep-desc">Chat conversacional del sidebar — historial en React state</div></div></div>
+        </div>
+      </div>
+      <div class="endpoints-group">
+        <div class="endpoints-group-title" onclick="toggleGroup(this)">Instagram & Jobs <span class="toggle-icon">▾</span></div>
+        <div class="endpoints-group-content">
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/instagram/connect</div><div class="ep-desc">Genera URL OAuth de Meta y redirige al usuario</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/instagram/callback</div><div class="ep-desc">Intercambia code → short-lived → long-lived token (60 días)</div></div></div>
+          <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/clients/:clientId/instagram</div><div class="ep-desc">Estado de la cuenta de Instagram conectada al cliente</div></div></div>
+          <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/clients/:clientId/instagram</div><div class="ep-desc">Desconecta la cuenta de Instagram del cliente</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/instagram/publish</div><div class="ep-desc">Publica en Instagram — 2 pasos: container + media_publish</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/instagram/refresh-token</div><div class="ep-desc">Refresca el long-lived token antes de que expire</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/jobs/publish</div><div class="ep-desc">Receiver de QStash — solo acepta llamadas con firma HMAC válida</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/waitlist</div><div class="ep-desc">Registro en la lista de espera — endpoint público (sin auth)</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DB -->
+  <section class="section" id="db">
+    <div class="section-header reveal">
+      <div class="section-label">Supabase <span class="section-number">05</span> <span class="section-label-line"></span></div>
+      <div class="section-title">Base de datos</div>
+      <p class="section-desc">Cinco tablas en PostgreSQL + la tabla auth.users manejada por Supabase Auth. Row Level Security habilitado en todas — ningún usuario puede acceder a datos de otro.</p>
+    </div>
+    <div class="db-grid reveal reveal-delay-1">
+      <div class="db-table">
+        <div class="db-header"><div class="db-table-name">profiles</div></div>
+        <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · FK auth.users</span></div>
+        <div class="db-field"><span class="field-name">name</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">workspace_name</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">language</span><span class="field-type">es | en</span></div>
+        <div class="db-field"><span class="field-name">timezone</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">notif_post_scheduled</span><span class="field-type">boolean</span></div>
+        <div class="db-field"><span class="field-name">notif_post_published</span><span class="field-type">boolean</span></div>
+        <div class="db-field"><span class="field-name">notif_post_failed</span><span class="field-type">boolean</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-header"><div class="db-table-name">clients</div></div>
+        <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · uuid</span></div>
+        <div class="db-field"><span class="field-name">user_id</span><span class="badge-fk">FK profiles</span></div>
+        <div class="db-field"><span class="field-name">name</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">color</span><span class="field-type">text (hex)</span></div>
+        <div class="db-field"><span class="field-name">plan</span><span class="field-type">free | pro</span></div>
+        <div class="db-field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-header"><div class="db-table-name">posts</div></div>
+        <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · uuid</span></div>
+        <div class="db-field"><span class="field-name">client_id</span><span class="badge-fk">FK clients</span></div>
+        <div class="db-field"><span class="field-name">user_id</span><span class="badge-fk">FK profiles</span></div>
+        <div class="db-field"><span class="field-name">description</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">status</span><span class="field-type">draft|scheduled|published|failed</span></div>
+        <div class="db-field"><span class="field-name">scheduled_at</span><span class="field-type">timestamptz</span></div>
+        <div class="db-field"><span class="field-name">media_urls</span><span class="field-type">text[]</span></div>
+        <div class="db-field"><span class="field-name">hashtags</span><span class="field-type">text[]</span></div>
+        <div class="db-field"><span class="field-name">qstash_message_id</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">instagram_post_id</span><span class="field-type">text</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-header"><div class="db-table-name">instagram_accounts</div></div>
+        <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · uuid</span></div>
+        <div class="db-field"><span class="field-name">client_id</span><span class="badge-fk">FK clients · unique</span></div>
+        <div class="db-field"><span class="field-name">instagram_user_id</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">username</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">access_token</span><span class="field-type">text (encriptado)</span></div>
+        <div class="db-field"><span class="field-name">token_expires_at</span><span class="field-type">timestamptz</span></div>
+        <div class="db-field"><span class="field-name">connected_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+      <div class="db-table">
+        <div class="db-header"><div class="db-table-name">notifications</div></div>
+        <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · uuid</span></div>
+        <div class="db-field"><span class="field-name">user_id</span><span class="badge-fk">FK profiles</span></div>
+        <div class="db-field"><span class="field-name">type</span><span class="field-type">post_published | post_failed | post_scheduled</span></div>
+        <div class="db-field"><span class="field-name">title</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">body</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">read</span><span class="field-type">boolean · default false</span></div>
+        <div class="db-field"><span class="field-name">post_id</span><span class="badge-fk">FK posts · nullable</span></div>
+        <div class="db-field"><span class="field-name">client_id</span><span class="badge-fk">FK clients · nullable</span></div>
+        <div class="db-field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
+      </div>
+    </div>
+    <div class="note reveal" style="margin-top:14px">
+      <strong>Row Level Security:</strong> todas las tablas tienen RLS habilitado con la política <code style="font-family:monospace;font-size:11px;background:rgba(0,149,182,0.1);padding:1px 5px;border-radius:3px">auth.uid() = user_id</code>. Aunque un endpoint tenga un bug, Supabase garantiza que los datos de un usuario nunca sean visibles para otro.
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section class="section" id="stack">
+    <div class="section-header reveal">
+      <div class="section-label">Tecnología <span class="section-number">06</span> <span class="section-label-line"></span></div>
+      <div class="section-title">Stack completo</div>
+      <p class="section-desc">Cada tecnología fue elegida por ser gratuita, compatible con Next.js y con setup mínimo para el deadline del TP.</p>
+    </div>
+    <div class="card reveal reveal-delay-1">
+      <table class="stack-table">
+        <thead>
+          <tr>
+            <th>Capa</th>
+            <th>Tecnología</th>
+            <th>Para qué sirve en publi</th>
+            <th>Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Framework</td><td>Next.js 14 (App Router)</td><td>Frontend + Backend en un único proyecto</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Lenguaje</td><td>TypeScript</td><td>Tipado estricto en todo el codebase</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Estilos</td><td>Tailwind CSS + shadcn/ui</td><td>Design system y componentes base</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Estado global</td><td>Zustand</td><td>Estado del cliente React (clientes activos, posts en edición)</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Base de datos</td><td>Supabase (PostgreSQL)</td><td>Usuarios, clientes, publicaciones, tokens de Instagram</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Autenticación</td><td>Supabase Auth</td><td>Login con email/contraseña y Google OAuth</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Storage</td><td>Vercel Blob</td><td>Imágenes y videos subidos antes de publicar en Instagram</td><td><span class="free-pill">1 GB gratis</span></td></tr>
+          <tr><td>Scheduling</td><td>Upstash QStash</td><td>Publicaciones programadas sin servidor 24/7</td><td><span class="free-pill">500/día gratis</span></td></tr>
+          <tr><td>Asistente IA</td><td>Groq API</td><td>Rewrite de copy, hashtags y horario óptimo via LLM</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Modelo IA</td><td>llama-3.3-70b-versatile</td><td>Modelo open-source de Meta vía Groq — sub-segundo de latencia</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Red social</td><td>Instagram Graph API</td><td>Única red del MVP — publicación en dos pasos</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Deploy</td><td>Vercel</td><td>Frontend + API Routes + auto-deploy desde GitHub</td><td><span class="free-pill">Gratis</span></td></tr>
+          <tr><td>Control de versiones</td><td>GitHub</td><td>Repositorio + branch protection + PR reviews</td><td><span class="free-pill">Gratis</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note reveal reveal-delay-2">
+      <strong>¿Por qué no hay backend separado?</strong> Next.js 14 con App Router permite colocar el backend directamente en <code style="font-family:monospace;font-size:11px;background:rgba(0,149,182,0.1);padding:1px 5px;border-radius:3px">src/app/api/</code>. Vercel los deploya como Serverless Functions automáticamente. No hay Render, Railway ni Express — todo convive en el mismo proyecto y el mismo repo.
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-logo">publi<span>.</span></div>
+  <div class="footer-text">Documentación técnica — TP Seminario de Integración Profesional · 2026</div>
+</footer>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Volver arriba">↑</button>
+
+<script>
+const svcData = {
+  vercel: {
+    iconInner: `▲`,
+    title: 'Vercel',
+    sub: 'Deploy y hosting — frontend + backend juntos',
+    body: `<strong>publi vive 100% en Vercel.</strong> El frontend (React, Next.js) y el backend (API Routes en <code>app/api/</code>) se deployean juntos desde el mismo repo de GitHub. Cada push a <code>main</code> dispara un deploy automático. Los PRs generan URLs de preview. No hay servidor separado — todo son Serverless Functions con timeout de 10 segundos en el tier gratuito.`,
+    pills: [['pill-blue','Serverless Functions'],['pill-green','Auto-deploy desde GitHub'],['pill-amber','Preview por PR'],['pill-teal','10s timeout (tier free)']]
+  },
+  supabase: {
+    iconInner: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11.9 1.036c-.015-.986-1.26-1.41-1.874-.637L.764 12.05C.141 12.88.763 14 1.79 14h7.577l.516 8.927c.015.986 1.26 1.41 1.874.637l9.262-11.649c.623-.831 0-1.951-1.026-1.951l-7.58.05-.513-9.978z" fill="#3ECF8E"/></svg>`,
+    title: 'Supabase',
+    sub: 'Base de datos + autenticación + seguridad de datos',
+    body: `<strong>Supabase es el backend de datos de publi.</strong> Provee PostgreSQL hosteado, autenticación nativa (email + Google OAuth) y Row Level Security (RLS) para garantizar que cada CM solo vea sus propios datos. El cliente JS de Supabase se usa directamente — no hay ORM extra. El helper <code>@supabase/ssr</code> maneja las cookies de sesión en Next.js automáticamente.`,
+    pills: [['pill-green','PostgreSQL hosteado'],['pill-teal','Auth nativa (email + Google)'],['pill-blue','Row Level Security'],['pill-amber','SDK JS directo, sin ORM']]
+  },
+  upstash: {
+    iconInner: `⚡`,
+    title: 'Upstash QStash',
+    sub: 'Scheduling de publicaciones programadas',
+    body: `<strong>QStash es la pieza clave para publicar en Instagram en el horario exacto.</strong> Cuando el CM programa un post, el backend encola un job en QStash con el delay calculado. En el momento programado, QStash hace un HTTP POST a <code>/api/jobs/publish</code> con el ID del post. El endpoint valida la firma HMAC para verificar que el mensaje viene de QStash, y procede a publicar. Si falla, QStash reintenta automáticamente hasta 3 veces con backoff exponencial.`,
+    pills: [['pill-teal','HTTP callback con delay'],['pill-blue','Firma HMAC (seguridad)'],['pill-amber','3 reintentos automáticos'],['pill-green','500 msgs/día gratis']]
+  },
+  groq: {
+    iconInner: `🤖`,
+    title: 'Groq API',
+    sub: 'Asistente IA — llama-3.3-70b-versatile',
+    body: `<strong>El asistente IA de publi usa Groq</strong> con el modelo <code>llama-3.3-70b-versatile</code>, gratuito y con latencia sub-segundo. El "pre-entrenamiento" se logra mediante un <strong>system prompt custom</strong> que se construye dinámicamente con el nombre del cliente, su audiencia e instrucciones de comportamiento. No hay entrenamiento real del modelo — es prompt engineering, que es exactamente lo que se hace en producción.`,
+    pills: [['pill-red','llama-3.3-70b-versatile'],['pill-amber','System prompt custom'],['pill-blue','Rewrite + hashtags + horario'],['pill-teal','Chat conversacional']]
+  },
+  meta: {
+    iconInner: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#1877F2"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.34 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10 10 0 0 0 22 12.06C22 6.53 17.5 2.04 12 2.04Z"/></svg>`,
+    title: 'Meta / Instagram Graph API',
+    sub: 'Única red social del MVP',
+    body: `<strong>Instagram usa la plataforma de Meta</strong> para su API. El flujo OAuth requiere una Meta App con el permiso <code>instagram_content_publish</code>. La publicación requiere dos pasos: primero crear un container (registrar la imagen), luego publicarlo. Los tokens duran 60 días y se renuevan automáticamente. Solo se implementa Instagram en el MVP — el resto de las redes se agregan en iteraciones futuras.`,
+    pills: [['pill-blue','OAuth de Meta'],['pill-amber','2 pasos para publicar'],['pill-teal','Long-lived token (60 días)'],['pill-green','Solo Instagram en MVP']]
+  }
+};
+
+function selectService(id, el) {
+  document.querySelectorAll('.service-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const d = svcData[id];
+  const panel = document.getElementById('service-detail');
+  const iconEl = document.getElementById('d-icon');
+  if (iconEl) iconEl.innerHTML = d.iconInner;
+  document.getElementById('d-title').textContent = d.title;
+  document.getElementById('d-sub').textContent = d.sub;
+  let pillsHtml = '<div class="pills">';
+  d.pills.forEach(([cls, lbl]) => { pillsHtml += `<span class="pill ${cls}">${lbl}</span>`; });
+  pillsHtml += '</div>';
+  const bodyEl = document.getElementById('d-body');
+  bodyEl.style.opacity = '0';
+  bodyEl.style.transform = 'translateY(8px)';
+  setTimeout(() => {
+    bodyEl.innerHTML = d.body + pillsHtml;
+    bodyEl.style.transition = 'opacity 0.3s, transform 0.3s';
+    bodyEl.style.opacity = '1';
+    bodyEl.style.transform = 'translateY(0)';
+  }, 150);
+}
+
+function switchFlow(name, btn) {
+  ['pub','auth','ia'].forEach(f => {
+    const el = document.getElementById('flow-' + f);
+    if (f === name) {
+      el.style.display = 'block';
+      el.style.animation = 'fadeIn 0.3s';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.flow-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function toggleGroup(titleEl) {
+  const content = titleEl.nextElementSibling;
+  const isCollapsed = content.classList.toggle('collapsed');
+  titleEl.classList.toggle('collapsed', isCollapsed);
+}
+
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = (scrollTop / docHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+});
+
+// Back to top button
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTop');
+  if (window.scrollY > 600) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+});
+
+// Scroll reveal
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+// Active nav link highlighting
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.nav-link');
+
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      navLinks.forEach(link => {
+        link.classList.toggle('active-nav', link.getAttribute('data-section') === id);
+      });
+    }
+  });
+}, { threshold: 0.2, rootMargin: '-80px 0px -60% 0px' });
+
+sections.forEach(section => navObserver.observe(section));
+</script>
+</body>
+</html>
