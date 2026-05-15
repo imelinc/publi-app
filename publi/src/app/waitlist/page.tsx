@@ -27,6 +27,9 @@ export default function WaitlistPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [errors, setErrors] = useState<Partial<FormState>>({})
   const [success, setSuccess] = useState(false)
+  const [position, setPosition] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   function validate(): boolean {
     const next: Partial<FormState> = {}
@@ -39,9 +42,44 @@ export default function WaitlistPage() {
     return Object.keys(next).length === 0
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (validate()) setSuccess(true)
+    if (!validate()) return
+
+    setLoading(true)
+    setServerError(null)
+
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: form.nombre,
+          email: form.email,
+          clientCount: form.clientes,
+          currentTools: form.herramientas,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.status === 409) {
+        setServerError('Este email ya está en la lista')
+        return
+      }
+
+      if (!res.ok) {
+        setServerError(data.error ?? 'Ocurrió un error. Intentá de nuevo.')
+        return
+      }
+
+      setPosition(data.position)
+      setSuccess(true)
+    } catch {
+      setServerError('Ocurrió un error. Intentá de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -55,9 +93,13 @@ export default function WaitlistPage() {
             ¡Recibimos tu solicitud!
           </h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Te vamos a avisar por email cuando tu acceso esté listo.
-            <br />
-            Mientras tanto, seguinos en Instagram para ver las novedades.
+            ¡Te anotaste! Te avisamos cuando tu acceso esté listo.
+            {position !== null && (
+              <>
+                <br />
+                Sos el número <span className="font-semibold text-foreground">#{position}</span> en la lista.
+              </>
+            )}
           </p>
           <Button asChild className="mt-2">
             <Link href="/">Volver al inicio</Link>
@@ -157,11 +199,16 @@ export default function WaitlistPage() {
               />
             </div>
 
+            {serverError && (
+              <p className="text-sm text-destructive">{serverError}</p>
+            )}
+
             <Button
               type="submit"
+              disabled={loading}
               className="mt-2 h-11 w-full text-[15px] font-semibold"
             >
-              Solicitar acceso
+              {loading ? 'Enviando...' : 'Solicitar acceso'}
             </Button>
           </form>
 

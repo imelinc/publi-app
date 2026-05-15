@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
+import { createClient } from "@/lib/supabase/client"
 
 import {
   AlertDialog,
@@ -331,7 +332,11 @@ export default function ConfiguracionPage() {
             <Button
               variant="outline"
               className="border-destructive/30 text-destructive hover:bg-destructive/10"
-              onClick={() => router.push("/login")}
+              onClick={async () => {
+                const supabase = createClient()
+                await supabase.auth.signOut()
+                router.push("/login")
+              }}
             >
               Cerrar sesión
             </Button>
