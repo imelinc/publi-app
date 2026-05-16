@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
+
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -148,20 +148,10 @@ export function Sidebar() {
                     : undefined
                 }
               >
-                {href === '/ai' ? (
-                  <Image
-                    src="/images/copi.png"
-                    alt="Copi"
-                    width={24}
-                    height={24}
-                    className="rounded-full shrink-0"
-                  />
-                ) : (
-                  <Icon
-                    className="w-[18px] h-[18px] shrink-0"
-                    style={{ color: isActive ? '#0095b6' : undefined }}
-                  />
-                )}
+                <Icon
+                  className="w-[18px] h-[18px] shrink-0"
+                  style={{ color: isActive ? '#0095b6' : undefined }}
+                />
                 {label}
               </button>
             )
