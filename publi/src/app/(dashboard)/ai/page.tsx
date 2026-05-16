@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react'
 import Image from 'next/image'
 import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store/use-app-store'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -28,6 +29,7 @@ const INITIAL_MESSAGE: Message = {
 }
 
 export default function AiPage() {
+  const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const [messages, setMessages] = useState<Message[]>([])
   const [started, setStarted] = useState(false)
   const [input, setInput] = useState('')
@@ -73,7 +75,7 @@ export default function AiPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: trimmed,
-            clientId: null,
+            clientId: activeWorkspaceId,
             history: updatedHistory.map(({ role, content }) => ({ role, content })),
           }),
         })
