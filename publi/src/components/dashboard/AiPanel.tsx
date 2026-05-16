@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Sparkles, X } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { X } from 'lucide-react'
+import Image from 'next/image'
 import type { SocialNetwork } from '@/lib/mock-data'
+import { useAppStore } from '@/store/use-app-store'
 
 interface AiPanelProps {
   type: 'rewrite' | 'hashtags' | 'schedule'
@@ -12,7 +14,7 @@ interface AiPanelProps {
   onDiscard: () => void
 }
 
-function generateSuggestion(
+function generateFallback(
   type: 'rewrite' | 'hashtags' | 'schedule',
   content: string,
   networks: SocialNetwork[]
@@ -55,16 +57,76 @@ const TYPE_LABELS: Record<string, string> = {
 export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPanelProps) {
   const [loading, setLoading] = useState(true)
   const [suggestion, setSuggestion] = useState<string | null>(null)
+  const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     setLoading(true)
     setSuggestion(null)
-    const timer = setTimeout(() => {
-      setLoading(false)
-      setSuggestion(generateSuggestion(type, content, networks))
-    }, 1200)
-    return () => clearTimeout(timer)
-  }, [type, content, networks])
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    const fallback = generateFallback(type, content, networks)
+
+    async function fetchSuggestion() {
+      try {
+        if (type === 'rewrite') {
+          const res = await fetch('/api/ai/rewrite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: content, clientId: activeWorkspaceId, tone: null }),
+            signal: controller.signal,
+          })
+          const data = await res.json()
+          const dynamicVariant = data.suggestions?.find(
+            (s: { text: string; label: string }) => s.label === 'Más dinámico'
+          )
+          setSuggestion(dynamicVariant?.text ?? data.suggestions?.[0]?.text ?? fallback)
+        } else if (type === 'hashtags') {
+          const res = await fetch('/api/ai/hashtags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: content, clientId: activeWorkspaceId, count: 12 }),
+            signal: controller.signal,
+          })
+          const data = await res.json()
+          if (Array.isArray(data.hashtags) && data.hashtags.length > 0) {
+            setSuggestion(data.hashtags.join(' '))
+          } else {
+            setSuggestion(fallback)
+          }
+        } else {
+          const res = await fetch('/api/ai/best-time', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId: activeWorkspaceId, networks }),
+            signal: controller.signal,
+          })
+          const data = await res.json()
+          const rec = data.recommendation
+          if (rec?.dayOfWeek && rec?.time && rec?.reason) {
+            setSuggestion(`📅 ${rec.dayOfWeek} a las ${rec.time} hs\n\n${rec.reason}`)
+          } else {
+            setSuggestion(fallback)
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setSuggestion(fallback)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchSuggestion()
+
+    return () => controller.abort()
+  }, [type, content, networks, activeWorkspaceId])
 
   return (
     <div className="bg-[#cceef5]/30 border border-[#0095b6]/20 rounded-xl p-4 mt-3">
@@ -81,7 +143,7 @@ export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPane
         <>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-[#0095b6]" />
+              <Image src="/images/copi.png" alt="Copi" width={24} height={24} className="rounded-full" />
               <span className="text-xs font-medium text-[#0095b6]">{TYPE_LABELS[type]}</span>
             </div>
             <button onClick={onDiscard} className="text-gray-400 hover:text-gray-600 transition-colors">
