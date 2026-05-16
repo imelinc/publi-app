@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard,
   Users,
@@ -212,7 +213,11 @@ export function Sidebar() {
             <p className="text-xs text-gray-400 truncate">nacho@publi.app</p>
           </div>
           <button
-            onClick={() => router.push('/login')}
+            onClick={async () => {
+              const supabase = createClient()
+              await supabase.auth.signOut()
+              router.push('/login')
+            }}
             className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
             title="Cerrar sesión"
           >
