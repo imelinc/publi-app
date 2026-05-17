@@ -1,8 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { WORKSPACES } from '@/lib/mock-data'
-import type { Post } from '@/lib/mock-data'
+import type { Post } from '@/types'
 
 interface MiniCalendarProps {
   posts: Post[]
@@ -55,11 +54,6 @@ export function MiniCalendar({ posts }: MiniCalendarProps) {
   const lastDay = weekDays[6]
   const rangeLabel = `${firstDay.getDate()} - ${lastDay.getDate()} de ${MONTH_NAMES[lastDay.getMonth()]}`
 
-  function getWorkspaceColor(workspaceId: string): string {
-    const ws = WORKSPACES.find((w) => w.id === workspaceId)
-    return ws?.color ?? '#0095b6'
-  }
-
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5">
       <div className="flex items-center justify-between">
@@ -96,7 +90,7 @@ export function MiniCalendar({ posts }: MiniCalendarProps) {
                   <div
                     key={post.id}
                     className="w-2 h-8 rounded-full"
-                    style={{ backgroundColor: getWorkspaceColor(post.workspaceId) }}
+                    style={{ backgroundColor: post.clientColor }}
                     title={post.title}
                   />
                 ))}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Post, CalendarEvent, WORKSPACES } from "@/lib/mock-data"
+import type { Post, CalendarEvent } from "@/types"
 
 interface CalendarGridProps {
   currentMonth: Date
@@ -17,12 +17,6 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
 const NETWORK_ICON_MAP: Record<string, string> = {
   instagram: "/icons/instagram.svg",
-  facebook: "/icons/facebook.svg",
-  tiktok: "/icons/tiktok.svg",
-  linkedin: "/icons/linkedin.svg",
-  twitter: "/icons/twitter.svg",
-  youtube: "/icons/youtube.svg",
-  threads: "/icons/theads.svg",
 }
 
 function getDaysInGrid(month: Date): Date[] {
@@ -80,10 +74,6 @@ function getPostsForDay(posts: Post[], date: Date): Post[] {
 function getEventsForDay(events: CalendarEvent[], date: Date): CalendarEvent[] {
   const dateStr = formatDateKey(date)
   return events.filter((e) => e.date === dateStr)
-}
-
-function getWorkspaceColor(workspaceId: string): string {
-  return WORKSPACES.find((w) => w.id === workspaceId)?.color ?? "#0095b6"
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -166,9 +156,9 @@ export function CalendarGrid({
                 )}
               </div>
               {dayPosts.slice(0, postsToShow).map((post) => {
-                const color = getWorkspaceColor(post.workspaceId)
+                const color = post.clientColor
                 const iconPath =
-                  NETWORK_ICON_MAP[post.networks[0]] ||
+                  NETWORK_ICON_MAP[post.networks[0]] ??
                   `/icons/${post.networks[0]}.svg`
                 return (
                   <div

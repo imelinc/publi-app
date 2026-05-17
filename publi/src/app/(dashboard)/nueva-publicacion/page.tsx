@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
-import { WORKSPACES } from '@/lib/mock-data'
-import type { SocialNetwork, PostStatus } from '@/lib/mock-data'
+import type { Network, PostStatus } from '@/types'
 import { PostEditor } from '@/components/dashboard/PostEditor'
 import { PostPreview } from '@/components/dashboard/PostPreview'
 import { AiPanel } from '@/components/dashboard/AiPanel'
@@ -28,35 +27,35 @@ import { useToast } from '@/components/ui/use-toast'
 export default function NuevaPublicacionPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { addPost, activeWorkspaceId } = useAppStore()
+  const { addPost, activeWorkspaceId, clients } = useAppStore()
 
-  const [workspaceId, setWorkspaceId] = useState(activeWorkspaceId)
+  const [clientId, setClientId] = useState(activeWorkspaceId)
   const [description, setDescription] = useState('')
-  const [networks, setNetworks] = useState<SocialNetwork[]>([])
-  const [scheduledAt, setScheduledAt] = useState<string | null>(null)
+  const [networks, setNetworks] = useState<Network[]>([])
   const [publishNow, setPublishNow] = useState(true)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [activePreviewNetwork, setActivePreviewNetwork] = useState<SocialNetwork | null>(null)
+  const [activePreviewNetwork, setActivePreviewNetwork] = useState<Network | null>(null)
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
   const [showScheduleAi, setShowScheduleAi] = useState(false)
 
-  const workspace = WORKSPACES.find((w) => w.id === workspaceId) ?? null
+  const client = clients.find((c) => c.id === clientId) ?? null
 
   useEffect(() => {
-    if (workspace) {
-      setNetworks(workspace.networks)
-      if (workspace.networks.length > 0) {
-        setActivePreviewNetwork(workspace.networks[0])
+    if (client) {
+      const connected = client.connectedNetworks
+      setNetworks(connected)
+      if (connected.length > 0) {
+        setActivePreviewNetwork(connected[0])
       }
     }
-  }, [workspaceId])
+  }, [clientId, client?.id])
 
-  const handleWorkspaceChange = useCallback((id: string) => {
-    setWorkspaceId(id)
+  const handleClientChange = useCallback((id: string) => {
+    setClientId(id)
   }, [])
 
-  const handleNetworksChange = useCallback((newNetworks: SocialNetwork[]) => {
+  const handleNetworksChange = useCallback((newNetworks: Network[]) => {
     setNetworks(newNetworks)
     if (newNetworks.length > 0) {
       setActivePreviewNetwork(newNetworks[0])
@@ -65,7 +64,7 @@ export default function NuevaPublicacionPage() {
     }
   }, [])
 
-  const handleNetworkSelect = useCallback((network: SocialNetwork) => {
+  const handleNetworkSelect = useCallback((network: Network) => {
     setActivePreviewNetwork(network)
   }, [])
 
@@ -85,32 +84,42 @@ export default function NuevaPublicacionPage() {
     return null
   }
 
-  function handleSaveDraft() {
-    addPost({
-      workspaceId,
-      title: description.slice(0, 50) || 'Sin título',
-      description,
-      networks,
-      status: 'draft' as PostStatus,
-      scheduledAt: null,
-      imageUrl,
-    })
-    toast({ title: 'Borrador guardado' })
+  async function handleSaveDraft() {
+    try {
+      await addPost({
+        clientId,
+        title: description.slice(0, 50) || 'Sin título',
+        description,
+        networks,
+        status: 'draft' as PostStatus,
+        scheduledAt: null,
+        mediaUrls: imageUrl ? [imageUrl] : [],
+        hashtags: [],
+      })
+      toast({ title: 'Borrador guardado' })
+    } catch {
+      toast({ title: 'Error al guardar borrador' })
+    }
   }
 
-  function handleConfirmPublish() {
+  async function handleConfirmPublish() {
     const status: PostStatus = publishNow ? 'published' : 'scheduled'
-    addPost({
-      workspaceId,
-      title: description.slice(0, 50) || 'Sin título',
-      description,
-      networks,
-      status,
-      scheduledAt: buildScheduledAt(),
-      imageUrl,
-    })
-    toast({ title: '¡Publicación programada!' })
-    router.push('/calendario')
+    try {
+      await addPost({
+        clientId,
+        title: description.slice(0, 50) || 'Sin título',
+        description,
+        networks,
+        status,
+        scheduledAt: buildScheduledAt(),
+        mediaUrls: imageUrl ? [imageUrl] : [],
+        hashtags: [],
+      })
+      toast({ title: '¡Publicación programada!' })
+      router.push('/calendario')
+    } catch {
+      toast({ title: 'Error al publicar' })
+    }
   }
 
   return (
@@ -120,11 +129,11 @@ export default function NuevaPublicacionPage() {
       <div className="flex gap-6">
         <div className="flex-1">
           <PostEditor
-            workspaceId={workspaceId}
+            clientId={clientId}
             description={description}
             networks={networks}
             imageUrl={imageUrl}
-            onWorkspaceChange={handleWorkspaceChange}
+            onClientChange={handleClientChange}
             onDescriptionChange={handleDescriptionChange}
             onNetworksChange={handleNetworksChange}
             onImageChange={handleImageChange}
@@ -135,7 +144,7 @@ export default function NuevaPublicacionPage() {
           <PostPreview
             description={description}
             imageUrl={imageUrl}
-            workspace={workspace}
+            client={client}
             networks={networks}
             activeNetwork={activePreviewNetwork}
             onNetworkSelect={handleNetworkSelect}
@@ -199,7 +208,7 @@ export default function NuevaPublicacionPage() {
                     type="schedule"
                     content={description}
                     networks={networks}
-                    onAccept={(result) => {
+                    onAccept={() => {
                       setShowScheduleAi(false)
                     }}
                     onDiscard={() => setShowScheduleAi(false)}

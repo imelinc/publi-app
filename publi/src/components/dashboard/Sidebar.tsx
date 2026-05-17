@@ -18,7 +18,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
-import { WORKSPACES } from '@/lib/mock-data'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', Icon: LayoutDashboard },
@@ -33,11 +32,18 @@ export function Sidebar() {
   const pathname = usePathname()
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const setActiveWorkspace = useAppStore((s) => s.setActiveWorkspace)
+  const clients = useAppStore((s) => s.clients)
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const activeWorkspace = WORKSPACES.find((w) => w.id === activeWorkspaceId) ?? WORKSPACES[0]
+  const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
+
+  useEffect(() => {
+    if (clients.length > 0 && !activeWorkspaceId) {
+      setActiveWorkspace(clients[0].id)
+    }
+  }, [clients, activeWorkspaceId, setActiveWorkspace])
 
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -65,30 +71,35 @@ export function Sidebar() {
             onClick={() => setDropdownOpen((v) => !v)}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
-              style={{
-                backgroundColor: activeWorkspace.color,
-                fontSize: '12px',
-                fontWeight: 600,
-              }}
-            >
-              {activeWorkspace.initials}
-            </div>
-            <span className="flex-1 text-sm font-medium text-gray-900 text-left truncate">
-              {activeWorkspace.name}
-            </span>
+            {activeClient ? (
+              <>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
+                  style={{
+                    backgroundColor: activeClient.color,
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {activeClient.initials}
+                </div>
+                <span className="flex-1 text-sm font-medium text-gray-900 text-left truncate">
+                  {activeClient.name}
+                </span>
+              </>
+            ) : (
+              <span className="flex-1 text-sm text-gray-400 text-left">Sin clientes</span>
+            )}
             <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
           </button>
 
-          {/* Dropdown */}
-          {dropdownOpen && (
+          {dropdownOpen && clients.length > 0 && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg z-50 py-1">
-              {WORKSPACES.map((ws) => (
+              {clients.map((c) => (
                 <button
-                  key={ws.id}
+                  key={c.id}
                   onClick={() => {
-                    setActiveWorkspace(ws.id)
+                    setActiveWorkspace(c.id)
                     setDropdownOpen(false)
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors"
@@ -96,17 +107,17 @@ export function Sidebar() {
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
                     style={{
-                      backgroundColor: ws.color,
+                      backgroundColor: c.color,
                       fontSize: '11px',
                       fontWeight: 600,
                     }}
                   >
-                    {ws.initials}
+                    {c.initials}
                   </div>
                   <span className="flex-1 text-sm text-gray-800 text-left truncate">
-                    {ws.name}
+                    {c.name}
                   </span>
-                  {ws.id === activeWorkspaceId && (
+                  {c.id === activeWorkspaceId && (
                     <Check className="w-4 h-4 shrink-0" style={{ color: '#0095b6' }} />
                   )}
                 </button>
@@ -118,7 +129,6 @@ export function Sidebar() {
 
       {/* ZONA MIDDLE */}
       <div className="flex-1 px-4 pb-4 flex flex-col overflow-y-auto">
-        {/* Nueva publicación button */}
         <button
           onClick={() => router.push('/nueva-publicacion')}
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-white text-sm font-medium mb-3 hover:opacity-90 transition-opacity"
@@ -128,7 +138,6 @@ export function Sidebar() {
           Nueva Publicación
         </button>
 
-        {/* Nav items */}
         <nav className="flex flex-col gap-0.5">
           {navItems.map(({ label, href, Icon }) => {
             const isActive = pathname.startsWith(href)
@@ -157,10 +166,8 @@ export function Sidebar() {
             )
           })}
 
-          {/* Separador */}
           <div className="border-t border-gray-100 my-2" />
 
-          {/* Configuración */}
           {(() => {
             const isActive = pathname.startsWith('/configuracion')
             return (

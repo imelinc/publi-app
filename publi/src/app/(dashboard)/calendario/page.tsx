@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { WORKSPACES, Post, CalendarEvent } from "@/lib/mock-data"
 import { useAppStore } from "@/store/use-app-store"
 import { CalendarGrid } from "@/components/dashboard/CalendarGrid"
 import { DraftPanel } from "@/components/dashboard/DraftPanel"
 import { EventModal } from "@/components/dashboard/EventModal"
+import type { Post, CalendarEvent } from "@/types"
 import {
   Dialog,
   DialogContent,
@@ -34,16 +34,16 @@ export default function CalendarioPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
-  const { posts, events, deleteEvent } = useAppStore()
+  const { posts, events, deleteEvent, clients } = useAppStore()
 
   const filteredPosts = useMemo(() => {
     if (clientFilter === "all") return posts
-    return posts.filter((p) => p.workspaceId === clientFilter)
+    return posts.filter((p) => p.clientId === clientFilter)
   }, [posts, clientFilter])
 
   const filteredEvents = useMemo(() => {
     if (clientFilter === "all") return events
-    return events.filter((e) => e.workspaceId === clientFilter)
+    return events.filter((e) => e.clientId === clientFilter)
   }, [events, clientFilter])
 
   function prevMonth() {
@@ -78,18 +78,13 @@ export default function CalendarioPage() {
   const capitalizedMonthLabel =
     monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
 
-  const selectedPostWorkspace = selectedPost
-    ? WORKSPACES.find((w) => w.id === selectedPost.workspaceId)
-    : null
-
-  const selectedEventWorkspace = selectedEvent
-    ? WORKSPACES.find((w) => w.id === selectedEvent.workspaceId)
+  const selectedEventClient = selectedEvent
+    ? clients.find((c) => c.id === selectedEvent.clientId) ?? null
     : null
 
   return (
     <div className="flex gap-4 h-[calc(100vh-112px)]">
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Calendar Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={prevMonth}>
@@ -135,9 +130,9 @@ export default function CalendarioPage() {
               className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700 outline-none"
             >
               <option value="all">Todos los clientes</option>
-              {WORKSPACES.map((ws) => (
-                <option key={ws.id} value={ws.id}>
-                  {ws.name}
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -168,7 +163,6 @@ export default function CalendarioPage() {
           </div>
         </div>
 
-        {/* Calendar Grid */}
         <CalendarGrid
           currentMonth={currentMonth}
           posts={filteredPosts}
@@ -180,9 +174,7 @@ export default function CalendarioPage() {
         />
       </div>
 
-      {draftPanelOpen && (
-        <DraftPanel posts={filteredPosts} workspaces={WORKSPACES} />
-      )}
+      {draftPanelOpen && <DraftPanel posts={filteredPosts} />}
 
       <EventModal
         open={eventModalOpen}
@@ -202,19 +194,17 @@ export default function CalendarioPage() {
               <DialogTitle>{selectedPost.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
-              {selectedPostWorkspace && (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                    style={{ backgroundColor: selectedPostWorkspace.color }}
-                  >
-                    {selectedPostWorkspace.initials}
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {selectedPostWorkspace.name}
-                  </span>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                  style={{ backgroundColor: selectedPost.clientColor }}
+                >
+                  {selectedPost.clientName.slice(0, 2).toUpperCase()}
                 </div>
-              )}
+                <span className="text-sm text-gray-600">
+                  {selectedPost.clientName}
+                </span>
+              </div>
               <p className="text-sm text-gray-600">
                 {selectedPost.description}
               </p>
@@ -279,16 +269,16 @@ export default function CalendarioPage() {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {selectedEventWorkspace && (
+              {selectedEventClient && (
                 <div className="flex items-center gap-2">
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                    style={{ backgroundColor: selectedEventWorkspace.color }}
+                    style={{ backgroundColor: selectedEventClient.color }}
                   >
-                    {selectedEventWorkspace.initials}
+                    {selectedEventClient.initials}
                   </div>
                   <span className="text-sm text-gray-600">
-                    {selectedEventWorkspace.name}
+                    {selectedEventClient.name}
                   </span>
                 </div>
               )}

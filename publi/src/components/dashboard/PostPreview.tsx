@@ -1,41 +1,29 @@
 'use client'
 
 import { Heart, MessageCircle, Send, Eye } from 'lucide-react'
-import type { SocialNetwork, Workspace } from '@/lib/mock-data'
+import type { Network, Client } from '@/types'
 
 interface PostPreviewProps {
   description: string
   imageUrl: string | null
-  workspace: Workspace | null
-  networks: SocialNetwork[]
-  activeNetwork: SocialNetwork | null
-  onNetworkSelect: (network: SocialNetwork) => void
+  client: Client | null
+  networks: Network[]
+  activeNetwork: Network | null
+  onNetworkSelect: (network: Network) => void
 }
 
-const NETWORK_ICONS: Record<SocialNetwork, string> = {
+const NETWORK_ICONS: Record<Network, string> = {
   instagram: '/icons/instagram-color.svg',
-  facebook: '/icons/facebook-color.svg',
-  tiktok: '/icons/tiktok-color.svg',
-  linkedin: '/icons/linkedin-color.svg',
-  twitter: '/icons/twitter-color.svg',
-  youtube: '/icons/yt-color.svg',
-  threads: '/icons/threads-color.svg',
 }
 
-const NETWORK_NAMES: Record<SocialNetwork, string> = {
+const NETWORK_NAMES: Record<Network, string> = {
   instagram: 'Instagram',
-  facebook: 'Facebook',
-  tiktok: 'TikTok',
-  linkedin: 'LinkedIn',
-  twitter: 'X',
-  youtube: 'YouTube',
-  threads: 'Threads',
 }
 
 export function PostPreview({
   description,
   imageUrl,
-  workspace,
+  client,
   networks,
   activeNetwork,
   onNetworkSelect,
@@ -77,12 +65,12 @@ export function PostPreview({
           <div className="flex items-center gap-2 p-3 border-b border-gray-100">
             <div
               className="size-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-              style={{ backgroundColor: workspace?.color ?? '#999' }}
+              style={{ backgroundColor: client?.color ?? '#999' }}
             >
-              {workspace?.initials ?? 'CM'}
+              {client?.initials ?? 'CM'}
             </div>
             <div>
-              <p className="text-xs font-semibold">{workspace?.name ?? 'Tu cuenta'}</p>
+              <p className="text-xs font-semibold">{client?.name ?? 'Tu cuenta'}</p>
               <p className="text-[10px] text-gray-400">· Ahora</p>
             </div>
             <span className="ml-auto text-gray-400 text-lg leading-none">···</span>
@@ -101,53 +89,6 @@ export function PostPreview({
           <p className="text-xs px-3 pb-3 pt-0 line-clamp-3 leading-relaxed">
             {description || 'Escribí el copy de tu publicación...'}
           </p>
-        </div>
-      )}
-
-      {activeNetwork === 'tiktok' && networks.includes('tiktok') && (
-        <div className="w-48 mx-auto bg-black rounded-2xl overflow-hidden text-white relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl || '/images/restaurant.jpg'}
-            alt="Post preview"
-            className="w-full h-64 object-cover opacity-90"
-          />
-          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80">
-            <p className="text-sm font-semibold">
-              @{(workspace?.name ?? 'cuenta').toLowerCase().replace(/\s+/g, '')}
-            </p>
-            <p className="text-xs opacity-80 line-clamp-2">
-              {description || 'Escribí el copy de tu publicación...'}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {(activeNetwork === 'facebook' || activeNetwork === 'linkedin' || activeNetwork === 'twitter' || activeNetwork === 'youtube' || activeNetwork === 'threads') && activeNetwork !== null && (
-        <div className="w-full bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt="Post preview"
-              className="w-full h-40 object-cover"
-            />
-          )}
-          <div className="p-3">
-            <div className="flex items-center gap-1.5">
-              <div
-                className="size-6 rounded-full flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0"
-                style={{ backgroundColor: workspace?.color ?? '#999' }}
-              >
-                {workspace?.initials ?? 'CM'}
-              </div>
-              <span className="font-semibold text-sm">{workspace?.name ?? 'Tu cuenta'}</span>
-              <span className="text-gray-400 text-xs">· Ahora</span>
-            </div>
-            <p className="text-sm text-gray-700 line-clamp-3 mt-1">
-              {description || 'Escribí el copy de tu publicación...'}
-            </p>
-          </div>
         </div>
       )}
 

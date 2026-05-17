@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { Post } from '@/lib/mock-data'
+import type { Post } from '@/types'
 
 interface StatsChartProps {
   posts: Post[]

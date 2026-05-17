@@ -2,66 +2,50 @@
 
 import { useState } from 'react'
 import { Wand2, Hash, Clock, ImagePlus, X } from 'lucide-react'
-import type { SocialNetwork } from '@/lib/mock-data'
-import { WORKSPACES } from '@/lib/mock-data'
+import type { Network } from '@/types'
+import { useAppStore } from '@/store/use-app-store'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { AiPanel } from './AiPanel'
 
 interface PostEditorProps {
-  workspaceId: string
+  clientId: string
   description: string
-  networks: SocialNetwork[]
+  networks: Network[]
   imageUrl: string | null
-  onWorkspaceChange: (id: string) => void
+  onClientChange: (id: string) => void
   onDescriptionChange: (text: string) => void
-  onNetworksChange: (networks: SocialNetwork[]) => void
+  onNetworksChange: (networks: Network[]) => void
   onImageChange: (url: string | null) => void
 }
 
-const NETWORK_LIMITS: Record<SocialNetwork, number> = {
+const NETWORK_LIMITS: Record<Network, number> = {
   instagram: 2200,
-  facebook: 63206,
-  tiktok: 2200,
-  linkedin: 3000,
-  twitter: 280,
-  youtube: 5000,
-  threads: 500,
 }
 
-const NETWORK_ICONS: Record<SocialNetwork, string> = {
+const NETWORK_ICONS: Record<Network, string> = {
   instagram: '/icons/instagram-color.svg',
-  facebook: '/icons/facebook-color.svg',
-  tiktok: '/icons/tiktok-color.svg',
-  linkedin: '/icons/linkedin-color.svg',
-  twitter: '/icons/twitter-color.svg',
-  youtube: '/icons/yt-color.svg',
-  threads: '/icons/threads-color.svg',
 }
 
-const NETWORK_NAMES: Record<SocialNetwork, string> = {
+const NETWORK_NAMES: Record<Network, string> = {
   instagram: 'Instagram',
-  facebook: 'Facebook',
-  tiktok: 'TikTok',
-  linkedin: 'LinkedIn',
-  twitter: 'X',
-  youtube: 'YouTube',
-  threads: 'Threads',
 }
 
 export function PostEditor({
-  workspaceId,
+  clientId,
   description,
   networks,
   imageUrl,
-  onWorkspaceChange,
+  onClientChange,
   onDescriptionChange,
   onNetworksChange,
   onImageChange,
 }: PostEditorProps) {
   const [aiPanelType, setAiPanelType] = useState<'rewrite' | 'hashtags' | 'schedule' | null>(null)
 
-  const selectedWorkspace = WORKSPACES.find((w) => w.id === workspaceId) ?? WORKSPACES[0]
+  const clients = useAppStore((s) => s.clients)
+  const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
+
   const charLimit = networks.length > 0 ? NETWORK_LIMITS[networks[0]] : 2200
   const charCount = description.length
 
@@ -72,7 +56,9 @@ export function PostEditor({
         ? 'text-[#ffb703]'
         : 'text-gray-400'
 
-  function toggleNetwork(network: SocialNetwork) {
+  const availableNetworks: Network[] = selectedClient?.connectedNetworks ?? []
+
+  function toggleNetwork(network: Network) {
     if (networks.includes(network)) {
       if (networks.length > 1) {
         onNetworksChange(networks.filter((n) => n !== network))
@@ -97,63 +83,66 @@ export function PostEditor({
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-6">
-      {/* SECCIÓN A — Cliente */}
       <div>
         <Label className="text-sm font-medium text-gray-700 mb-2 block">Cliente</Label>
         <div className="relative">
           <select
-            value={workspaceId}
-            onChange={(e) => onWorkspaceChange(e.target.value)}
+            value={clientId}
+            onChange={(e) => onClientChange(e.target.value)}
             className="w-full appearance-none rounded-lg border border-gray-200 bg-white py-2.5 pl-11 pr-4 text-sm outline-none focus:border-[#0095b6] transition-colors"
           >
-            {WORKSPACES.map((w) => (
-              <option key={w.id} value={w.id}>{w.name}</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-            <span
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
-              style={{ backgroundColor: selectedWorkspace.color }}
-            >
-              {selectedWorkspace.initials}
-            </span>
-          </div>
+          {selectedClient && (
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                style={{ backgroundColor: selectedClient.color }}
+              >
+                {selectedClient.initials}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Redes sociales */}
       <div>
         <Label className="text-sm font-medium text-gray-700 mb-2 block">Redes sociales</Label>
         <div className="flex flex-wrap gap-2">
-          {selectedWorkspace.networks.map((network) => {
-            const selected = networks.includes(network)
-            return (
-              <button
-                key={network}
-                type="button"
-                onClick={() => toggleNetwork(network)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  selected
-                    ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={NETWORK_ICONS[network]}
-                  alt={NETWORK_NAMES[network]}
-                  width={16}
-                  height={16}
-                  className="size-4 object-contain"
-                />
-                {NETWORK_NAMES[network]}
-              </button>
-            )
-          })}
+          {availableNetworks.length > 0 ? (
+            availableNetworks.map((network) => {
+              const selected = networks.includes(network)
+              return (
+                <button
+                  key={network}
+                  type="button"
+                  onClick={() => toggleNetwork(network)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
+                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={NETWORK_ICONS[network]}
+                    alt={NETWORK_NAMES[network]}
+                    width={16}
+                    height={16}
+                    className="size-4 object-contain"
+                  />
+                  {NETWORK_NAMES[network]}
+                </button>
+              )
+            })
+          ) : (
+            <p className="text-sm text-gray-400">Este cliente no tiene redes conectadas</p>
+          )}
         </div>
       </div>
 
-      {/* SECCIÓN B — Contenido */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <Label className="text-sm font-medium text-gray-700">Descripción</Label>
@@ -215,7 +204,6 @@ export function PostEditor({
         )}
       </div>
 
-      {/* SECCIÓN C — Imagen */}
       <div>
         <Label className="text-sm font-medium text-gray-700 mb-2 block">Multimedia</Label>
         {imageUrl ? (

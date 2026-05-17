@@ -1,41 +1,22 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useAppStore, getPostsByWorkspace } from '@/store/use-app-store'
-import { WORKSPACES, POSTS } from '@/lib/mock-data'
-import type { SocialNetwork, Post } from '@/lib/mock-data'
+import { useAppStore, getPostsByClient } from '@/store/use-app-store'
+import type { Network } from '@/types'
 import { StatsChart } from '@/components/dashboard/StatsChart'
-import { Filter, TrendingUp } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 
-const NETWORK_COLORS: Record<SocialNetwork, string> = {
+const NETWORK_COLORS: Record<Network, string> = {
   instagram: '#E1306C',
-  facebook: '#1877F2',
-  tiktok: '#111111',
-  linkedin: '#0A66C2',
-  twitter: '#1DA1F2',
-  youtube: '#FF0000',
-  threads: '#111111',
 }
 
-const NETWORK_LABELS: Record<SocialNetwork, string> = {
+const NETWORK_LABELS: Record<Network, string> = {
   instagram: 'Instagram',
-  facebook: 'Facebook',
-  tiktok: 'TikTok',
-  linkedin: 'LinkedIn',
-  twitter: 'Twitter',
-  youtube: 'YouTube',
-  threads: 'Threads',
 }
 
-function getEngagementRate(networkFilter: SocialNetwork | 'all'): number {
-  const rates: Record<SocialNetwork, number> = {
+function getEngagementRate(networkFilter: Network | 'all'): number {
+  const rates: Record<Network, number> = {
     instagram: 4.2,
-    facebook: 2.1,
-    tiktok: 8.5,
-    linkedin: 1.8,
-    twitter: 3.4,
-    youtube: 2.9,
-    threads: 1.5,
   }
   if (networkFilter === 'all') {
     return Object.values(rates).reduce((a, b) => a + b, 0) / Object.keys(rates).length
@@ -70,14 +51,16 @@ function formatDateShort(dateStr: string): string {
 }
 
 export default function MetricasPage() {
-  const { posts, activeWorkspaceId } = useAppStore()
-  const [clientFilter, setClientFilter] = useState<string>(activeWorkspaceId)
+  const { posts, activeWorkspaceId, clients } = useAppStore()
+  const [clientFilter, setClientFilter] = useState<string>(activeWorkspaceId || 'all')
   const [periodFilter, setPeriodFilter] = useState<'7d' | '30d' | '3m'>('30d')
-  const [networkFilter, setNetworkFilter] = useState<SocialNetwork | 'all'>('all')
+  const [networkFilter, setNetworkFilter] = useState<Network | 'all'>('all')
+
+  const allNetworks: Network[] = ['instagram']
 
   const filteredPosts = useMemo(() => {
     let result = clientFilter !== 'all'
-      ? getPostsByWorkspace(posts, clientFilter)
+      ? getPostsByClient(posts, clientFilter)
       : posts
 
     result = result.filter((p) => {
@@ -94,7 +77,7 @@ export default function MetricasPage() {
 
   const previousPeriodCount = useMemo(() => {
     let base = clientFilter !== 'all'
-      ? getPostsByWorkspace(posts, clientFilter)
+      ? getPostsByClient(posts, clientFilter)
       : posts
     base = base.filter((p) => {
       const dateStr = p.scheduledAt ?? p.createdAt
@@ -107,8 +90,6 @@ export default function MetricasPage() {
   }, [posts, clientFilter, periodFilter, networkFilter])
 
   const totalDiff = filteredPosts.length - previousPeriodCount
-
-  const allNetworks: SocialNetwork[] = ['instagram', 'facebook', 'tiktok', 'linkedin', 'twitter', 'youtube', 'threads']
 
   const networkCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -146,8 +127,8 @@ export default function MetricasPage() {
             className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-[#0095b6] transition cursor-pointer"
           >
             <option value="all">Todos los clientes</option>
-            {WORKSPACES.map((w) => (
-              <option key={w.id} value={w.id}>{w.name}</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
 
@@ -163,7 +144,7 @@ export default function MetricasPage() {
 
           <select
             value={networkFilter}
-            onChange={(e) => setNetworkFilter(e.target.value as SocialNetwork | 'all')}
+            onChange={(e) => setNetworkFilter(e.target.value as Network | 'all')}
             className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-[#0095b6] transition cursor-pointer"
           >
             <option value="all">Todas</option>
@@ -176,9 +157,7 @@ export default function MetricasPage() {
 
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Total de publicaciones
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total de publicaciones</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{filteredPosts.length}</p>
           {totalDiff !== 0 && (
             <div className="flex items-center gap-1 text-xs mt-1">
@@ -198,23 +177,17 @@ export default function MetricasPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Publicadas
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Publicadas</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{publishedCount}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Programadas
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Programadas</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{scheduledCount}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Engagement promedio
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Engagement promedio</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{engagementRate.toFixed(2)}%</p>
         </div>
       </div>
@@ -235,15 +208,8 @@ export default function MetricasPage() {
               return (
                 <div key={net} className="flex items-center gap-3">
                   <div className="w-24 flex items-center gap-2">
-                    <img
-                      src={`/icons/${net}-color.svg`}
-                      alt={net}
-                      width={16}
-                      height={16}
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      {NETWORK_LABELS[net]}
-                    </span>
+                    <img src={`/icons/${net}-color.svg`} alt={net} width={16} height={16} />
+                    <span className="text-sm font-medium text-gray-700">{NETWORK_LABELS[net]}</span>
                   </div>
                   <div className="flex-1 h-6 rounded-md relative" style={{ backgroundColor: `${NETWORK_COLORS[net]}15` }}>
                     <div
@@ -293,20 +259,15 @@ export default function MetricasPage() {
                     <tr key={post.id} className="border-b border-gray-50 last:border-0">
                       <td className="py-2.5">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={`/icons/${primaryNetwork}.svg`}
-                            alt={primaryNetwork}
-                            width={16}
-                            height={16}
-                          />
-                          <span className="text-sm text-gray-700">
-                            {primaryNetwork ? NETWORK_LABELS[primaryNetwork as SocialNetwork] : ''}
-                          </span>
+                          {primaryNetwork && (
+                            <>
+                              <img src={`/icons/${primaryNetwork}.svg`} alt={primaryNetwork} width={16} height={16} />
+                              <span className="text-sm text-gray-700">{NETWORK_LABELS[primaryNetwork as Network]}</span>
+                            </>
+                          )}
                         </div>
                       </td>
-                      <td className="py-2.5 text-sm text-gray-900 truncate pr-4">
-                        {post.title}
-                      </td>
+                      <td className="py-2.5 text-sm text-gray-900 truncate pr-4">{post.title}</td>
                       <td className="py-2.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${st.bg} ${st.text}`}>
                           {st.label}

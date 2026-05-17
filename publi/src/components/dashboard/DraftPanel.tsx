@@ -2,25 +2,18 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Post, Workspace } from "@/lib/mock-data"
 import { useAppStore } from "@/store/use-app-store"
+import type { Post } from "@/types"
 
 const NETWORK_ICON_MAP: Record<string, string> = {
   instagram: "/icons/instagram.svg",
-  facebook: "/icons/facebook.svg",
-  tiktok: "/icons/tiktok.svg",
-  linkedin: "/icons/linkedin.svg",
-  twitter: "/icons/twitter.svg",
-  youtube: "/icons/youtube.svg",
-  threads: "/icons/theads.svg",
 }
 
 interface DraftPanelProps {
   posts: Post[]
-  workspaces: Workspace[]
 }
 
-export function DraftPanel({ posts, workspaces }: DraftPanelProps) {
+export function DraftPanel({ posts }: DraftPanelProps) {
   const [activeTab, setActiveTab] = useState<"drafts" | "scheduled">("drafts")
   const deletePost = useAppStore((s) => s.deletePost)
   const router = useRouter()
@@ -29,10 +22,6 @@ export function DraftPanel({ posts, workspaces }: DraftPanelProps) {
   const scheduledPosts = posts.filter((p) => p.status === "scheduled")
 
   const displayedPosts = activeTab === "drafts" ? draftPosts : scheduledPosts
-
-  function getWorkspace(workspaceId: string): Workspace | undefined {
-    return workspaces.find((w) => w.id === workspaceId)
-  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 h-full flex flex-col overflow-hidden w-72 flex-shrink-0">
@@ -70,23 +59,20 @@ export function DraftPanel({ posts, workspaces }: DraftPanelProps) {
           </p>
         ) : (
           displayedPosts.map((post) => {
-            const ws = getWorkspace(post.workspaceId)
             const iconPath =
-              NETWORK_ICON_MAP[post.networks[0]] ||
+              NETWORK_ICON_MAP[post.networks[0]] ??
               `/icons/${post.networks[0]}.svg`
 
             return (
               <div key={post.id} className="bg-gray-50 rounded-lg p-3">
                 <div className="flex justify-between items-start">
                   <div className="flex gap-2 items-center">
-                    {ws && (
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                        style={{ backgroundColor: ws.color }}
-                      >
-                        {ws.initials}
-                      </div>
-                    )}
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                      style={{ backgroundColor: post.clientColor }}
+                    >
+                      {post.clientName.slice(0, 2).toUpperCase()}
+                    </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={iconPath}
