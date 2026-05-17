@@ -2,13 +2,9 @@
 
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAppStore, getScheduledPosts, getDraftPosts, getPostsByWorkspace } from '@/store/use-app-store'
-import { WORKSPACES, POSTS, ACTIVITY_FEED } from '@/lib/mock-data'
+import { useAppStore, getScheduledPosts, getDraftPosts, getPostsByClient } from '@/store/use-app-store'
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar'
-import { CheckCircle2, FileText, UserPlus, TrendingUp, TrendingDown } from 'lucide-react'
-
-const DAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
-const MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+import { CheckCircle2, FileText, TrendingUp, TrendingDown } from 'lucide-react'
 
 function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr)
@@ -16,26 +12,13 @@ function formatDateShort(dateStr: string): string {
   const tomorrow = new Date(now)
   tomorrow.setDate(now.getDate() + 1)
 
+  const DAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+
   if (d.toDateString() === tomorrow.toDateString()) {
     return `Mañana, ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
   }
 
   return `${DAYS_ES[d.getDay()].replace(/^\w/, (c) => c.toUpperCase())} ${d.getDate()}, ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-}
-
-function formatRelative(timestamp: string): string {
-  const now = new Date()
-  const d = new Date(timestamp)
-  const diffMs = now.getTime() - d.getTime()
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffHours < 1) return 'hace un momento'
-  if (diffHours < 24) return `hace ${diffHours}h`
-  if (diffDays === 1) return 'ayer'
-  if (diffDays < 7) return `hace ${diffDays} días`
-  if (diffDays < 30) return `hace ${Math.floor(diffDays / 7)} semanas`
-  return `hace ${Math.floor(diffDays / 30)} meses`
 }
 
 function isInLast7Days(dateStr: string): boolean {
@@ -58,20 +41,20 @@ function isInPrevious7Days(dateStr: string): boolean {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { posts, activeWorkspaceId } = useAppStore()
+  const { posts, activeWorkspaceId, clients } = useAppStore()
 
-  const activeWorkspace = WORKSPACES.find((w) => w.id === activeWorkspaceId)
-  const postsForWorkspace = getPostsByWorkspace(posts, activeWorkspaceId)
-  const scheduledPosts = getScheduledPosts(postsForWorkspace)
-  const draftPosts = getDraftPosts(postsForWorkspace)
-  const publishedPosts = postsForWorkspace.filter((p) => p.status === 'published')
+  const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
+  const postsForClient = getPostsByClient(posts, activeWorkspaceId)
+  const scheduledPosts = getScheduledPosts(postsForClient)
+  const draftPosts = getDraftPosts(postsForClient)
+  const publishedPosts = postsForClient.filter((p) => p.status === 'published')
 
-  const thisWeekCount = postsForWorkspace.filter((p) => {
+  const thisWeekCount = postsForClient.filter((p) => {
     const dateStr = p.scheduledAt ?? p.createdAt
     return isInLast7Days(dateStr) || isInLast7Days(p.createdAt)
   }).length
 
-  const lastWeekCount = postsForWorkspace.filter((p) => {
+  const lastWeekCount = postsForClient.filter((p) => {
     const dateStr = p.scheduledAt ?? p.createdAt
     return isInPrevious7Days(dateStr) || isInPrevious7Days(p.createdAt)
   }).length
@@ -105,12 +88,56 @@ export default function DashboardPage() {
     (p) => p.scheduledAt !== null && new Date(p.scheduledAt) > now
   ).length
 
+  const recentPublished = posts
+    .filter((p) => p.status === 'published')
+    .sort((a, b) => (b.publishedAt ?? b.createdAt).localeCompare(a.publishedAt ?? a.createdAt))
+    .slice(0, 4)
+
+  const recentDrafts = posts
+    .filter((p) => p.status === 'draft')
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 4)
+
+  const activityItems = [
+    ...recentPublished.map((p) => ({
+      id: p.id,
+      clientName: p.clientName,
+      text: `Post "${p.title}" publicado exitosamente.`,
+      timestamp: p.publishedAt ?? p.createdAt,
+      type: 'post_published' as const,
+    })),
+    ...recentDrafts.map((p) => ({
+      id: `draft-${p.id}`,
+      clientName: p.clientName,
+      text: `Borrador "${p.title}" guardado.`,
+      timestamp: p.createdAt,
+      type: 'draft_saved' as const,
+    })),
+  ]
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .slice(0, 6)
+
+  function formatRelative(timestamp: string): string {
+    const n = new Date()
+    const d = new Date(timestamp)
+    const diffMs = n.getTime() - d.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffHours < 1) return 'hace un momento'
+    if (diffHours < 24) return `hace ${diffHours}h`
+    if (diffDays === 1) return 'ayer'
+    if (diffDays < 7) return `hace ${diffDays} días`
+    if (diffDays < 30) return `hace ${Math.floor(diffDays / 7)} semanas`
+    return `hace ${Math.floor(diffDays / 30)} meses`
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Buen día, Nacho 👋</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {activeWorkspace?.name ?? 'Todos'} · {todayFormatted}
+          {activeClient?.name ?? 'Todos'} · {todayFormatted}
         </p>
       </div>
 
@@ -138,9 +165,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Programadas
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Programadas</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{scheduledPosts.length}</p>
           <div className="flex items-center gap-1 text-xs mt-1">
             <span className="text-gray-400">{futureScheduled} pendientes</span>
@@ -148,16 +173,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Borradores
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Borradores</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{draftPosts.length}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Publicadas
-          </p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Publicadas</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{publishedPosts.length}</p>
           <div className="flex items-center gap-1 text-xs mt-1">
             {publishedDiff > 0 ? (
@@ -179,7 +200,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
-          <MiniCalendar posts={postsForWorkspace} />
+          <MiniCalendar posts={postsForClient} />
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -199,43 +220,35 @@ export default function DashboardPage() {
             </p>
           ) : (
             <div className="mt-3">
-              {upcomingPosts.map((post) => {
-                const ws = WORKSPACES.find((w) => w.id === post.workspaceId)
-                return (
+              {upcomingPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                >
                   <div
-                    key={post.id}
-                    className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
+                    style={{ backgroundColor: post.clientColor }}
                   >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
-                      style={{ backgroundColor: ws?.color ?? '#0095b6' }}
-                    >
-                      {ws?.initials ?? '??'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                        {post.title}
-                      </p>
-                      <div className="flex gap-1 items-center mt-1">
-                        {post.networks.map((net) => (
-                          <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
-                            <img
-                              src={`/icons/${net}.svg`}
-                              alt={net}
-                              width={12}
-                              height={12}
-                            />
-                            {net.charAt(0).toUpperCase() + net.slice(1)}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0 text-right">
-                      {post.scheduledAt ? formatDateShort(post.scheduledAt) : ''}
-                    </span>
+                    {post.clientName.slice(0, 2).toUpperCase()}
                   </div>
-                )
-              })}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                      {post.title}
+                    </p>
+                    <div className="flex gap-1 items-center mt-1">
+                      {post.networks.map((net) => (
+                        <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
+                          <img src={`/icons/${net}.svg`} alt={net} width={12} height={12} />
+                          {net.charAt(0).toUpperCase() + net.slice(1)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400 flex-shrink-0 text-right">
+                    {post.scheduledAt ? formatDateShort(post.scheduledAt) : ''}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -243,30 +256,32 @@ export default function DashboardPage() {
 
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Actividad reciente</h3>
-        {ACTIVITY_FEED.slice(0, 6).map((activity) => {
-          const ws = WORKSPACES.find((w) => w.id === activity.workspaceId)
-          const iconMap = {
-            post_published: <CheckCircle2 className="w-4 h-4 text-green-500" />,
-            draft_saved: <FileText className="w-4 h-4 text-[#0095b6]" />,
-            client_added: <UserPlus className="w-4 h-4 text-[#ffb703]" />,
-          }
+        {activityItems.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Sin actividad reciente</p>
+        ) : (
+          activityItems.map((activity) => {
+            const iconMap = {
+              post_published: <CheckCircle2 className="w-4 h-4 text-green-500" />,
+              draft_saved: <FileText className="w-4 h-4 text-[#0095b6]" />,
+            }
 
-          return (
-            <div
-              key={activity.id}
-              className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
-            >
-              <div className="flex-shrink-0 mt-0.5">{iconMap[activity.type]}</div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-gray-900">{ws?.name ?? ''}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{activity.text}</p>
+            return (
+              <div
+                key={activity.id}
+                className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+              >
+                <div className="flex-shrink-0 mt-0.5">{iconMap[activity.type]}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-gray-900">{activity.clientName}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{activity.text}</p>
+                </div>
+                <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
+                  {formatRelative(activity.timestamp)}
+                </span>
               </div>
-              <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
-                {formatRelative(activity.timestamp)}
-              </span>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
     </div>
   )

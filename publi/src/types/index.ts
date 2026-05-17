@@ -82,3 +82,15 @@ export interface WaitlistEntry {
   clientCount: '1-3' | '4-10' | '11-20' | '20+'
   currentTools: string | null
 }
+
+export type EventType = 'event' | 'deadline'
+
+export interface CalendarEvent {
+  id: string
+  clientId: string
+  title: string
+  description: string
+  type: EventType
+  color: string
+  date: string
+}

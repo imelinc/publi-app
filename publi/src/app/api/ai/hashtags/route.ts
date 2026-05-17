@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
-import { WORKSPACES } from '@/lib/mock-data'
+import { createClient } from '@/lib/supabase/server'
 
 interface HashtagsBody {
   text: string
@@ -12,17 +12,36 @@ export async function POST(req: NextRequest) {
   try {
     const { text, clientId, count }: HashtagsBody = await req.json()
 
-    const workspace = clientId
-      ? WORKSPACES.find((w) => w.id === clientId) ?? null
-      : null
+    let clientExtra = ''
+
+    if (clientId) {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', clientId)
+          .eq('user_id', user.id)
+          .single()
+
+        if (client) {
+          const { data: igAccount } = await supabase
+            .from('instagram_accounts')
+            .select('id')
+            .eq('client_id', clientId)
+            .maybeSingle()
+
+          const networks = igAccount ? 'instagram' : 'ninguna'
+          clientExtra = ` Cliente activo: ${client.name}, redes: ${networks}.`
+        }
+      }
+    }
 
     let systemPrompt =
       'Sos Copi, asistente de publi para Community Managers. Respondés en español rioplatense, conciso y creativo.'
-
-    if (workspace) {
-      systemPrompt += ` Cliente activo: ${workspace.name}, redes: ${workspace.networks.join(', ')}.`
-    }
-
+    systemPrompt += clientExtra
     systemPrompt += ' Cuando reescribís copy ofrecés 2 variantes. Nunca uses relleno.'
 
     const userPrompt = `Generá ${count ?? 12} hashtags relevantes para este copy: "${text}". Respondé SOLO con JSON válido sin backticks: {"hashtags": ["#tag1", "#tag2", ...]}`

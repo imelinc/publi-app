@@ -3,13 +3,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { X } from 'lucide-react'
 import Image from 'next/image'
-import type { SocialNetwork } from '@/lib/mock-data'
+import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
 
 interface AiPanelProps {
   type: 'rewrite' | 'hashtags' | 'schedule'
   content: string
-  networks: SocialNetwork[]
+  networks: Network[]
   onAccept: (result: string) => void
   onDiscard: () => void
 }
@@ -17,17 +17,11 @@ interface AiPanelProps {
 function generateFallback(
   type: 'rewrite' | 'hashtags' | 'schedule',
   content: string,
-  networks: SocialNetwork[]
+  networks: Network[]
 ): string {
   if (type === 'rewrite') {
     if (networks.includes('instagram')) {
       return `${content}\n\n✨ ¿Te identificás? Guardalo para después 🔖 Seguinos para más contenido como este.`
-    }
-    if (networks.includes('linkedin')) {
-      return `${content}\n\n¿Qué pensás? Dejame tu opinión en los comentarios.`
-    }
-    if (networks.includes('tiktok')) {
-      return `${content} ¡Seguinos para más! 🎵`
     }
     return `${content}\n\n✨ Versión optimizada para mayor engagement.`
   }
@@ -36,15 +30,6 @@ function generateFallback(
     return '#contenido #redessociales #marketing #comunidad #growth #socialmedia #digitalmarketing #branding #estrategia #comunitymanager #engagement #trending'
   }
 
-  if (networks.includes('tiktok')) {
-    return '📅 Viernes a las 20:00 hs\n\nEste horario tiene el mayor engagement histórico para TikTok. Tu audiencia está más activa entre las 19 y 21 hs.'
-  }
-  if (networks.includes('linkedin')) {
-    return '📅 Martes a las 12:00 hs\n\nEste horario tiene el mayor engagement histórico para LinkedIn. Tu audiencia profesional está más activa entre las 11 y 13 hs.'
-  }
-  if (networks.includes('facebook')) {
-    return '📅 Jueves a las 19:00 hs\n\nEste horario tiene el mayor engagement histórico para Facebook. Tu audiencia está más activa entre las 18 y 20 hs.'
-  }
   return '📅 Miércoles a las 18:00 hs\n\nEste horario tiene el mayor engagement histórico para Instagram. Tu audiencia está más activa entre las 17 y 19 hs.'
 }
 

@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { WORKSPACES, EventType } from "@/lib/mock-data"
 import { useAppStore } from "@/store/use-app-store"
 import { useToast } from "@/components/ui/use-toast"
+import type { EventType } from "@/types"
 import {
   Dialog,
   DialogContent,
@@ -36,10 +36,11 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
   const [description, setDescription] = useState("")
   const [type, setType] = useState<EventType>("event")
   const [color, setColor] = useState("#0095b6")
-  const [workspaceId, setWorkspaceId] = useState("")
+  const [clientId, setClientId] = useState("")
 
   const addEvent = useAppStore((s) => s.addEvent)
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
+  const clients = useAppStore((s) => s.clients)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -48,21 +49,21 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
       setDescription("")
       setType("event")
       setColor("#0095b6")
-      setWorkspaceId(activeWorkspaceId)
+      setClientId(activeWorkspaceId)
     }
   }, [open, activeWorkspaceId])
 
   useEffect(() => {
-    if (open && !workspaceId) {
-      setWorkspaceId(activeWorkspaceId)
+    if (open && !clientId) {
+      setClientId(activeWorkspaceId)
     }
-  }, [open, activeWorkspaceId, workspaceId])
+  }, [open, activeWorkspaceId, clientId])
 
   function handleSave() {
     if (!title.trim() || !selectedDate) return
 
     addEvent({
-      workspaceId,
+      clientId,
       title: title.trim(),
       description: description.trim(),
       type,
@@ -182,13 +183,13 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
               Cliente
             </label>
             <select
-              value={workspaceId}
-              onChange={(e) => setWorkspaceId(e.target.value)}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
               className="w-full h-8 rounded-lg border border-gray-200 bg-white px-2.5 text-sm text-gray-700 outline-none"
             >
-              {WORKSPACES.map((ws) => (
-                <option key={ws.id} value={ws.id}>
-                  {ws.name}
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
