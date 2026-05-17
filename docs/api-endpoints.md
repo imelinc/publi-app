@@ -3,7 +3,13 @@
 > **Stack:** Next.js 14 (TypeScript) · Supabase (DB + Auth) · Vercel Blob (storage) · Upstash QStash (scheduling) · Groq API (IA)  
 > **Convención de rutas:** Next.js API Routes en `app/api/...`  
 > **Autenticación:** Supabase Auth — el cliente JS maneja la sesión automáticamente. Los endpoints del servidor validan con `supabase.auth.getUser()`.  
-> **Fecha de relevamiento:** Mayo 2026 — basado en inspección del frontend deployado en Vercel
+> **Fecha de relevamiento:** Mayo 2026 — actualizado con inspección del repositorio
+
+> **Estado de implementación:** verificado contra `publi/src/app/api/**/route.ts`.
+>
+> - ✅ Implementado: existe el endpoint y cubre el contrato principal.
+> - ⚠️ Parcial: existe el endpoint, pero falta parte del contrato documentado.
+> - ⬜ Pendiente: no existe implementación en el repositorio.
 
 ---
 
@@ -25,7 +31,7 @@
 
 > **Manejado por Supabase Auth.** El frontend usa el SDK de Supabase directamente (`supabase.auth.signInWithPassword`, `supabase.auth.signInWithOAuth`, etc.). Los endpoints de backend solo necesitan validar la sesión activa.
 
-### `GET /api/auth/callback`
+### ⬜ `GET /api/auth/callback`
 Callback de Google OAuth. Supabase redirige acá después del login con Google. Intercambia el `code` por una sesión activa y redirige al dashboard.
 
 **Query Params:** `code` (string), `next` (string, ruta de redirección)  
@@ -34,7 +40,7 @@ Callback de Google OAuth. Supabase redirige acá después del login con Google. 
 
 ---
 
-### `POST /api/auth/logout`
+### ✅ `POST /api/auth/logout`
 Cierra la sesión del usuario actual.
 
 **Auth:** Sesión Supabase activa (cookie)  
@@ -47,7 +53,7 @@ Cierra la sesión del usuario actual.
 
 > Los datos extendidos del usuario (nombre del workspace, timezone, idioma, preferencias de notificaciones) se guardan en la tabla `profiles` en Supabase, vinculada a `auth.users` por `user_id`. No hay endpoints separados de "settings" — todo el perfil y la configuración pasan por `/api/users/me`.
 
-### `GET /api/users/me`
+### ⬜ `GET /api/users/me`
 Devuelve el perfil completo del usuario autenticado, incluyendo configuración general y preferencias de notificaciones.
 
 **Auth:** Sesión Supabase activa  
@@ -74,7 +80,7 @@ Devuelve el perfil completo del usuario autenticado, incluyendo configuración g
 
 ---
 
-### `PATCH /api/users/me`
+### ⬜ `PATCH /api/users/me`
 Actualiza el perfil del usuario: datos generales y/o preferencias de notificaciones. Todos los campos son opcionales; solo se actualiza lo que se envía.
 
 **Auth:** Sesión Supabase activa  
@@ -98,7 +104,7 @@ Actualiza el perfil del usuario: datos generales y/o preferencias de notificacio
 
 ---
 
-### `PATCH /api/users/me/password`
+### ⬜ `PATCH /api/users/me/password`
 Actualiza la contraseña. Usa `supabase.auth.updateUser()` internamente.
 
 **Auth:** Sesión Supabase activa  
@@ -115,7 +121,7 @@ Actualiza la contraseña. Usa `supabase.auth.updateUser()` internamente.
 
 ---
 
-### `DELETE /api/users/me`
+### ⬜ `DELETE /api/users/me`
 Elimina la cuenta del usuario. Acción irreversible. Elimina también todos sus clientes y publicaciones (cascade en DB).
 
 **Auth:** Sesión Supabase activa  
@@ -127,7 +133,7 @@ Elimina la cuenta del usuario. Acción irreversible. Elimina también todos sus 
 
 > Cada "cliente" es un workspace aislado que agrupa publicaciones y la cuenta de Instagram conectada.
 
-### `GET /api/clients`
+### ✅ `GET /api/clients`
 Lista todos los clientes del usuario autenticado con sus estadísticas.
 
 **Auth:** Sesión Supabase activa  
@@ -153,8 +159,10 @@ Lista todos los clientes del usuario autenticado con sus estadísticas.
 
 ---
 
-### `POST /api/clients`
+### ⚠️ `POST /api/clients`
 Crea un nuevo cliente. Flujo de 3 pasos en el frontend (nombre+color → redes → plan).
+
+**Estado repo:** crea clientes en Supabase, pero todavía no valida límite de plan Free ni persiste `networks` como campo propio.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -171,7 +179,7 @@ Crea un nuevo cliente. Flujo de 3 pasos en el frontend (nombre+color → redes �
 
 ---
 
-### `GET /api/clients/:clientId`
+### ✅ `GET /api/clients/:clientId`
 Detalle de un cliente específico.
 
 **Auth:** Sesión Supabase activa  
@@ -179,8 +187,10 @@ Detalle de un cliente específico.
 
 ---
 
-### `PATCH /api/clients/:clientId`
+### ⚠️ `PATCH /api/clients/:clientId`
 Edita nombre, color, redes o plan de un cliente.
+
+**Estado repo:** actualiza nombre, color y plan; `networks` no se persiste como campo editable.
 
 **Auth:** Sesión Supabase activa  
 **Request Body** (todos opcionales)
@@ -196,7 +206,7 @@ Edita nombre, color, redes o plan de un cliente.
 
 ---
 
-### `DELETE /api/clients/:clientId`
+### ✅ `DELETE /api/clients/:clientId`
 Elimina un cliente y todas sus publicaciones (cascade).
 
 **Auth:** Sesión Supabase activa  
@@ -208,8 +218,10 @@ Elimina un cliente y todas sus publicaciones (cascade).
 
 > Este endpoint es el núcleo del sistema. También cubre la vista de **Calendario**: usando los parámetros `from`, `to` y `view` se obtienen las publicaciones agrupadas por día sin necesidad de un endpoint separado. La creación de eventos desde el calendario usa directamente `POST /api/posts`.
 
-### `GET /api/posts`
+### ⚠️ `GET /api/posts`
 Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
+
+**Estado repo:** lista publicaciones del usuario, pero todavía no aplica query params (`clientId`, `status`, `from`, `to`, `view`, `page`, `limit`) ni devuelve paginación.
 
 **Auth:** Sesión Supabase activa  
 **Query Params**
@@ -259,8 +271,10 @@ Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
 
 ---
 
-### `POST /api/posts`
+### ⚠️ `POST /api/posts`
 Crea una publicación nueva (borrador, programada o inmediata). También se usa para agregar eventos desde la vista de Calendario (pasando `scheduledAt`).
+
+**Estado repo:** crea publicaciones básicas, pero todavía no encola QStash para `scheduled`, no publica en Instagram para `published` y no valida cuenta de Instagram conectada.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -284,7 +298,7 @@ Crea una publicación nueva (borrador, programada o inmediata). También se usa 
 
 ---
 
-### `GET /api/posts/:postId`
+### ⬜ `GET /api/posts/:postId`
 Detalle completo de una publicación.
 
 **Auth:** Sesión Supabase activa  
@@ -292,7 +306,7 @@ Detalle completo de una publicación.
 
 ---
 
-### `PATCH /api/posts/:postId`
+### ⬜ `PATCH /api/posts/:postId`
 Edita una publicación (solo borradores o programadas aún no ejecutadas).
 
 **Auth:** Sesión Supabase activa  
@@ -312,15 +326,17 @@ Edita una publicación (solo borradores o programadas aún no ejecutadas).
 
 ---
 
-### `DELETE /api/posts/:postId`
+### ⚠️ `DELETE /api/posts/:postId`
 Elimina una publicación. Si estaba programada, cancela el job de QStash.
+
+**Estado repo:** elimina la publicación validando ownership vía cliente, pero todavía no cancela jobs de QStash.
 
 **Auth:** Sesión Supabase activa  
 **Response `204`** — sin body
 
 ---
 
-### `POST /api/posts/media`
+### ⬜ `POST /api/posts/media`
 Sube una imagen o video a Vercel Blob y devuelve la URL pública.
 
 **Auth:** Sesión Supabase activa  
@@ -342,7 +358,7 @@ Sube una imagen o video a Vercel Blob y devuelve la URL pública.
 
 > Endpoint único que cubre tanto la página de Métricas como el resumen del Dashboard. El frontend lo consume con distintos parámetros según el contexto: `period=7d` para el inicio del dashboard, períodos más amplios para la página de Métricas.
 
-### `GET /api/metrics`
+### ⬜ `GET /api/metrics`
 Estadísticas agregadas para la página de Métricas y el resumen del dashboard.
 
 **Auth:** Sesión Supabase activa  
@@ -407,8 +423,10 @@ Cuando sugerís hashtags, balanceás alcance alto, medio y nicho.
 
 ---
 
-### `POST /api/ai/rewrite`
+### ⚠️ `POST /api/ai/rewrite`
 Reescribe o mejora el copy de una publicación para Instagram.
+
+**Estado repo:** llama a Groq y usa contexto del cliente cuando hay sesión, pero no exige autenticación para responder.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -433,8 +451,10 @@ Reescribe o mejora el copy de una publicación para Instagram.
 
 ---
 
-### `POST /api/ai/hashtags`
+### ⚠️ `POST /api/ai/hashtags`
 Genera hashtags relevantes para el copy e Instagram.
+
+**Estado repo:** llama a Groq y devuelve `hashtags`, pero no exige autenticación y todavía no devuelve `grouped`.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -459,8 +479,10 @@ Genera hashtags relevantes para el copy e Instagram.
 
 ---
 
-### `POST /api/ai/best-time`
+### ⚠️ `POST /api/ai/best-time`
 Sugiere el mejor horario para publicar en Instagram. Combina el historial de publicaciones del cliente en Supabase con el system prompt configurado.
+
+**Estado repo:** llama a Groq y devuelve una recomendación, pero no exige autenticación ni combina historial real de publicaciones.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -483,8 +505,10 @@ Sugiere el mejor horario para publicar en Instagram. Combina el historial de pub
 
 ---
 
-### `POST /api/ai/chat`
+### ⚠️ `POST /api/ai/chat`
 Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrategia de contenido, análisis, ideas de posts.
+
+**Estado repo:** llama a Groq y usa contexto del cliente cuando hay sesión, pero no exige autenticación para responder.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -510,7 +534,7 @@ Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrate
 
 ## 7. Waitlist
 
-### `POST /api/waitlist`
+### ✅ `POST /api/waitlist`
 Registra a alguien en la lista de espera (beta cerrada).
 
 **Auth:** No requerida — endpoint público  
@@ -538,7 +562,7 @@ Registra a alguien en la lista de espera (beta cerrada).
 
 > Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta). El refresh del token se maneja automáticamente dentro del proceso de publicación: antes de publicar, el endpoint verifica si el token expira en menos de 10 días y lo renueva si es necesario.
 
-### `GET /api/instagram/connect`
+### ⬜ `GET /api/instagram/connect`
 Genera la URL de autorización de Meta OAuth y redirige al usuario.
 
 **Auth:** Sesión Supabase activa  
@@ -547,7 +571,7 @@ Genera la URL de autorización de Meta OAuth y redirige al usuario.
 
 ---
 
-### `GET /api/instagram/callback`
+### ⬜ `GET /api/instagram/callback`
 Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda en Supabase.
 
 **Query Params:** `code` (string), `state` (uuid del clientId)  
@@ -560,7 +584,7 @@ Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda en
 
 ---
 
-### `GET /api/clients/:clientId/instagram`
+### ⬜ `GET /api/clients/:clientId/instagram`
 Estado de la cuenta de Instagram conectada a un cliente.
 
 **Auth:** Sesión Supabase activa  
@@ -578,7 +602,7 @@ Estado de la cuenta de Instagram conectada a un cliente.
 
 ---
 
-### `DELETE /api/clients/:clientId/instagram`
+### ⬜ `DELETE /api/clients/:clientId/instagram`
 Desconecta la cuenta de Instagram de un cliente.
 
 **Auth:** Sesión Supabase activa  
@@ -586,7 +610,7 @@ Desconecta la cuenta de Instagram de un cliente.
 
 ---
 
-### `POST /api/instagram/publish`
+### ⬜ `POST /api/instagram/publish`
 Publica un post en Instagram via Graph API. Llamado directamente (publicación inmediata) o desde el job de QStash (publicación programada). Refresca el token automáticamente si está próximo a vencer.
 
 **Auth:** Sesión Supabase activa (directo) o header `x-qstash-signature` (desde QStash)  
@@ -620,7 +644,7 @@ Publica un post en Instagram via Graph API. Llamado directamente (publicación i
 
 > Estos endpoints son llamados automáticamente por **Upstash QStash** en el momento programado. No son accesibles desde el frontend. Validan la firma con el header `x-qstash-signature`.
 
-### `POST /api/jobs/publish`
+### ⬜ `POST /api/jobs/publish`
 Job principal de publicación programada. QStash llama este endpoint cuando llega el horario de un post.
 
 **Headers:** `x-qstash-signature: <firma HMAC>`  
@@ -639,33 +663,33 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 
 ## Resumen por pantalla
 
-| Pantalla / Feature | Endpoints utilizados |
-|---|---|
-| Landing page | `POST /api/waitlist` |
-| Login (email/password) | Supabase Auth SDK — sin endpoint propio |
-| Login (Google OAuth) | Supabase Auth SDK → `GET /api/auth/callback` |
-| Waitlist | `POST /api/waitlist` |
-| Dashboard / Inicio | `GET /api/metrics?period=7d` · `GET /api/posts?view=week` |
-| Clientes — listado | `GET /api/clients` |
-| Clientes — crear | `POST /api/clients` |
-| Clientes — editar | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
-| Clientes — eliminar | `DELETE /api/clients/:id` |
-| Clientes — conectar Instagram | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
-| Clientes — estado Instagram | `GET /api/clients/:id/instagram` |
-| Calendario | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` |
-| Métricas | `GET /api/metrics` |
-| Nueva publicación — crear | `POST /api/posts` · `POST /api/posts/media` |
-| Nueva publicación — editar borrador | `PATCH /api/posts/:id` |
-| Nueva publicación — IA reescribir | `POST /api/ai/rewrite` |
-| Nueva publicación — IA hashtags | `POST /api/ai/hashtags` |
-| Nueva publicación — IA horario | `POST /api/ai/best-time` |
-| Configuración — General | `GET /api/users/me` · `PATCH /api/users/me` |
-| Configuración — Notificaciones | `PATCH /api/users/me` |
-| Configuración — Cuenta | `PATCH /api/users/me/password` |
-| Configuración — Cerrar sesión | `POST /api/auth/logout` |
-| Configuración — Eliminar cuenta | `DELETE /api/users/me` |
-| Chat IA (sidebar) | `POST /api/ai/chat` |
-| Job scheduling (interno) | `POST /api/jobs/publish` ← llamado por QStash |
+| Pantalla / Feature | Estado | Endpoints utilizados |
+|---|---|---|
+| Landing page | ✅ | `POST /api/waitlist` |
+| Login (email/password) | ✅ | Supabase Auth SDK — sin endpoint propio |
+| Login (Google OAuth) | ⬜ | Supabase Auth SDK → `GET /api/auth/callback` |
+| Waitlist | ✅ | `POST /api/waitlist` |
+| Dashboard / Inicio | ⚠️ | `GET /api/metrics?period=7d` · `GET /api/posts?view=week` |
+| Clientes — listado | ✅ | `GET /api/clients` |
+| Clientes — crear | ⚠️ | `POST /api/clients` |
+| Clientes — editar | ⚠️ | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
+| Clientes — eliminar | ✅ | `DELETE /api/clients/:id` |
+| Clientes — conectar Instagram | ⬜ | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
+| Clientes — estado Instagram | ⬜ | `GET /api/clients/:id/instagram` |
+| Calendario | ⚠️ | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` · `GET/POST /api/calendar/events` |
+| Métricas | ⬜ | `GET /api/metrics` |
+| Nueva publicación — crear | ⚠️ | `POST /api/posts` · `POST /api/posts/media` |
+| Nueva publicación — editar borrador | ⬜ | `PATCH /api/posts/:id` |
+| Nueva publicación — IA reescribir | ⚠️ | `POST /api/ai/rewrite` |
+| Nueva publicación — IA hashtags | ⚠️ | `POST /api/ai/hashtags` |
+| Nueva publicación — IA horario | ⚠️ | `POST /api/ai/best-time` |
+| Configuración — General | ⬜ | `GET /api/users/me` · `PATCH /api/users/me` |
+| Configuración — Notificaciones | ⬜ | `PATCH /api/users/me` |
+| Configuración — Cuenta | ⬜ | `PATCH /api/users/me/password` |
+| Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
+| Configuración — Eliminar cuenta | ⬜ | `DELETE /api/users/me` |
+| Chat IA (sidebar) | ⚠️ | `POST /api/ai/chat` |
+| Job scheduling (interno) | ⬜ | `POST /api/jobs/publish` ← llamado por QStash |
 
 ---
 

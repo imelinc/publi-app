@@ -33,13 +33,35 @@
 
 ### Alcance del MVP
 
-- Gestión de clientes (workspaces aislados por cliente)
-- Publicación y programación de posts en **Instagram** (única red social en MVP)
-- Calendario de contenido mensual y semanal
-- Métricas de publicaciones (datos reales desde Instagram Graph API)
-- Asistente IA para copy, hashtags y horario óptimo (Groq)
-- Autenticación con email/contraseña y Google OAuth
-- Lista de espera (waitlist) para beta cerrada
+- ✅ Gestión de clientes (workspaces aislados por cliente)
+- ⚠️ Publicación y programación de posts en **Instagram** (única red social en MVP)
+- ⚠️ Calendario de contenido mensual y semanal
+- ⬜ Métricas de publicaciones (datos reales desde Instagram Graph API)
+- ⚠️ Asistente IA para copy, hashtags y horario óptimo (Groq)
+- ⚠️ Autenticación con email/contraseña y Google OAuth
+- ✅ Lista de espera (waitlist) para beta cerrada
+
+### Estado actual verificado en repositorio
+
+> Relevamiento contra `publi/src/app/api/**/route.ts`.
+>
+> - ✅ Implementado: existe el endpoint o feature y cubre el contrato principal.
+> - ⚠️ Parcial: existe implementación, pero faltan piezas del contrato documentado.
+> - ⬜ Pendiente: no hay endpoint o integración real en el repositorio.
+
+| Área | Estado | Observación |
+|---|---|---|
+| Waitlist | ✅ | `POST /api/waitlist` persiste en Supabase con service role y maneja duplicados. |
+| Clientes | ⚠️ | CRUD base implementado; falta persistir/editar `networks` y validar límite Free. |
+| Publicaciones | ⚠️ | Listado, creación y eliminación básica; faltan filtros/paginación, edición, detalle, QStash e Instagram real. |
+| Calendario | ⚠️ | Existe `GET/POST /api/calendar/events`; no está alineado del todo con el contrato que centraliza calendario en `/api/posts`. |
+| IA Groq | ⚠️ | Endpoints existen y llaman a Groq; no exigen sesión obligatoria y algunos responses no coinciden con el contrato completo. |
+| Auth | ⚠️ | Logout implementado; callback OAuth documentado pero sin `route.ts` en `api/auth/callback`. |
+| Usuarios / Configuración | ⬜ | No existen `/api/users/me`, `/api/users/me/password` ni eliminación de cuenta. |
+| Métricas | ⬜ | No existe `/api/metrics`. |
+| Storage Blob | ⬜ | No existe `/api/posts/media`; `src/lib/blob.ts` es placeholder. |
+| Instagram Graph API | ⬜ | No existen endpoints OAuth/publish; `src/lib/instagram.ts` es placeholder. |
+| QStash | ⬜ | No existe `/api/jobs/publish`; `src/lib/qstash.ts` es placeholder. |
 
 ### Fuera del alcance del MVP
 
@@ -166,20 +188,20 @@ publi/                              ← raíz del proyecto Next.js
 │   │   ├── waitlist/
 │   │   ├── api/                    ← BACKEND — Next.js Route Handlers
 │   │   │   ├── auth/
-│   │   │   │   ├── callback/       ← Google OAuth callback (Supabase)
-│   │   │   │   └── logout/
-│   │   │   ├── users/me/           ← perfil, contraseña, configuración
-│   │   │   ├── clients/            ← CRUD clientes
+│   │   │   │   ├── callback/       ← ⬜ Google OAuth callback (Supabase)
+│   │   │   │   └── logout/         ← ✅ logout
+│   │   │   ├── users/me/           ← ⬜ perfil, contraseña, configuración
+│   │   │   ├── clients/            ← ⚠️ CRUD clientes
 │   │   │   │   └── [clientId]/
-│   │   │   │       └── instagram/  ← estado cuenta Instagram por cliente
-│   │   │   ├── posts/              ← CRUD publicaciones + vista calendario
-│   │   │   │   ├── media/          ← upload a Vercel Blob
+│   │   │   │       └── instagram/  ← ⬜ estado cuenta Instagram por cliente
+│   │   │   ├── posts/              ← ⚠️ CRUD publicaciones + vista calendario
+│   │   │   │   ├── media/          ← ⬜ upload a Vercel Blob
 │   │   │   │   └── [postId]/
-│   │   │   ├── metrics/            ← estadísticas (dashboard + detalle)
-│   │   │   ├── ai/                 ← rewrite, hashtags, best-time, chat
-│   │   │   ├── instagram/          ← OAuth connect/callback, publish
-│   │   │   ├── waitlist/           ← registro de waitlist
-│   │   │   └── jobs/publish/       ← receiver de QStash (scheduling)
+│   │   │   ├── metrics/            ← ⬜ estadísticas (dashboard + detalle)
+│   │   │   ├── ai/                 ← ⚠️ rewrite, hashtags, best-time, chat
+│   │   │   ├── instagram/          ← ⬜ OAuth connect/callback, publish
+│   │   │   ├── waitlist/           ← ✅ registro de waitlist
+│   │   │   └── jobs/publish/       ← ⬜ receiver de QStash (scheduling)
 │   │   ├── layout.tsx              ← layout raíz (fonts, providers)
 │   │   ├── page.tsx                ← landing page
 │   │   └── globals.css
