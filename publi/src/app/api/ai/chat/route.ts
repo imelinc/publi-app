@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
-import { WORKSPACES, POSTS } from '@/lib/mock-data'
+import { createClient } from '@/lib/supabase/server'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -17,11 +17,51 @@ export async function POST(req: NextRequest) {
   try {
     const { message, clientId, history }: ChatBody = await req.json()
 
-    const workspace = clientId
-      ? WORKSPACES.find((w) => w.id === clientId) ?? null
-      : null
+    let clientContext = ''
 
-    let systemPrompt = `Sos Copi, el asistente de IA de publi — una plataforma de gestión de redes sociales para Community Managers freelance.
+    if (clientId) {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('id, name, plan, color')
+          .eq('id', clientId)
+          .eq('user_id', user.id)
+          .single()
+
+        if (client) {
+          const { data: igAccount } = await supabase
+            .from('instagram_accounts')
+            .select('id')
+            .eq('client_id', client.id)
+            .maybeSingle()
+
+          const connectedNetworks = igAccount ? 'instagram' : 'ninguna'
+
+          const { data: recentPosts } = await supabase
+            .from('posts')
+            .select('title, status')
+            .eq('client_id', client.id)
+            .order('created_at', { ascending: false })
+            .limit(3)
+
+          const recentSummary = (recentPosts ?? [])
+            .map((p: { title: string; status: string }) => `"${p.title}" (${p.status})`)
+            .join(', ')
+
+          clientContext = `
+
+CLIENTE ACTIVO: ${client.name}
+Redes conectadas: ${connectedNetworks}
+Plan: ${client.plan}
+Posts recientes: ${recentSummary || 'ninguno'}`
+        }
+      }
+    }
+
+    const systemPrompt = `Sos Copi, el asistente de IA de publi — una plataforma de gestión de redes sociales para Community Managers freelance.
 Tu rol es ayudar al CM con:
 
 - Ideas y estrategia de contenido
@@ -33,22 +73,7 @@ Tu rol es ayudar al CM con:
 
 Siempre respondés en español rioplatense, de forma concisa, directa y accionable.
 No usás relleno ni frases vacías. Sos creativo, profesional y levemente divertido.
-Nunca inventás métricas. Si no tenés datos, lo decís.`
-
-    if (workspace) {
-      const clientPosts = POSTS.filter((p) => p.workspaceId === workspace.id)
-      const recentPostsSummary = clientPosts
-        .slice(0, 3)
-        .map((p) => `"${p.title}" (${p.status})`)
-        .join(', ')
-
-      systemPrompt += `
-
-CLIENTE ACTIVO: ${workspace.name}
-Redes conectadas: ${workspace.networks.join(', ')}
-Plan: ${workspace.plan}
-Posts recientes: ${recentPostsSummary || 'ninguno'}`
-    }
+Nunca inventás métricas. Si no tenés datos, lo decís.${clientContext}`
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
