@@ -29,16 +29,7 @@
 
 ## 1. Auth
 
-> **Manejado por Supabase Auth.** El frontend usa el SDK de Supabase directamente (`supabase.auth.signInWithPassword`, `supabase.auth.signInWithOAuth`, etc.). Los endpoints de backend solo necesitan validar la sesión activa.
-
-### ⬜ `GET /api/auth/callback`
-Callback de Google OAuth. Supabase redirige acá después del login con Google. Intercambia el `code` por una sesión activa y redirige al dashboard.
-
-**Query Params:** `code` (string), `next` (string, ruta de redirección)  
-**Response:** Redirect `302` a `/dashboard`  
-**Nota:** Este endpoint lo genera el helper de Supabase Auth para Next.js (`@supabase/ssr`).
-
----
+> **Manejado por Supabase Auth.** El frontend usa el SDK de Supabase directamente (`supabase.auth.signInWithPassword`, `supabase.auth.signOut`, etc.). Los endpoints de backend solo necesitan validar la sesión activa.
 
 ### ✅ `POST /api/auth/logout`
 Cierra la sesión del usuario actual.
@@ -667,7 +658,6 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 |---|---|---|
 | Landing page | ✅ | `POST /api/waitlist` |
 | Login (email/password) | ✅ | Supabase Auth SDK — sin endpoint propio |
-| Login (Google OAuth) | ⬜ | Supabase Auth SDK → `GET /api/auth/callback` |
 | Waitlist | ✅ | `POST /api/waitlist` |
 | Dashboard / Inicio | ⚠️ | `GET /api/metrics?period=7d` · `GET /api/posts?view=week` |
 | Clientes — listado | ✅ | `GET /api/clients` |

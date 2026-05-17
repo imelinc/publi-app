@@ -38,7 +38,7 @@
 - ⚠️ Calendario de contenido mensual y semanal
 - ⬜ Métricas de publicaciones (datos reales desde Instagram Graph API)
 - ⚠️ Asistente IA para copy, hashtags y horario óptimo (Groq)
-- ⚠️ Autenticación con email/contraseña y Google OAuth
+- ⚠️ Autenticación con email/contraseña
 - ✅ Lista de espera (waitlist) para beta cerrada
 
 ### Estado actual verificado en repositorio
@@ -56,7 +56,7 @@
 | Publicaciones | ⚠️ | Listado, creación y eliminación básica; faltan filtros/paginación, edición, detalle, QStash e Instagram real. |
 | Calendario | ⚠️ | Existe `GET/POST /api/calendar/events`; no está alineado del todo con el contrato que centraliza calendario en `/api/posts`. |
 | IA Groq | ⚠️ | Endpoints existen y llaman a Groq; no exigen sesión obligatoria y algunos responses no coinciden con el contrato completo. |
-| Auth | ⚠️ | Logout implementado; callback OAuth documentado pero sin `route.ts` en `api/auth/callback`. |
+| Auth | ⚠️ | Login email/contraseña vía Supabase SDK; logout implementado en `/api/auth/logout`. |
 | Usuarios / Configuración | ⬜ | No existen `/api/users/me`, `/api/users/me/password` ni eliminación de cuenta. |
 | Métricas | ⬜ | No existe `/api/metrics`. |
 | Storage Blob | ⬜ | No existe `/api/posts/media`; `src/lib/blob.ts` es placeholder. |
@@ -188,7 +188,6 @@ publi/                              ← raíz del proyecto Next.js
 │   │   ├── waitlist/
 │   │   ├── api/                    ← BACKEND — Next.js Route Handlers
 │   │   │   ├── auth/
-│   │   │   │   ├── callback/       ← ⬜ Google OAuth callback (Supabase)
 │   │   │   │   └── logout/         ← ✅ logout
 │   │   │   ├── users/me/           ← ⬜ perfil, contraseña, configuración
 │   │   │   ├── clients/            ← ⚠️ CRUD clientes
@@ -428,25 +427,6 @@ Cookie de sesión guardada automáticamente por @supabase/ssr
         │
         ▼
 Redirect a /dashboard
-```
-
-### Flujo Google OAuth
-
-```
-Usuario hace click en "Continuar con Google"
-        │
-        ▼
-supabase.auth.signInWithOAuth({ provider: 'google' })
-        │
-        ▼
-Redirect a Google → usuario autoriza → Google redirige a:
-/api/auth/callback?code=xxx
-        │
-        ▼
-Next.js Route Handler intercambia code por sesión
-        │
-        ▼
-Cookie de sesión guardada → Redirect a /dashboard
 ```
 
 ### Validación en API Routes
@@ -854,7 +834,7 @@ Next.js 14 con App Router permite colocar el backend (API Routes) dentro del mis
 
 ### ¿Por qué Supabase Auth en lugar de NextAuth o JWT manual?
 
-Supabase Auth provee email/contraseña y Google OAuth out of the box, se integra automáticamente con la base de datos (tabla `auth.users`), y el helper `@supabase/ssr` maneja las cookies de sesión en Next.js sin configuración adicional. Implementar JWT manual representaría semanas de trabajo innecesario para el timeline del proyecto.
+Supabase Auth provee email/contraseña out of the box, se integra automáticamente con la base de datos (tabla `auth.users`), y el helper `@supabase/ssr` maneja las cookies de sesión en Next.js sin configuración adicional. Implementar JWT manual representaría semanas de trabajo innecesario para el timeline del proyecto.
 
 ### ¿Por qué solo Instagram en el MVP?
 
