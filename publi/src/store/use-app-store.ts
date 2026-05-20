@@ -7,11 +7,17 @@ import type {
   Network,
   PostStatus,
   EventType,
+  UserProfile,
 } from '@/types'
 
 interface AppState {
   activeWorkspaceId: string
   setActiveWorkspace: (id: string) => void
+
+  user: UserProfile | null
+  userLoading: boolean
+  fetchUser: () => Promise<void>
+  setUser: (user: UserProfile) => void
 
   clients: Client[]
   clientsLoading: boolean
@@ -53,6 +59,28 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   activeWorkspaceId: '',
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+
+  // ─── User ─────────────────────────────────────────────────────────────────────
+
+  user: null,
+  userLoading: false,
+
+  fetchUser: async () => {
+    set({ userLoading: true })
+    try {
+      const res = await fetch('/api/users/me')
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error || 'Error al cargar perfil')
+      }
+      const profile = (await res.json()) as UserProfile
+      set({ user: profile })
+    } finally {
+      set({ userLoading: false })
+    }
+  },
+
+  setUser: (user) => set({ user }),
 
   // ─── Clients ──────────────────────────────────────────────────────────────────
 
