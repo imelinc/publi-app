@@ -53,8 +53,6 @@ export interface UserProfile {
   email: string
   avatarUrl: string | null
   workspaceName: string
-  language: 'es' | 'en'
-  timezone: string
   createdAt: string
 }
 

@@ -41,7 +41,7 @@ function isInPrevious7Days(dateStr: string): boolean {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { posts, activeWorkspaceId, clients } = useAppStore()
+  const { posts, activeWorkspaceId, clients, user } = useAppStore()
 
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
   const postsForClient = getPostsByClient(posts, activeWorkspaceId)
@@ -135,7 +135,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Buen día, Nacho 👋</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Hola, {user?.name ?? 'Usuario'} 👋</h1>
         <p className="text-sm text-gray-500 mt-1">
           {activeClient?.name ?? 'Todos'} · {todayFormatted}
         </p>

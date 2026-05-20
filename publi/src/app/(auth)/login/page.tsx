@@ -7,6 +7,14 @@ import { AuthLayout } from "@/components/publi/AuthLayout"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
@@ -15,6 +23,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [forgotOpen, setForgotOpen] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -63,12 +72,35 @@ export default function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Contraseña</Label>
-            <Link
-              href="#"
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              ¿Olvidaste tu contraseña?
-            </Link>
+            <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>¿Olvidaste tu contraseña?</DialogTitle>
+                  <DialogDescription>
+                    Ponte en contacto con nuestro equipo para reestablecer tu contraseña.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center gap-2 py-4">
+                  <a
+                    href="mailto:support@publi.com"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    support@publi.com
+                  </a>
+                </div>
+                <Button onClick={() => setForgotOpen(false)} className="w-full">
+                  Entendido
+                </Button>
+              </DialogContent>
+            </Dialog>
           </div>
           <Input
             id="password"
