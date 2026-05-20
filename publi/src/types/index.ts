@@ -6,14 +6,11 @@ export type Network = 'instagram'
 
 export type PostStatus = 'draft' | 'scheduled' | 'published' | 'failed'
 
-export type Plan = 'free' | 'pro'
-
 export interface Client {
   id: string
   name: string
   color: string
   initials: string
-  plan: Plan
   connectedNetworks: Network[]
   stats: {
     scheduled: number

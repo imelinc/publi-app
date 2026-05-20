@@ -12,7 +12,6 @@ export interface Workspace {
   color: string
   initials: string
   networks: SocialNetwork[]
-  plan: 'free' | 'pro'
   clientSince: string
 }
 
@@ -65,7 +64,6 @@ export const WORKSPACES: Workspace[] = [
     color: '#92400e',
     initials: 'CB',
     networks: ['instagram', 'facebook'],
-    plan: 'pro',
     clientSince: '2025-03-01',
   },
   {
@@ -74,7 +72,6 @@ export const WORKSPACES: Workspace[] = [
     color: '#6d28d9',
     initials: 'SL',
     networks: ['instagram', 'tiktok', 'linkedin'],
-    plan: 'pro',
     clientSince: '2025-06-15',
   },
   {
@@ -83,7 +80,6 @@ export const WORKSPACES: Workspace[] = [
     color: '#be185d',
     initials: 'BR',
     networks: ['instagram'],
-    plan: 'free',
     clientSince: '2026-01-10',
   },
 ]
