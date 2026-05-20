@@ -14,12 +14,14 @@ export default function DashboardLayout({
   const fetchClients = useAppStore((s) => s.fetchClients)
   const fetchPosts = useAppStore((s) => s.fetchPosts)
   const fetchEvents = useAppStore((s) => s.fetchEvents)
+  const fetchUser = useAppStore((s) => s.fetchUser)
 
   useEffect(() => {
+    fetchUser().catch(() => {})
     fetchClients().catch(() => {})
     fetchPosts().catch(() => {})
     fetchEvents().catch(() => {})
-  }, [fetchClients, fetchPosts, fetchEvents])
+  }, [fetchUser, fetchClients, fetchPosts, fetchEvents])
 
   return (
     <>

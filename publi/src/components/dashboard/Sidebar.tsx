@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -37,7 +37,17 @@ export function Sidebar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  const user = useAppStore((s) => s.user)
+
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
+
+  const userInitials = useMemo(() => {
+    if (!user?.name) return 'U'
+    const parts = user.name.trim().split(/\s+/)
+    const first = parts[0]?.[0] ?? ''
+    const second = parts[1]?.[0] ?? ''
+    return (first + second).toUpperCase() || 'U'
+  }, [user?.name])
 
   useEffect(() => {
     if (clients.length > 0 && !activeWorkspaceId) {
@@ -203,11 +213,15 @@ export function Sidebar() {
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
             style={{ backgroundColor: '#0095b6' }}
           >
-            NM
+            {userInitials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Nacho Melinc</p>
-            <p className="text-xs text-gray-400 truncate">nacho@publi.app</p>
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {user?.name ?? 'Usuario'}
+            </p>
+            <p className="text-xs text-gray-400 truncate">
+              {user?.email ?? ''}
+            </p>
           </div>
           <button
             onClick={async () => {
