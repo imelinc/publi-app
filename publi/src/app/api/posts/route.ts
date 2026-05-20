@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 import type { Network, PostStatus } from '@/types'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -10,24 +10,58 @@ export async function GET() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: clients, error: cErr } = await supabase
+  const { searchParams } = new URL(request.url)
+  const clientId = searchParams.get('clientId')
+  const status = searchParams.get('status') as PostStatus | null
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '20', 10)))
+  const offset = (page - 1) * limit
+
+  // Obtener clientes del usuario (aplicar filtro por clientId si viene)
+  let clientQuery = supabase
     .from('clients')
     .select('id, name, color')
     .eq('user_id', user.id)
 
+  if (clientId && clientId !== 'all') {
+    clientQuery = clientQuery.eq('id', clientId)
+  }
+
+  const { data: clients, error: cErr } = await clientQuery
+
   if (cErr) return Response.json({ error: cErr.message }, { status: 500 })
-  if (!clients || clients.length === 0) return Response.json({ data: [] })
+  if (!clients || clients.length === 0) {
+    return Response.json({ data: [], total: 0, page, limit })
+  }
 
   const clientMap = new Map(
     clients.map((c: { id: string; name: string; color: string }) => [c.id, c])
   )
   const clientIds = clients.map((c: { id: string }) => c.id)
 
-  const { data: posts, error: pErr } = await supabase
+  // Construir query de posts con filtros
+  let postsQuery = supabase
     .from('posts')
-    .select('*')
+    .select('*', { count: 'exact' })
     .in('client_id', clientIds)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (status) {
+    postsQuery = postsQuery.eq('status', status)
+  }
+
+  if (from) {
+    postsQuery = postsQuery.gte('scheduled_at', from)
+  }
+
+  if (to) {
+    postsQuery = postsQuery.lte('scheduled_at', to)
+  }
+
+  const { data: posts, error: pErr, count } = await postsQuery
 
   if (pErr) return Response.json({ error: pErr.message }, { status: 500 })
 
@@ -60,8 +94,9 @@ export async function GET() {
     }
   })
 
-  return Response.json({ data: result })
+  return Response.json({ data: result, total: count ?? 0, page, limit })
 }
+
 
 interface CreatePostBody {
   clientId: string
