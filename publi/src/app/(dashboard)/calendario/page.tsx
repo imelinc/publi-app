@@ -318,8 +318,12 @@ export default function CalendarioPage() {
                   variant="outline"
                   size="sm"
                   className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
-                  onClick={() => {
-                    deleteEvent(selectedEvent.id)
+                  onClick={async () => {
+                    try {
+                      await deleteEvent(selectedEvent.id)
+                    } catch {
+                      // El error ya se maneja en el store / se puede agregar toast
+                    }
                     setSelectedEvent(null)
                   }}
                 >

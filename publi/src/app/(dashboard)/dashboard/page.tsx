@@ -41,10 +41,11 @@ function isInPrevious7Days(dateStr: string): boolean {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { posts, activeWorkspaceId, clients, user } = useAppStore()
+  const { posts, events, activeWorkspaceId, clients, user } = useAppStore()
 
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
   const postsForClient = getPostsByClient(posts, activeWorkspaceId)
+  const eventsForClient = events.filter((e) => e.clientId === activeWorkspaceId)
   const scheduledPosts = getScheduledPosts(postsForClient)
   const draftPosts = getDraftPosts(postsForClient)
   const publishedPosts = postsForClient.filter((p) => p.status === 'published')
@@ -65,6 +66,16 @@ export default function DashboardPage() {
   const upcomingPosts = scheduledPosts
     .filter((p) => p.scheduledAt !== null && new Date(p.scheduledAt) >= now)
     .sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''))
+
+  const upcomingEvents = eventsForClient
+    .filter((e) => new Date(e.date + 'T12:00:00') >= now)
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const upcomingItems = [
+    ...upcomingPosts.map((p) => ({ type: 'post' as const, data: p, date: p.scheduledAt! })),
+    ...upcomingEvents.map((e) => ({ type: 'event' as const, data: e, date: e.date })),
+  ]
+    .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5)
 
   const publishedThisWeek = publishedPosts.filter((p) =>
@@ -200,7 +211,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
-          <MiniCalendar posts={postsForClient} />
+          <MiniCalendar posts={postsForClient} events={eventsForClient} />
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -214,41 +225,79 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {upcomingPosts.length === 0 ? (
+          {upcomingItems.length === 0 ? (
             <p className="text-sm text-gray-400 py-4 text-center">
-              No hay publicaciones programadas
+              No hay publicaciones ni eventos programados
             </p>
           ) : (
             <div className="mt-3">
-              {upcomingPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
-                    style={{ backgroundColor: post.clientColor }}
-                  >
-                    {post.clientName.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                      {post.title}
-                    </p>
-                    <div className="flex gap-1 items-center mt-1">
-                      {post.networks.map((net) => (
-                        <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
-                          <img src={`/icons/${net}.svg`} alt={net} width={12} height={12} />
-                          {net.charAt(0).toUpperCase() + net.slice(1)}
-                        </span>
-                      ))}
+              {upcomingItems.map((item) => {
+                if (item.type === 'post') {
+                  const post = item.data
+                  return (
+                    <div
+                      key={post.id}
+                      className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
+                        style={{ backgroundColor: post.clientColor }}
+                      >
+                        {post.clientName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                          {post.title}
+                        </p>
+                        <div className="flex gap-1 items-center mt-1">
+                          {post.networks.map((net) => (
+                            <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
+                              <img src={`/icons/${net}.svg`} alt={net} width={12} height={12} />
+                              {net.charAt(0).toUpperCase() + net.slice(1)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-400 flex-shrink-0 text-right">
+                        {post.scheduledAt ? formatDateShort(post.scheduledAt) : ''}
+                      </span>
                     </div>
+                  )
+                }
+
+                const event = item.data
+                const eventClient = clients.find((c) => c.id === event.clientId)
+                return (
+                  <div
+                    key={event.id}
+                    className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
+                      style={{ backgroundColor: eventClient?.color ?? event.color }}
+                    >
+                      {eventClient?.initials ?? event.title.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                        {event.title}
+                      </p>
+                      <span
+                        className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-1 ${
+                          event.type === 'deadline'
+                            ? 'bg-red-50 text-red-600'
+                            : 'bg-blue-50 text-blue-600'
+                        }`}
+                      >
+                        {event.type === 'deadline' ? '⏰ Deadline' : '📅 Evento'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0 text-right">
+                      {formatDateShort(event.date + 'T12:00:00')}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0 text-right">
-                    {post.scheduledAt ? formatDateShort(post.scheduledAt) : ''}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

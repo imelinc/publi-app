@@ -50,7 +50,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       description: event.description ?? '',
       type: (event.type as EventType) ?? 'event',
       color: event.color ?? '#0095b6',
-      date: event.date,
+      date: (event.date as string ?? '').split('T')[0],
     },
   })
 }
@@ -127,7 +127,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       description: updated.description ?? '',
       type: (updated.type as EventType) ?? 'event',
       color: updated.color ?? '#0095b6',
-      date: updated.date,
+      date: (updated.date as string ?? '').split('T')[0],
     },
   })
 }
