@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (clientId) {
       const { data: client } = await supabase
         .from('clients')
-        .select('id, name, plan, color')
+        .select('id, name, color')
         .eq('id', clientId)
         .eq('user_id', user.id)
         .single()
@@ -57,7 +57,6 @@ export async function POST(req: NextRequest) {
 
 CLIENTE ACTIVO: ${client.name}
 Redes conectadas: ${connectedNetworks}
-Plan: ${client.plan}
 Posts recientes: ${recentSummary || 'ninguno'}`
       }
     }

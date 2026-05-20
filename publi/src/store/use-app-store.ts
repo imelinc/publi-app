@@ -3,7 +3,6 @@ import type {
   Client,
   Post,
   CalendarEvent,
-  Plan,
   Network,
   PostStatus,
   EventType,
@@ -22,8 +21,8 @@ interface AppState {
   clients: Client[]
   clientsLoading: boolean
   fetchClients: () => Promise<void>
-  addClient: (data: { name: string; color: string; plan: Plan }) => Promise<Client>
-  updateClient: (id: string, data: { name?: string; color?: string; plan?: Plan }) => Promise<void>
+  addClient: (data: { name: string; color: string }) => Promise<Client>
+  updateClient: (id: string, data: { name?: string; color?: string }) => Promise<void>
   deleteClient: (id: string) => Promise<void>
 
   posts: Post[]

@@ -7,7 +7,7 @@ import { ClientCard } from '@/components/dashboard/ClientCard'
 import { ClientModal } from '@/components/dashboard/ClientModal'
 import { useToast } from '@/components/ui/use-toast'
 import { Plus } from 'lucide-react'
-import type { Client, Plan } from '@/types'
+import type { Client } from '@/types'
 
 function ClientCardSkeleton() {
   return (
@@ -80,7 +80,7 @@ export default function ClientesPage() {
     router.push('/dashboard')
   }
 
-  async function handleSave(data: { name: string; color: string; plan: Plan }) {
+  async function handleSave(data: { name: string; color: string }) {
     try {
       if (editingClient) {
         await updateClient(editingClient.id, data)

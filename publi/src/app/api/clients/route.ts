@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
-import type { Network, Plan } from '@/types'
+import type { Network } from '@/types'
 
 export async function GET() {
   const supabase = await createClient()
@@ -54,11 +54,10 @@ export async function GET() {
     else if (typed.status === 'published') entry.published++
   }
 
-  const result = clients.map((c: { id: string; name: string; color: string; plan: Plan; created_at: string }) => ({
+  const result = clients.map((c: { id: string; name: string; color: string; created_at: string }) => ({
     id: c.id,
     name: c.name,
     color: c.color,
-    plan: c.plan,
     createdAt: c.created_at,
     initials: c.name.slice(0, 2).toUpperCase(),
     connectedNetworks: igSet.has(c.id) ? (['instagram'] as Network[]) : ([] as Network[]),
@@ -72,7 +71,6 @@ interface CreateClientBody {
   name: string
   color: string
   networks?: Network[]
-  plan?: Plan
 }
 
 export async function POST(request: NextRequest) {
@@ -95,7 +93,6 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       name: body.name.trim(),
       color: body.color,
-      plan: body.plan ?? 'free',
     })
     .select()
     .single()
@@ -108,7 +105,6 @@ export async function POST(request: NextRequest) {
     id: client.id,
     name: client.name,
     color: client.color,
-    plan: client.plan,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
     connectedNetworks: [] as Network[],
