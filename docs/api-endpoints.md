@@ -212,22 +212,20 @@ Elimina un cliente y todas sus publicaciones (cascade).
 
 > Este endpoint es el núcleo del sistema. También cubre la vista de **Calendario**: usando los parámetros `from`, `to` y `view` se obtienen las publicaciones agrupadas por día sin necesidad de un endpoint separado. La creación de eventos desde el calendario usa directamente `POST /api/posts`.
 
-### ⚠️ `GET /api/posts`
+### ✅ `GET /api/posts`
 Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
-
-**Estado repo:** lista publicaciones del usuario, pero todavía no aplica query params (`clientId`, `status`, `from`, `to`, `view`, `page`, `limit`) ni devuelve paginación.
 
 **Auth:** Sesión Supabase activa  
 **Query Params**
 | Param | Tipo | Descripción |
 |---|---|---|
-| `clientId` | string | UUID o `all` |
+| `clientId` | string | UUID o `all` (default: todos los clientes del usuario) |
 | `status` | string | `draft \| scheduled \| published \| failed` |
-| `from` | ISO date | Fecha inicio |
-| `to` | ISO date | Fecha fin |
-| `view` | string | `month \| week` — agrupa resultados por día cuando se indica |
+| `from` | ISO date | Filtra por `scheduled_at >= from` |
+| `to` | ISO date | Filtra por `scheduled_at <= to` |
+| `view` | string | `month \| week` — sin efecto en la query, informativo para el frontend |
 | `page` | number | Default: 1 |
-| `limit` | number | Default: 20 |
+| `limit` | number | Default: 20, máximo: 100 |
 
 **Response `200`**
 ```json
@@ -315,7 +313,7 @@ Crea una publicación nueva (borrador, programada o inmediata).
 
 ---
 
-### ⬜ `GET /api/posts/:postId`
+### ✅ `GET /api/posts/:postId`
 Detalle completo de una publicación.
 
 **Auth:** Sesión Supabase activa  
@@ -345,7 +343,7 @@ Detalle completo de una publicación.
 
 ---
 
-### ⬜ `PATCH /api/posts/:postId`
+### ✅ `PATCH /api/posts/:postId`
 Edita una publicación (solo borradores o programadas aún no ejecutadas).
 
 **Auth:** Sesión Supabase activa  
@@ -360,20 +358,25 @@ Edita una publicación (solo borradores o programadas aún no ejecutadas).
   "scheduledAt": "ISO 8601 | null"
 }
 ```
-**Lógica interna:** Si cambia `scheduledAt`, cancela el job de QStash anterior y encola uno nuevo.  
+**Nota:** Si cambia `scheduledAt` en una futura versión con QStash integrado, se cancelará el job anterior y se encolará uno nuevo.  
 **Response `200`**
 ```json
 {
   "data": {
     "id": "uuid",
     "clientId": "uuid",
+    "clientName": "string",
+    "clientColor": "string",
     "title": "string",
     "description": "string",
     "networks": ["instagram"],
     "status": "draft | scheduled",
     "scheduledAt": "ISO 8601 | null",
+    "publishedAt": "ISO 8601 | null",
     "mediaUrls": ["string"],
     "hashtags": ["string"],
+    "instagramPostId": "string | null",
+    "engagement": { "likes": 0, "comments": 0, "views": 0, "reach": 0 },
     "createdAt": "ISO 8601",
     "updatedAt": "ISO 8601"
   }
@@ -415,10 +418,17 @@ Sube una imagen o video a Vercel Blob y devuelve la URL pública.
 
 > Módulo para gestionar eventos de planificación general y fechas límites (deadlines) en el calendario, persistiendo las entradas de manera independiente de las publicaciones.
 
-### ⚠️ `GET /api/calendar/events`
-Obtiene todos los eventos del calendario creados para los clientes del usuario autenticado.
+### ✅ `GET /api/calendar/events`
+Obtiene los eventos del calendario de los clientes del usuario autenticado.
 
 **Auth:** Sesión Supabase activa  
+**Query Params**
+| Param | Tipo | Descripción |
+|---|---|---|
+| `clientId` | string | UUID o `all` (default: todos los clientes del usuario) |
+| `from` | ISO date | Filtra eventos con `date >= from` |
+| `to` | ISO date | Filtra eventos con `date <= to` |
+
 **Response `200`**
 ```json
 {
@@ -438,7 +448,7 @@ Obtiene todos los eventos del calendario creados para los clientes del usuario a
 
 ---
 
-### ⚠️ `POST /api/calendar/events`
+### ✅ `POST /api/calendar/events`
 Crea un nuevo evento o fecha límite en el calendario.
 
 **Auth:** Sesión Supabase activa  
@@ -453,6 +463,8 @@ Crea un nuevo evento o fecha límite en el calendario.
   "date": "ISO 8601"
 }
 ```
+**Campos obligatorios:** `clientId`, `title`, `type`, `date`  
+**Campos opcionales:** `description` (default: `""`), `color` (default: `"#0095b6"`)  
 **Response `201`**
 ```json
 {
@@ -467,7 +479,70 @@ Crea un nuevo evento o fecha límite en el calendario.
   }
 }
 ```
-**Errores:** `400` campos obligatorios vacíos · `404` cliente no encontrado
+**Errores:** `400` campos obligatorios faltantes o tipo inválido · `404` cliente no encontrado
+
+---
+
+### ✅ `GET /api/calendar/events/:eventId`
+Detalle de un evento de calendario.
+
+**Auth:** Sesión Supabase activa  
+**Response `200`**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "clientId": "uuid",
+    "title": "string",
+    "description": "string",
+    "type": "event | deadline",
+    "color": "string (hex)",
+    "date": "ISO 8601"
+  }
+}
+```
+**Errores:** `404` evento no encontrado o no pertenece al usuario
+
+---
+
+### ✅ `PATCH /api/calendar/events/:eventId`
+Actualiza un evento de calendario. Todos los campos son opcionales; solo se actualizan los campos enviados.
+
+**Auth:** Sesión Supabase activa  
+**Request Body** (todos opcionales)
+```json
+{
+  "title": "string",
+  "description": "string",
+  "type": "event | deadline",
+  "color": "string (hex)",
+  "date": "ISO 8601"
+}
+```
+**Response `200`**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "clientId": "uuid",
+    "title": "string",
+    "description": "string",
+    "type": "event | deadline",
+    "color": "string (hex)",
+    "date": "ISO 8601"
+  }
+}
+```
+**Errores:** `400` tipo inválido o título vacío · `404` evento no encontrado o no pertenece al usuario
+
+---
+
+### ✅ `DELETE /api/calendar/events/:eventId`
+Elimina un evento de calendario.
+
+**Auth:** Sesión Supabase activa  
+**Response `204`** — sin body  
+**Errores:** `404` evento no encontrado o no pertenece al usuario
 
 ---
 
@@ -792,7 +867,7 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 | Clientes — eliminar | ✅ | `DELETE /api/clients/:id` |
 | Clientes — conectar Instagram | ⬜ | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
 | Clientes — estado Instagram | ⬜ | `GET /api/clients/:id/instagram` |
-| Calendario | ⚠️ | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` · `GET/POST /api/calendar/events` |
+| Calendario | ✅ | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` · `GET/POST /api/calendar/events` · `GET/PATCH/DELETE /api/calendar/events/:eventId` |
 | Métricas | ⬜ | `GET /api/metrics` |
 | Nueva publicación — crear | ⚠️ | `POST /api/posts` · `POST /api/posts/media` |
 | Nueva publicación — editar borrador | ⬜ | `PATCH /api/posts/:id` |
@@ -800,8 +875,6 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 | Nueva publicación — IA hashtags | ⚠️ | `POST /api/ai/hashtags` |
 | Nueva publicación — IA horario | ⚠️ | `POST /api/ai/best-time` |
 | Configuración — General | ✅ | `GET /api/users/me` · `PATCH /api/users/me` |
-| Configuración — Notificaciones | ⬜ | Eliminado / Fuera de alcance |
-| Configuración — Cuenta | ⬜ | Eliminado / Fuera de alcance |
 | Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
 | Configuración — Eliminar cuenta | ✅ | `DELETE /api/users/me` |
 | Chat IA (sidebar) | ⚠️ | `POST /api/ai/chat` |
