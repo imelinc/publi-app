@@ -13,6 +13,11 @@ interface RewriteSuggestion {
   label: string
 }
 
+/** Limpia backticks de markdown que Groq a veces agrega al JSON */
+function extractJson(raw: string): string {
+  return raw.replace(/^```(?:json)?\n?/i, '').replace(/```$/i, '').trim()
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -21,7 +26,12 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { text, clientId, tone }: RewriteBody = await req.json()
+    const body = await req.json()
+    const { text, clientId, tone } = body as RewriteBody
+
+    if (!text?.trim()) {
+      return Response.json({ error: 'El campo text es requerido' }, { status: 400 })
+    }
 
     let clientExtra = ''
 
@@ -64,10 +74,11 @@ export async function POST(req: NextRequest) {
     })
 
     const raw = completion.choices[0]?.message?.content ?? ''
-    const parsed: { suggestions: RewriteSuggestion[] } = JSON.parse(raw)
+    const parsed: { suggestions: RewriteSuggestion[] } = JSON.parse(extractJson(raw))
 
     return Response.json({ suggestions: parsed.suggestions }, { status: 200 })
-  } catch {
-    return Response.json({ error: 'Error interno' }, { status: 500 })
+  } catch (err) {
+    const message = err instanceof SyntaxError ? 'Respuesta inválida del modelo' : 'Error interno'
+    return Response.json({ error: message }, { status: 500 })
   }
 }
