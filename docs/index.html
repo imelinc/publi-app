@@ -993,9 +993,9 @@
         <div class="endpoints-group-title" onclick="toggleGroup(this)">Clientes (Workspaces) <span class="toggle-icon">▾</span></div>
         <div class="endpoints-group-content">
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/clients</div><div class="ep-desc">Lista todos los clientes del CM con sus estadísticas</div></div></div>
-          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/clients</div><div class="ep-desc">Crea un nuevo cliente — nombre, color, redes, plan</div></div></div>
+          <div class="endpoint-row post"><span class="method-badge badge-post">POST</span><div><div class="ep-path">/api/clients</div><div class="ep-desc">Crea un nuevo cliente — nombre, color y redes conectadas</div></div></div>
           <div class="endpoint-row get"><span class="method-badge badge-get">GET</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Detalle de un cliente específico</div></div></div>
-          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Edita nombre, color, redes o plan</div></div></div>
+          <div class="endpoint-row patch"><span class="method-badge badge-patch">PATCH</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Edita nombre o color de un cliente</div></div></div>
           <div class="endpoint-row del"><span class="method-badge badge-del">DEL</span><div><div class="ep-path">/api/clients/:clientId</div><div class="ep-desc">Elimina cliente y todas sus publicaciones (cascade)</div></div></div>
         </div>
       </div>
@@ -1053,11 +1053,6 @@
         <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · FK auth.users</span></div>
         <div class="db-field"><span class="field-name">name</span><span class="field-type">text</span></div>
         <div class="db-field"><span class="field-name">workspace_name</span><span class="field-type">text</span></div>
-        <div class="db-field"><span class="field-name">language</span><span class="field-type">es | en</span></div>
-        <div class="db-field"><span class="field-name">timezone</span><span class="field-type">text</span></div>
-        <div class="db-field"><span class="field-name">notif_post_scheduled</span><span class="field-type">boolean</span></div>
-        <div class="db-field"><span class="field-name">notif_post_published</span><span class="field-type">boolean</span></div>
-        <div class="db-field"><span class="field-name">notif_post_failed</span><span class="field-type">boolean</span></div>
       </div>
       <div class="db-table">
         <div class="db-header"><div class="db-table-name">clients</div></div>
@@ -1065,7 +1060,6 @@
         <div class="db-field"><span class="field-name">user_id</span><span class="badge-fk">FK profiles</span></div>
         <div class="db-field"><span class="field-name">name</span><span class="field-type">text</span></div>
         <div class="db-field"><span class="field-name">color</span><span class="field-type">text (hex)</span></div>
-        <div class="db-field"><span class="field-name">plan</span><span class="field-type">free | pro</span></div>
         <div class="db-field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
       </div>
       <div class="db-table">
@@ -1092,15 +1086,14 @@
         <div class="db-field"><span class="field-name">connected_at</span><span class="field-type">timestamptz</span></div>
       </div>
       <div class="db-table">
-        <div class="db-header"><div class="db-table-name">notifications</div></div>
+        <div class="db-header"><div class="db-table-name">calendar_events</div></div>
         <div class="db-field"><span class="field-name">id</span><span class="badge-pk">PK · uuid</span></div>
-        <div class="db-field"><span class="field-name">user_id</span><span class="badge-fk">FK profiles</span></div>
-        <div class="db-field"><span class="field-name">type</span><span class="field-type">post_published | post_failed | post_scheduled</span></div>
+        <div class="db-field"><span class="field-name">client_id</span><span class="badge-fk">FK clients</span></div>
         <div class="db-field"><span class="field-name">title</span><span class="field-type">text</span></div>
-        <div class="db-field"><span class="field-name">body</span><span class="field-type">text</span></div>
-        <div class="db-field"><span class="field-name">read</span><span class="field-type">boolean · default false</span></div>
-        <div class="db-field"><span class="field-name">post_id</span><span class="badge-fk">FK posts · nullable</span></div>
-        <div class="db-field"><span class="field-name">client_id</span><span class="badge-fk">FK clients · nullable</span></div>
+        <div class="db-field"><span class="field-name">description</span><span class="field-type">text</span></div>
+        <div class="db-field"><span class="field-name">type</span><span class="field-type">event | deadline</span></div>
+        <div class="db-field"><span class="field-name">color</span><span class="field-type">text (hex)</span></div>
+        <div class="db-field"><span class="field-name">date</span><span class="field-type">timestamptz</span></div>
         <div class="db-field"><span class="field-name">created_at</span><span class="field-type">timestamptz</span></div>
       </div>
     </div>
