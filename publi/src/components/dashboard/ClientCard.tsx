@@ -37,15 +37,6 @@ export function ClientCard({ client, onEdit, onDelete, onViewWorkspace }: Client
           </div>
           <div className="flex flex-col">
             <span className="font-semibold text-gray-900">{client.name}</span>
-            {client.plan === 'pro' ? (
-              <span className="bg-[#cceef5] text-[#0095b6] text-xs px-2 py-0.5 rounded-full font-medium w-fit">
-                Pro
-              </span>
-            ) : (
-              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full font-medium w-fit">
-                Free
-              </span>
-            )}
           </div>
         </div>
 
