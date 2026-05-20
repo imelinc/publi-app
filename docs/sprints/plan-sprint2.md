@@ -30,8 +30,7 @@ El corazón del producto. Sin esto no hay scheduling.
 
 Cerrar deuda técnica del Sprint 1 antes de sumar features nuevas.
 
-- Agregar autenticación obligatoria a todos los endpoints de Groq (`/api/ai/*`)
-- Mejorar el contexto del cliente en el system prompt usando historial real de posts
+- Agregar autenticación obligatoria a todos los endpoints de Groq (`/api/ai/*`) ✅
 
 ---
 
