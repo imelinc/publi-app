@@ -581,14 +581,27 @@ function AIAssistantPreview() {
     }, 1200);
   };
 
+  const copiMessages = [
+    "¡Copy listo! Acá va tu copy optimizado para Instagram",
+    "Analizé tu audiencia y encontré el mejor horario",
+    "Estos hashtags van a maximizar tu alcance",
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Asistente IA</p>
-          <p className="text-xs text-muted-foreground">
-            Generá copys, horarios y hashtags con un click
-          </p>
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/images/copi.png"
+            alt="Copi"
+            className="h-9 w-9 object-contain"
+          />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Copi</p>
+            <p className="text-xs text-muted-foreground">
+              Tu asistente IA dentro de publi
+            </p>
+          </div>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
           <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -596,12 +609,25 @@ function AIAssistantPreview() {
         </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[160px_1fr]">
+        <div className="flex flex-col items-center gap-3 rounded-[24px] border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
+          <img
+            src="/images/copi_notebook.png"
+            alt="Copi trabajando"
+            className="h-28 w-28 object-contain drop-shadow-lg"
+          />
+          <div className="w-full rounded-xl bg-primary/10 px-3 py-2 text-center">
+            <p className="text-[10px] font-semibold leading-relaxed text-primary">
+              {copiMessages[selectedPrompt]}
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-3">
-          <div className="rounded-[24px] border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
+          <div className="rounded-[24px] border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white">
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-white">
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden="true">
                   <path d="M12 2l1.09 3.36L16.45 6l-2.72 2.18L14.54 12 12 9.82 9.46 12l.81-3.82L7.55 6l3.36-.64L12 2z" fill="currentColor" />
                 </svg>
               </div>
@@ -611,7 +637,7 @@ function AIAssistantPreview() {
               </div>
             </div>
 
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-1.5">
               {aiPrompts.map((prompt, i) => (
                 <button
                   key={prompt.label}
@@ -621,7 +647,7 @@ function AIAssistantPreview() {
                     handleGenerate();
                   }}
                   className={cn(
-                    "w-full rounded-2xl border px-3 py-2.5 text-left transition-all duration-200",
+                    "w-full rounded-2xl border px-3 py-2 text-left transition-all duration-200",
                     selectedPrompt === i
                       ? "border-primary/40 bg-primary/10 text-foreground"
                       : "border-border/50 bg-white text-muted-foreground hover:border-primary/20 hover:bg-primary/5",
@@ -633,50 +659,55 @@ function AIAssistantPreview() {
               ))}
             </div>
           </div>
-        </div>
 
-        <div className="rounded-[24px] border border-border/50 bg-white p-4">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold text-foreground">Resultado</p>
+          <div className="rounded-[24px] border border-border/50 bg-white p-3">
+            <div className="flex items-center gap-2">
+              <img
+                src="/images/copi.png"
+                alt="Copi"
+                className="h-5 w-5 object-contain"
+              />
+              <p className="text-xs font-semibold text-foreground">Resultado de Copi</p>
+              {generating && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-primary">
+                  <span className="h-1.5 w-1.5 animate-ping rounded-full bg-primary" />
+                  Generando...
+                </span>
+              )}
+            </div>
+
             {generating && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-primary">
-                <span className="h-1.5 w-1.5 animate-ping rounded-full bg-primary" />
-                Generando...
-              </span>
+              <div className="mt-4 space-y-2">
+                <div className="h-3 w-3/4 animate-pulse rounded-full bg-primary/10" />
+                <div className="h-3 w-full animate-pulse rounded-full bg-primary/10" />
+                <div className="h-3 w-2/3 animate-pulse rounded-full bg-primary/10" />
+              </div>
+            )}
+
+            {showResult && !generating && (
+              <div className="mt-3 animate-in fade-in duration-300">
+                <div className="rounded-2xl bg-[hsl(var(--hero-background))] p-3">
+                  <p className="text-[11px] leading-relaxed text-foreground/85">
+                    {aiSuggestions[selectedPrompt].text}
+                  </p>
+                  {aiSuggestions[selectedPrompt].detail && (
+                    <p className="mt-2 text-[10px] text-primary">
+                      {aiSuggestions[selectedPrompt].detail}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  <button type="button" className="flex-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-semibold text-white transition-all hover:bg-primary/90">
+                    Usar este resultado
+                  </button>
+                  <button type="button" onClick={handleGenerate} className="rounded-xl border border-border/50 px-3 py-2 text-[11px] font-medium text-muted-foreground transition-all hover:bg-primary/5">
+                    Regenerar
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-
-          {generating && (
-            <div className="mt-4 space-y-2">
-              <div className="h-3 w-3/4 animate-pulse rounded-full bg-primary/10" />
-              <div className="h-3 w-full animate-pulse rounded-full bg-primary/10" />
-              <div className="h-3 w-2/3 animate-pulse rounded-full bg-primary/10" />
-            </div>
-          )}
-
-          {showResult && !generating && (
-            <div className="mt-3 animate-in fade-in duration-300">
-              <div className="rounded-2xl bg-[hsl(var(--hero-background))] p-3">
-                <p className="text-[11px] leading-relaxed text-foreground/85">
-                  {aiSuggestions[selectedPrompt].text}
-                </p>
-                {aiSuggestions[selectedPrompt].detail && (
-                  <p className="mt-2 text-[10px] text-primary">
-                    {aiSuggestions[selectedPrompt].detail}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-3 flex gap-2">
-                <button type="button" className="flex-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-semibold text-white transition-all hover:bg-primary/90">
-                  Usar este resultado
-                </button>
-                <button type="button" onClick={handleGenerate} className="rounded-xl border border-border/50 px-3 py-2 text-[11px] font-medium text-muted-foreground transition-all hover:bg-primary/5">
-                  Regenerar
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
