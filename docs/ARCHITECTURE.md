@@ -57,7 +57,7 @@
 | Calendario | ⚠️ | Existe `GET/POST /api/calendar/events`; no está alineado del todo con el contrato que centraliza calendario en `/api/posts`. |
 | IA Groq | ⚠️ | Endpoints existen y llaman a Groq; no exigen sesión obligatoria y algunos responses no coinciden con el contrato completo. |
 | Auth | ⚠️ | Login email/contraseña vía Supabase SDK; logout implementado en `/api/auth/logout`. |
-| Usuarios / Configuración | ⬜ | No existen `/api/users/me`, `/api/users/me/password` ni eliminación de cuenta. |
+| Usuarios / Configuración | ✅ | `GET/PATCH/DELETE /api/users/me`; UI en `/configuracion` conectada. `PATCH /api/users/me/password` fuera de alcance (Sprint 3+). |
 | Métricas | ⬜ | No existe `/api/metrics`. |
 | Storage Blob | ⬜ | No existe `/api/posts/media`; `src/lib/blob.ts` es placeholder. |
 | Instagram Graph API | ⬜ | No existen endpoints OAuth/publish; `src/lib/instagram.ts` es placeholder. |
@@ -189,7 +189,7 @@ publi/                              ← raíz del proyecto Next.js
 │   │   ├── api/                    ← BACKEND — Next.js Route Handlers
 │   │   │   ├── auth/
 │   │   │   │   └── logout/         ← ✅ logout
-│   │   │   ├── users/me/           ← ⬜ perfil, contraseña, configuración
+│   │   │   ├── users/me/           ← ✅ perfil, contraseña, configuración
 │   │   │   ├── clients/            ← ⚠️ CRUD clientes
 │   │   │   │   └── [clientId]/
 │   │   │   │       └── instagram/  ← ⬜ estado cuenta Instagram por cliente

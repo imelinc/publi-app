@@ -44,7 +44,7 @@ Cierra la sesión del usuario actual.
 
 > Los datos extendidos del usuario (nombre del workspace, timezone, idioma, preferencias de notificaciones) se guardan en la tabla `profiles` en Supabase, vinculada a `auth.users` por `user_id`. No hay endpoints separados de "settings" — todo el perfil y la configuración pasan por `/api/users/me`.
 
-### ⬜ `GET /api/users/me`
+### ✅ `GET /api/users/me`
 Devuelve el perfil completo del usuario autenticado, incluyendo configuración general y preferencias de notificaciones.
 
 **Auth:** Sesión Supabase activa  
@@ -71,7 +71,7 @@ Devuelve el perfil completo del usuario autenticado, incluyendo configuración g
 
 ---
 
-### ⬜ `PATCH /api/users/me`
+### ✅ `PATCH /api/users/me`
 Actualiza el perfil del usuario: datos generales y/o preferencias de notificaciones. Todos los campos son opcionales; solo se actualiza lo que se envía.
 
 **Auth:** Sesión Supabase activa  
@@ -95,24 +95,7 @@ Actualiza el perfil del usuario: datos generales y/o preferencias de notificacio
 
 ---
 
-### ⬜ `PATCH /api/users/me/password`
-Actualiza la contraseña. Usa `supabase.auth.updateUser()` internamente.
-
-**Auth:** Sesión Supabase activa  
-**Request Body**
-```json
-{
-  "currentPassword": "string",
-  "newPassword": "string",
-  "confirmPassword": "string"
-}
-```
-**Response `200`** — `{ "message": "Contraseña actualizada correctamente." }`  
-**Errores:** `401` contraseña actual incorrecta
-
----
-
-### ⬜ `DELETE /api/users/me`
+### ✅ `DELETE /api/users/me`
 Elimina la cuenta del usuario. Acción irreversible. Elimina también todos sus clientes y publicaciones (cascade en DB).
 
 **Auth:** Sesión Supabase activa  
@@ -673,11 +656,11 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 | Nueva publicación — IA reescribir | ⚠️ | `POST /api/ai/rewrite` |
 | Nueva publicación — IA hashtags | ⚠️ | `POST /api/ai/hashtags` |
 | Nueva publicación — IA horario | ⚠️ | `POST /api/ai/best-time` |
-| Configuración — General | ⬜ | `GET /api/users/me` · `PATCH /api/users/me` |
-| Configuración — Notificaciones | ⬜ | `PATCH /api/users/me` |
-| Configuración — Cuenta | ⬜ | `PATCH /api/users/me/password` |
+| Configuración — General | ✅ | `GET /api/users/me` · `PATCH /api/users/me` |
+| Configuración — Notificaciones | ⬜ | Fuera de alcance (Sprint 3+) |
+| Configuración — Cuenta | ⬜ | `PATCH /api/users/me/password` — fuera de alcance (Sprint 3+) |
 | Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
-| Configuración — Eliminar cuenta | ⬜ | `DELETE /api/users/me` |
+| Configuración — Eliminar cuenta | ✅ | `DELETE /api/users/me` |
 | Chat IA (sidebar) | ⚠️ | `POST /api/ai/chat` |
 | Job scheduling (interno) | ⬜ | `POST /api/jobs/publish` ← llamado por QStash |
 

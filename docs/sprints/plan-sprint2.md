@@ -9,9 +9,9 @@
 
 Lo básico que hace que el producto se sienta real para quien lo usa.
 
-- Endpoint de perfil completo (`GET /api/users/me`)
-- Edición de nombre, workspace y timezone (`PATCH /api/users/me`)
-- Cambio de contraseña y eliminación de cuenta (`PATCH /api/users/me/password` · `DELETE /api/users/me`)
+- Endpoint de perfil completo (`GET /api/users/me`) ✅
+- Edición de nombre y workspace (`PATCH /api/users/me`) ✅
+- Eliminación de cuenta (`DELETE /api/users/me`) ✅
 
 ---
 
