@@ -54,10 +54,10 @@
 | Waitlist | ✅ | `POST /api/waitlist` persiste en Supabase con service role y maneja duplicados. |
 | Clientes | ⚠️ | CRUD base implementado; falta persistir/editar `networks` y validar límite Free. |
 | Publicaciones | ⚠️ | Listado, creación y eliminación básica; faltan filtros/paginación, edición, detalle, QStash e Instagram real. |
-| Calendario | ⚠️ | Existe `GET/POST /api/calendar/events`; no está alineado del todo con el contrato que centraliza calendario en `/api/posts`. |
+| Calendario | ⚠️ | Listado y creación de eventos en `/api/calendar/events`; posts integrados vía `/api/posts`. |
 | IA Groq | ⚠️ | Endpoints existen y llaman a Groq; no exigen sesión obligatoria y algunos responses no coinciden con el contrato completo. |
 | Auth | ⚠️ | Login email/contraseña vía Supabase SDK; logout implementado en `/api/auth/logout`. |
-| Usuarios / Configuración | ✅ | `GET/PATCH/DELETE /api/users/me`; UI en `/configuracion` conectada. `PATCH /api/users/me/password` fuera de alcance (Sprint 3+). |
+| Usuarios / Configuración | ✅ | `GET/PATCH/DELETE /api/users/me`; UI en `/configuracion` conectada. |
 | Métricas | ⬜ | No existe `/api/metrics`. |
 | Storage Blob | ⬜ | No existe `/api/posts/media`; `src/lib/blob.ts` es placeholder. |
 | Instagram Graph API | ⬜ | No existen endpoints OAuth/publish; `src/lib/instagram.ts` es placeholder. |
@@ -259,14 +259,6 @@ create table profiles (
   id            uuid references auth.users(id) on delete cascade primary key,
   name          text not null,
   workspace_name text default 'Mi workspace',
-  language      text default 'es',
-  timezone      text default 'America/Buenos_Aires',
-  -- preferencias de notificaciones
-  notif_post_scheduled    boolean default true,
-  notif_post_published    boolean default true,
-  notif_post_failed       boolean default true,
-  notif_reminder          boolean default false,
-  notif_weekly_summary    boolean default false,
   created_at    timestamptz default now()
 );
 ```
@@ -280,7 +272,6 @@ create table clients (
   user_id     uuid references auth.users(id) on delete cascade not null,
   name        text not null,
   color       text not null,
-  plan        text default 'free' check (plan in ('free', 'pro')),
   created_at  timestamptz default now()
 );
 ```
@@ -331,19 +322,18 @@ create table posts (
 );
 ```
 
-#### Tabla `notifications`
-Notificaciones in-app.
+#### Tabla `calendar_events`
+Eventos generales y fechas límite en el calendario.
 
 ```sql
-create table notifications (
+create table calendar_events (
   id          uuid default gen_random_uuid() primary key,
-  user_id     uuid references auth.users(id) on delete cascade not null,
-  type        text not null check (type in ('post_published', 'post_failed', 'post_scheduled')),
+  client_id   uuid references clients(id) on delete cascade not null,
   title       text not null,
-  body        text not null,
-  read        boolean default false,
-  post_id     uuid references posts(id) on delete set null,
-  client_id   uuid references clients(id) on delete set null,
+  description text,
+  type        text not null check (type in ('event', 'deadline')),
+  color       text default '#0095b6',
+  date        timestamptz not null,
   created_at  timestamptz default now()
 );
 ```
@@ -474,13 +464,13 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { name, color, networks, plan } = body
+  const { name, color, networks } = body
 
   if (!name) return Response.json({ error: 'El nombre es requerido' }, { status: 400 })
 
   const { data, error } = await supabase
     .from('clients')
-    .insert({ name, color, networks, plan, user_id: user.id })
+    .insert({ name, color, networks, user_id: user.id })
     .select()
     .single()
 
@@ -862,6 +852,6 @@ Next.js en Vercel no tiene un servidor corriendo 24/7, por lo que no se puede us
 | Timeout de 10s en Vercel Free | El upload de imágenes pesadas puede fallar | Upgrade a Vercel Pro o dividir el proceso en dos steps |
 | Tokens de Instagram expiran en 60 días | Requiere refresh manual o job recurrente | Implementar job de refresh automático con QStash |
 | Chat IA sin persistencia | El historial se pierde al recargar | Guardar conversaciones en tabla `ai_conversations` |
-| Sin sistema de planes real | Plan Free/Pro es solo un campo en DB | Integrar Stripe o Mercado Pago para billing |
+| Sin sistema de facturación | No hay cobros ni billing en el MVP | Integrar Stripe o Mercado Pago para planes futuros |
 | Sin tests automatizados | Riesgo de regresiones | Agregar Jest + Testing Library en iteración post-MVP |
 | Engagement de Instagram | Solo se guarda lo que Instagram devuelve al publicar | Implementar job periódico que actualice métricas desde Graph API |
