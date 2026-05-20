@@ -16,32 +16,33 @@ interface Recommendation {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return Response.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const { clientId, networks }: BestTimeBody = await req.json()
 
     let clientExtra = ''
 
     if (clientId) {
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: client } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', clientId)
+        .eq('user_id', user.id)
+        .single()
 
-      if (user) {
-        const { data: client } = await supabase
-          .from('clients')
-          .select('name')
-          .eq('id', clientId)
-          .eq('user_id', user.id)
-          .single()
+      if (client) {
+        const { data: igAccount } = await supabase
+          .from('instagram_accounts')
+          .select('id')
+          .eq('client_id', clientId)
+          .maybeSingle()
 
-        if (client) {
-          const { data: igAccount } = await supabase
-            .from('instagram_accounts')
-            .select('id')
-            .eq('client_id', clientId)
-            .maybeSingle()
-
-          const connectedNetworks = igAccount ? 'instagram' : 'ninguna'
-          clientExtra = ` Cliente activo: ${client.name}, redes: ${connectedNetworks}.`
-        }
+        const connectedNetworks = igAccount ? 'instagram' : 'ninguna'
+        clientExtra = ` Cliente activo: ${client.name}, redes: ${connectedNetworks}.`
       }
     }
 
