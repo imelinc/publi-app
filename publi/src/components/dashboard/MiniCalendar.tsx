@@ -1,10 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import type { Post } from '@/types'
+import type { Post, CalendarEvent } from '@/types'
 
 interface MiniCalendarProps {
   posts: Post[]
+  events?: CalendarEvent[]
 }
 
 const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -38,7 +39,7 @@ function toDateString(d: Date): string {
   return d.toISOString().split('T')[0]
 }
 
-export function MiniCalendar({ posts }: MiniCalendarProps) {
+export function MiniCalendar({ posts, events = [] }: MiniCalendarProps) {
   const router = useRouter()
   const weekDays = getWeekDays()
   const today = new Date()
@@ -48,6 +49,11 @@ export function MiniCalendar({ posts }: MiniCalendarProps) {
     return posts.filter(
       (p) => p.scheduledAt !== null && p.scheduledAt.startsWith(dateStr)
     )
+  })
+
+  const eventsByDay = weekDays.map((day) => {
+    const dateStr = toDateString(day)
+    return events.filter((e) => e.date === dateStr)
   })
 
   const firstDay = weekDays[0]
@@ -73,7 +79,9 @@ export function MiniCalendar({ posts }: MiniCalendarProps) {
 
         {weekDays.map((day, i) => {
           const dayPosts = postsByDay[i]
+          const dayEvents = eventsByDay[i]
           const isToday = isSameDay(day, today)
+          const totalItems = dayPosts.length + dayEvents.length
 
           return (
             <div key={day.toISOString()} className="flex flex-col items-center min-h-[80px]">
@@ -85,7 +93,8 @@ export function MiniCalendar({ posts }: MiniCalendarProps) {
                 <span className="text-sm text-gray-700">{day.getDate()}</span>
               )}
 
-              <div className="flex flex-col gap-1 mt-2 items-center">
+              <div className="flex flex-col gap-1 mt-2 items-center w-full px-2">
+                {/* Posts como barras verticales */}
                 {dayPosts.slice(0, 3).map((post) => (
                   <div
                     key={post.id}
@@ -94,9 +103,29 @@ export function MiniCalendar({ posts }: MiniCalendarProps) {
                     title={post.title}
                   />
                 ))}
-                {dayPosts.length > 3 && (
+
+                {/* Eventos / deadlines como puntos de color */}
+                {dayEvents.length > 0 && (
+                  <div className="flex gap-1 mt-1 flex-wrap justify-center">
+                    {dayEvents.slice(0, 4).map((event) => (
+                      <div
+                        key={event.id}
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: event.color }}
+                        title={`${event.type === 'deadline' ? '⏰' : '📅'} ${event.title}`}
+                      />
+                    ))}
+                    {dayEvents.length > 4 && (
+                      <span className="text-[9px] text-gray-400 leading-none">
+                        +{dayEvents.length - 4}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {totalItems > 3 && (
                   <span className="text-xs text-gray-400 mt-1">
-                    +{dayPosts.length - 3}
+                    +{totalItems - 3}
                   </span>
                 )}
               </div>

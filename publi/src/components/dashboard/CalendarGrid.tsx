@@ -127,9 +127,11 @@ export function CalendarGrid({
           const dayEvents = getEventsForDay(events, date)
           const maxChips = 3
           const totalItems = dayPosts.length + dayEvents.length
-          const postsToShow = Math.min(dayPosts.length, maxChips)
-          const eventsToShow = Math.min(dayEvents.length, maxChips - postsToShow)
           const overflow = totalItems > maxChips ? totalItems - maxChips : 0
+          // Mostrar eventos primero (deadlines son críticos), luego posts
+          const eventsToShow = Math.min(dayEvents.length, maxChips)
+          const remainingSlots = maxChips - eventsToShow
+          const postsToShow = Math.min(dayPosts.length, remainingSlots)
 
           return (
             <div

@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     description: (e.description as string) ?? '',
     type: (e.type as EventType) ?? 'event',
     color: (e.color as string) ?? '#0095b6',
-    date: e.date,
+    date: ((e.date as string) ?? '').split('T')[0],
   }))
 
   return Response.json({ data: result })
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     description: event.description ?? '',
     type: (event.type as EventType) ?? 'event',
     color: event.color ?? '#0095b6',
-    date: event.date,
+    date: (event.date as string ?? '').split('T')[0],
   }
 
   return Response.json({ data: result }, { status: 201 })
