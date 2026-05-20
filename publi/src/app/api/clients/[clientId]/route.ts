@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
-import type { Network, Plan } from '@/types'
+import type { Network } from '@/types'
 
 interface RouteParams {
   params: Promise<{ clientId: string }>
@@ -50,7 +50,6 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     id: client.id,
     name: client.name,
     color: client.color,
-    plan: client.plan,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
     connectedNetworks: igAccount ? (['instagram'] as Network[]) : ([] as Network[]),
@@ -63,7 +62,6 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 interface UpdateClientBody {
   name?: string
   color?: string
-  plan?: Plan
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -92,7 +90,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const updates: Record<string, string> = {}
   if (body.name !== undefined) updates.name = body.name.trim()
   if (body.color !== undefined) updates.color = body.color
-  if (body.plan !== undefined) updates.plan = body.plan
 
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: 'No se enviaron campos para actualizar' }, { status: 400 })
@@ -114,7 +111,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     id: client.id,
     name: client.name,
     color: client.color,
-    plan: client.plan,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
   }
