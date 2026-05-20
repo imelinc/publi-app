@@ -614,10 +614,8 @@ Cuando sugerís hashtags, balanceás alcance alto, medio y nicho.
 
 ---
 
-### ⚠️ `POST /api/ai/rewrite`
+### ✅ `POST /api/ai/rewrite`
 Reescribe o mejora el copy de una publicación para Instagram.
-
-**Estado repo:** llama a Groq y usa contexto del cliente cuando hay sesión, pero no exige autenticación para responder.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -642,10 +640,8 @@ Reescribe o mejora el copy de una publicación para Instagram.
 
 ---
 
-### ⚠️ `POST /api/ai/hashtags`
+### ✅ `POST /api/ai/hashtags`
 Genera hashtags relevantes para el copy e Instagram.
-
-**Estado repo:** llama a Groq y devuelve `hashtags`, pero no exige autenticación y todavía no devuelve `grouped`.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -670,10 +666,8 @@ Genera hashtags relevantes para el copy e Instagram.
 
 ---
 
-### ⚠️ `POST /api/ai/best-time`
-Sugiere el mejor horario para publicar en Instagram. Combina el historial de publicaciones del cliente en Supabase con el system prompt configurado.
-
-**Estado repo:** llama a Groq y devuelve una recomendación, pero no exige autenticación ni combina historial real de publicaciones.
+### ✅ `POST /api/ai/best-time`
+Sugiere el mejor horario para publicar en Instagram. Combina el historial real de publicaciones del cliente en Supabase con el system prompt configurado.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -697,10 +691,8 @@ Sugiere el mejor horario para publicar en Instagram. Combina el historial de pub
 
 ---
 
-### ⚠️ `POST /api/ai/chat`
+### ✅ `POST /api/ai/chat`
 Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrategia de contenido, análisis, ideas de posts.
-
-**Estado repo:** llama a Groq y usa contexto del cliente cuando hay sesión, pero no exige autenticación para responder.
 
 **Auth:** Sesión Supabase activa  
 **Request Body**
@@ -862,22 +854,22 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 | Waitlist | ✅ | `POST /api/waitlist` |
 | Dashboard / Inicio | ⚠️ | `GET /api/metrics?period=7d` · `GET /api/posts?view=week` |
 | Clientes — listado | ✅ | `GET /api/clients` |
-| Clientes — crear | ⚠️ | `POST /api/clients` |
-| Clientes — editar | ⚠️ | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
+| Clientes — crear | ✅ | `POST /api/clients` |
+| Clientes — editar | ✅ | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
 | Clientes — eliminar | ✅ | `DELETE /api/clients/:id` |
 | Clientes — conectar Instagram | ⬜ | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
 | Clientes — estado Instagram | ⬜ | `GET /api/clients/:id/instagram` |
 | Calendario | ✅ | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` · `GET/POST /api/calendar/events` · `GET/PATCH/DELETE /api/calendar/events/:eventId` |
 | Métricas | ⬜ | `GET /api/metrics` |
 | Nueva publicación — crear | ⚠️ | `POST /api/posts` · `POST /api/posts/media` |
-| Nueva publicación — editar borrador | ⬜ | `PATCH /api/posts/:id` |
-| Nueva publicación — IA reescribir | ⚠️ | `POST /api/ai/rewrite` |
-| Nueva publicación — IA hashtags | ⚠️ | `POST /api/ai/hashtags` |
-| Nueva publicación — IA horario | ⚠️ | `POST /api/ai/best-time` |
+| Nueva publicación — editar borrador | ✅ | `GET /api/posts/:id` · `PATCH /api/posts/:id` |
+| Nueva publicación — IA reescribir | ✅ | `POST /api/ai/rewrite` |
+| Nueva publicación — IA hashtags | ✅ | `POST /api/ai/hashtags` |
+| Nueva publicación — IA horario | ✅ | `POST /api/ai/best-time` |
 | Configuración — General | ✅ | `GET /api/users/me` · `PATCH /api/users/me` |
 | Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
 | Configuración — Eliminar cuenta | ✅ | `DELETE /api/users/me` |
-| Chat IA (sidebar) | ⚠️ | `POST /api/ai/chat` |
+| Chat IA (sidebar) | ✅ | `POST /api/ai/chat` |
 | Job scheduling (interno) | ⬜ | `POST /api/jobs/publish` ← llamado por QStash |
 
 ---
