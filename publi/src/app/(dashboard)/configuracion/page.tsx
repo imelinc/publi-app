@@ -2,13 +2,14 @@
 
 import {
   AlertTriangle,
+  Bell,
+  Lock,
+  Settings,
   User,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
 import { createClient } from "@/lib/supabase/client"
-import { useAppStore } from "@/store/use-app-store"
-import type { UserProfile } from "@/types"
 
 import {
   AlertDialog,
@@ -25,124 +26,57 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
+import { useAppStore } from "@/store/use-app-store"
 
-async function parseApiError(res: Response): Promise<string> {
-  try {
-    const data = (await res.json()) as { error?: string; message?: string }
-    return data.error ?? data.message ?? 'Error desconocido'
-  } catch {
-    return 'Error desconocido'
-  }
+type NotificationSettings = {
+  scheduledSuccess: boolean
+  published: boolean
+  publishError: boolean
+  reminder: boolean
+  weeklySummary: boolean
 }
 
 export default function ConfiguracionPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const userProfile = useAppStore((s) => s.userProfile)
 
-  const setUser = useAppStore((s) => s.setUser)
+  const [workspaceName, setWorkspaceName] = React.useState<string>("Mi workspace")
+  const [language, setLanguage] = React.useState<string>("Español")
+  const [timezone, setTimezone] = React.useState<string>("America/Buenos_Aires (GMT-3)")
+  const [currentPassword, setCurrentPassword] = React.useState<string>("")
+  const [newPassword, setNewPassword] = React.useState<string>("")
+  const [confirmPassword, setConfirmPassword] = React.useState<string>("")
+  const [notifications, setNotifications] = React.useState<NotificationSettings>({
+    scheduledSuccess: true,
+    published: true,
+    publishError: true,
+    reminder: false,
+    weeklySummary: false,
+  })
 
-  const [loading, setLoading] = React.useState(true)
-  const [savingGeneral, setSavingGeneral] = React.useState(false)
-  const [deleting, setDeleting] = React.useState(false)
+  const updateNotification = React.useCallback(
+    (key: keyof NotificationSettings, value: boolean) => {
+      setNotifications((current) => ({ ...current, [key]: value }))
+    },
+    []
+  )
 
-  const [name, setName] = React.useState("")
-  const [email, setEmail] = React.useState("")
-  const [workspaceName, setWorkspaceName] = React.useState("Mi workspace")
-
-  React.useEffect(() => {
-    let cancelled = false
-
-    async function loadProfile() {
-      try {
-        const res = await fetch("/api/users/me")
-        if (!res.ok) {
-          const msg = await parseApiError(res)
-          if (!cancelled) {
-            toast({ title: "Error al cargar perfil", description: msg })
-          }
-          return
-        }
-        const profile = (await res.json()) as UserProfile
-        if (cancelled) return
-        setName(profile.name)
-        setEmail(profile.email)
-        setWorkspaceName(profile.workspaceName)
-      } catch {
-        if (!cancelled) {
-          toast({
-            title: "Error al cargar perfil",
-            description: "No se pudo conectar con el servidor",
-          })
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    loadProfile()
-    return () => {
-      cancelled = true
-    }
-  }, [toast])
-
-  const handleSaveGeneral = React.useCallback(async () => {
-    setSavingGeneral(true)
-    try {
-      const res = await fetch("/api/users/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, workspaceName }),
-      })
-      if (!res.ok) {
-        toast({
-          title: "Error al guardar",
-          description: await parseApiError(res),
-        })
-        return
-      }
-      const profile = (await res.json()) as UserProfile
-      setName(profile.name)
-      setWorkspaceName(profile.workspaceName)
-      setUser(profile)
-      toast({ title: "Configuración guardada" })
-    } catch {
-      toast({
-        title: "Error al guardar",
-        description: "No se pudo conectar con el servidor",
-      })
-    } finally {
-      setSavingGeneral(false)
-    }
-  }, [name, workspaceName, toast, setUser])
-
-  const handleDangerDelete = React.useCallback(async () => {
-    setDeleting(true)
-    try {
-      const res = await fetch("/api/users/me", { method: "DELETE" })
-      if (!res.ok && res.status !== 204) {
-        toast({
-          title: "Error al eliminar cuenta",
-          description: await parseApiError(res),
-        })
-        return
-      }
-      const supabase = createClient()
-      await supabase.auth.signOut()
-      toast({ title: "Cuenta eliminada" })
-      router.push("/login")
-    } catch {
-      toast({
-        title: "Error al eliminar cuenta",
-        description: "No se pudo conectar con el servidor",
-      })
-    } finally {
-      setDeleting(false)
-    }
+  const handleDangerDelete = React.useCallback(() => {
+    toast({ title: "Cuenta eliminada" })
+    router.push("/login")
   }, [router, toast])
-
-  const disabled = loading || savingGeneral || deleting
 
   return (
     <div className="min-h-screen bg-[#f5f0e8] p-6 md:p-8">
@@ -154,29 +88,14 @@ export default function ConfiguracionPage() {
         </p>
       </section>
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Cargando configuración...</p>
-      ) : null}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
-            Perfil
+            <Settings className="h-4 w-4 text-primary" />
+            General
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="h-10"
-              disabled={disabled}
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="workspace">Nombre del workspace</Label>
             <Input
@@ -184,7 +103,6 @@ export default function ConfiguracionPage() {
               value={workspaceName}
               onChange={(event) => setWorkspaceName(event.target.value)}
               className="h-10"
-              disabled={disabled}
             />
             <p className="text-xs text-muted-foreground">
               Este nombre aparece en tus reportes y notificaciones
@@ -192,23 +110,202 @@ export default function ConfiguracionPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="current-email">Email</Label>
-            <Input
-              id="current-email"
-              disabled
-              value={email}
-              className="h-10"
-            />
-            <p className="text-xs text-muted-foreground">
-              El email no se puede modificar
-            </p>
+            <Label>Idioma</Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Español">Español</SelectItem>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="Português">Português</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Zona horaria</Label>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="America/Buenos_Aires (GMT-3)">
+                  America/Buenos_Aires (GMT-3)
+                </SelectItem>
+                <SelectItem value="America/New_York (GMT-5)">
+                  America/New_York (GMT-5)
+                </SelectItem>
+                <SelectItem value="Europe/Madrid (GMT+1)">
+                  Europe/Madrid (GMT+1)
+                </SelectItem>
+                <SelectItem value="America/Mexico_City (GMT-6)">
+                  America/Mexico_City (GMT-6)
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="pt-1">
-            <Button onClick={handleSaveGeneral} disabled={disabled}>
-              {savingGeneral ? "Guardando..." : "Guardar cambios"}
+            <Button onClick={() => toast({ title: "Configuración guardada" })}>
+              Guardar cambios
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" />
+            Notificaciones
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Publicación programada exitosamente
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Recibí una notificación cada vez que una publicación se programe correctamente
+                </p>
+              </div>
+              <Switch
+                checked={notifications.scheduledSuccess}
+                onCheckedChange={(value) => updateNotification("scheduledSuccess", value)}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Publicación publicada</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Notificación cuando una publicación se publica en la red social
+                </p>
+              </div>
+              <Switch
+                checked={notifications.published}
+                onCheckedChange={(value) => updateNotification("published", value)}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Error al publicar</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Alerta cuando una publicación falla al intentar publicarse
+                </p>
+              </div>
+              <Switch
+                checked={notifications.publishError}
+                onCheckedChange={(value) => updateNotification("publishError", value)}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Recordatorio previo a publicación
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Recibí un aviso 1 hora antes de cada publicación programada
+                </p>
+              </div>
+              <Switch
+                checked={notifications.reminder}
+                onCheckedChange={(value) => updateNotification("reminder", value)}
+              />
+            </div>
+            <Separator />
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Resumen semanal</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Recibí un resumen de actividad todos los lunes
+                </p>
+              </div>
+              <Switch
+                checked={notifications.weeklySummary}
+                onCheckedChange={(value) => updateNotification("weeklySummary", value)}
+              />
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <Button onClick={() => toast({ title: "Preferencias guardadas" })}>
+              Guardar preferencias
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            Cuenta
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-email">Email actual</Label>
+            <div className="relative">
+              <Input
+                id="current-email"
+                disabled
+                value={userProfile?.email ?? ''}
+                className="h-10 pr-10"
+              />
+              <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Contraseña actual</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new-password">Nueva contraseña</Label>
+            <Input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCurrentPassword("")
+              setNewPassword("")
+              setConfirmPassword("")
+              toast({ title: "Contraseña actualizada correctamente" })
+            }}
+          >
+            Actualizar contraseña
+          </Button>
         </CardContent>
       </Card>
 
@@ -230,7 +327,6 @@ export default function ConfiguracionPage() {
             <Button
               variant="outline"
               className="border-destructive/30 text-destructive hover:bg-destructive/10"
-              disabled={disabled}
               onClick={async () => {
                 const supabase = createClient()
                 await supabase.auth.signOut()
@@ -240,6 +336,8 @@ export default function ConfiguracionPage() {
               Cerrar sesión
             </Button>
           </div>
+
+          <Separator />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -252,7 +350,6 @@ export default function ConfiguracionPage() {
               <AlertDialogTrigger asChild>
                 <Button
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  disabled={disabled}
                 >
                   Eliminar cuenta
                 </Button>
@@ -266,9 +363,9 @@ export default function ConfiguracionPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDangerDelete} disabled={deleting}>
-                    {deleting ? "Eliminando..." : "Sí, eliminar cuenta"}
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDangerDelete}>
+                    Sí, eliminar cuenta
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

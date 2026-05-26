@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -37,17 +37,8 @@ export function Sidebar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const user = useAppStore((s) => s.user)
-
+  const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
-
-  const userInitials = useMemo(() => {
-    if (!user?.name) return 'U'
-    const parts = user.name.trim().split(/\s+/)
-    const first = parts[0]?.[0] ?? ''
-    const second = parts[1]?.[0] ?? ''
-    return (first + second).toUpperCase() || 'U'
-  }, [user?.name])
 
   useEffect(() => {
     if (clients.length > 0 && !activeWorkspaceId) {
@@ -209,18 +200,26 @@ export function Sidebar() {
       {/* ZONA BOTTOM */}
       <div className="px-4 pb-5 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-            style={{ backgroundColor: '#0095b6' }}
-          >
-            {userInitials}
-          </div>
+          {userProfile?.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt={userProfile.name}
+              className="w-8 h-8 rounded-full shrink-0 object-cover"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+              style={{ backgroundColor: '#0095b6' }}
+            >
+              {userProfile?.initials ?? '…'}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.name ?? 'Usuario'}
+              {userProfile?.name ?? '…'}
             </p>
             <p className="text-xs text-gray-400 truncate">
-              {user?.email ?? ''}
+              {userProfile?.email ?? ''}
             </p>
           </div>
           <button

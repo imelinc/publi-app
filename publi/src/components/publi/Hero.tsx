@@ -54,7 +54,11 @@ const sidebarItems: ReadonlyArray<{ icon: typeof LayoutDashboard; active: boolea
   { icon: Settings, active: false },
 ];
 
-export function Hero() {
+interface HeroProps {
+  isLoggedIn?: boolean;
+}
+
+export function Hero({ isLoggedIn = false }: HeroProps) {
   const marqueeItems = [...socialPlatforms, ...socialPlatforms];
 
   return (
@@ -82,16 +86,29 @@ export function Hero() {
 
           <Reveal delayMs={180}>
             <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <Button
-                asChild
-                size="lg"
-                className="h-14 rounded-full px-7 text-base font-semibold shadow-[0_22px_50px_-28px_hsl(var(--primary)/0.9)] hover:bg-primary/90"
-              >
-                <Link href="/waitlist">
-                  Empezar gratis
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-14 rounded-full px-7 text-base font-semibold shadow-[0_22px_50px_-28px_hsl(var(--primary)/0.9)] hover:bg-primary/90"
+                >
+                  <Link href="/dashboard">
+                    Ir al dashboard
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-14 rounded-full px-7 text-base font-semibold shadow-[0_22px_50px_-28px_hsl(var(--primary)/0.9)] hover:bg-primary/90"
+                >
+                  <Link href="/waitlist">
+                    Empezar gratis
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              )}
               <Button
                 asChild
                 variant="outline"

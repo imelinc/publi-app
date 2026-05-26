@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/store/use-app-store'
 import { ClientCard } from '@/components/dashboard/ClientCard'
 import { ClientModal } from '@/components/dashboard/ClientModal'
+import { ManageNetworksDialog } from '@/components/dashboard/ManageNetworksDialog'
 import { useToast } from '@/components/ui/use-toast'
 import { Plus } from 'lucide-react'
-import type { Client } from '@/types'
+import type { Client, Plan } from '@/types'
 
 function ClientCardSkeleton() {
   return (
@@ -38,6 +39,7 @@ function ClientCardSkeleton() {
 export default function ClientesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [networksClient, setNetworksClient] = useState<Client | null>(null)
 
   const router = useRouter()
   const clients = useAppStore((s) => s.clients)
@@ -80,27 +82,49 @@ export default function ClientesPage() {
     router.push('/dashboard')
   }
 
-  async function handleSave(data: { name: string; color: string }) {
+  function handleManageNetworks(client: Client) {
+    setNetworksClient(client)
+  }
+
+  async function handleNetworksDialogClose() {
+    setNetworksClient(null)
+    // Refrescar clientes para que las cards muestren las redes actualizadas
+    try {
+      await fetchClients()
+    } catch {
+      // silent
+    }
+  }
+
+  async function handleSave(data: { name: string; color: string; plan: Plan }): Promise<Client> {
     try {
       if (editingClient) {
         await updateClient(editingClient.id, data)
+        toast({ title: 'Cliente actualizado' })
+        return { ...editingClient, ...data, initials: editingClient.initials }
       } else {
-        await addClient(data)
+        const created = await addClient(data)
+        toast({ title: 'Cliente creado — ahora conectá sus redes' })
+        return created
       }
-      setModalOpen(false)
-      setEditingClient(null)
-      toast({ title: 'Cliente guardado' })
-    } catch {
+    } catch (err) {
       toast({
         title: 'Error al guardar',
         description: 'No se pudo guardar el cliente. Intentá de nuevo.',
       })
+      throw err
     }
   }
 
-  function handleModalClose() {
+  async function handleModalClose() {
     setModalOpen(false)
     setEditingClient(null)
+    // Refrescar para que las cards reflejen redes conectadas en el paso 3
+    try {
+      await fetchClients()
+    } catch {
+      // silent
+    }
   }
 
   return (
@@ -141,6 +165,7 @@ export default function ClientesPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onViewWorkspace={handleViewWorkspace}
+              onManageNetworks={handleManageNetworks}
             />
           ))}
         </div>
@@ -151,6 +176,13 @@ export default function ClientesPage() {
         onClose={handleModalClose}
         client={editingClient}
         onSave={handleSave}
+      />
+
+      <ManageNetworksDialog
+        open={networksClient !== null}
+        onClose={handleNetworksDialogClose}
+        clientId={networksClient?.id ?? null}
+        clientName={networksClient?.name}
       />
     </div>
   )

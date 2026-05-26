@@ -5,23 +5,17 @@ import { useAppStore, getPostsByClient } from '@/store/use-app-store'
 import type { Network } from '@/types'
 import { StatsChart } from '@/components/dashboard/StatsChart'
 import { TrendingUp } from 'lucide-react'
-
-const NETWORK_COLORS: Record<Network, string> = {
-  instagram: '#E1306C',
-}
-
-const NETWORK_LABELS: Record<Network, string> = {
-  instagram: 'Instagram',
-}
+import { NETWORK_META, ALL_NETWORKS } from '@/lib/networks'
 
 function getEngagementRate(networkFilter: Network | 'all'): number {
-  const rates: Record<Network, number> = {
-    instagram: 4.2,
-  }
   if (networkFilter === 'all') {
-    return Object.values(rates).reduce((a, b) => a + b, 0) / Object.keys(rates).length
+    const sum = ALL_NETWORKS.reduce(
+      (acc, n) => acc + NETWORK_META[n].baselineEngagement,
+      0
+    )
+    return sum / ALL_NETWORKS.length
   }
-  return rates[networkFilter] ?? 0
+  return NETWORK_META[networkFilter].baselineEngagement
 }
 
 function isInPeriod(dateStr: string, period: '7d' | '30d' | '3m'): boolean {
@@ -149,7 +143,7 @@ export default function MetricasPage() {
           >
             <option value="all">Todas</option>
             {allNetworks.map((net) => (
-              <option key={net} value={net}>{NETWORK_LABELS[net]}</option>
+              <option key={net} value={net}>{NETWORK_META[net].label}</option>
             ))}
           </select>
         </div>
@@ -209,14 +203,14 @@ export default function MetricasPage() {
                 <div key={net} className="flex items-center gap-3">
                   <div className="w-24 flex items-center gap-2">
                     <img src={`/icons/${net}-color.svg`} alt={net} width={16} height={16} />
-                    <span className="text-sm font-medium text-gray-700">{NETWORK_LABELS[net]}</span>
+                    <span className="text-sm font-medium text-gray-700">{NETWORK_META[net].label}</span>
                   </div>
-                  <div className="flex-1 h-6 rounded-md relative" style={{ backgroundColor: `${NETWORK_COLORS[net]}15` }}>
+                  <div className="flex-1 h-6 rounded-md relative" style={{ backgroundColor: `${NETWORK_META[net].color}15` }}>
                     <div
                       className="h-full rounded-md flex items-center justify-center text-xs text-white font-semibold"
                       style={{
                         width: `${Math.max(pct, 20)}%`,
-                        backgroundColor: NETWORK_COLORS[net],
+                        backgroundColor: NETWORK_META[net].color,
                       }}
                     >
                       {count}
@@ -262,7 +256,7 @@ export default function MetricasPage() {
                           {primaryNetwork && (
                             <>
                               <img src={`/icons/${primaryNetwork}.svg`} alt={primaryNetwork} width={16} height={16} />
-                              <span className="text-sm text-gray-700">{NETWORK_LABELS[primaryNetwork as Network]}</span>
+                              <span className="text-sm text-gray-700">{NETWORK_META[primaryNetwork as Network].label}</span>
                             </>
                           )}
                         </div>
