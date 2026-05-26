@@ -7,11 +7,24 @@ import type {
   Network,
   PostStatus,
   EventType,
+  SocialAccount,
 } from '@/types'
+
+export interface UserProfile {
+  id: string
+  email: string
+  name: string
+  initials: string
+  avatarUrl: string | null
+}
 
 interface AppState {
   activeWorkspaceId: string
   setActiveWorkspace: (id: string) => void
+
+  // ─── User profile ──────────────────────────────────────────────────────────────
+  userProfile: UserProfile | null
+  fetchUserProfile: () => Promise<void>
 
   clients: Client[]
   clientsLoading: boolean
@@ -19,6 +32,19 @@ interface AppState {
   addClient: (data: { name: string; color: string; plan: Plan }) => Promise<Client>
   updateClient: (id: string, data: { name?: string; color?: string; plan?: Plan }) => Promise<void>
   deleteClient: (id: string) => Promise<void>
+
+  // ─── Social accounts (cuentas de redes sociales por cliente) ────────────────
+  fetchSocialAccounts: (clientId: string) => Promise<SocialAccount[]>
+  addSocialAccount: (
+    clientId: string,
+    network: Network,
+    username: string
+  ) => Promise<SocialAccount>
+  removeSocialAccount: (
+    clientId: string,
+    accountId: string,
+    network: Network
+  ) => Promise<void>
 
   posts: Post[]
   postsLoading: boolean
@@ -35,6 +61,7 @@ interface AppState {
   }) => Promise<Post>
   updatePost: (id: string, updates: Partial<Post>) => void
   deletePost: (id: string) => Promise<void>
+  requestApproval: (postId: string) => Promise<{ approvalUrl: string }>
 
   events: CalendarEvent[]
   eventsLoading: boolean
@@ -53,6 +80,17 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   activeWorkspaceId: '',
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+
+  // ─── User profile ──────────────────────────────────────────────────────────────
+
+  userProfile: null,
+
+  fetchUserProfile: async () => {
+    const res = await fetch('/api/users/me')
+    if (!res.ok) return
+    const json = await res.json()
+    set({ userProfile: json as UserProfile })
+  },
 
   // ─── Clients ──────────────────────────────────────────────────────────────────
 
@@ -117,6 +155,67 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ clients: state.clients.filter((c) => c.id !== id) }))
   },
 
+  // ─── Social accounts ──────────────────────────────────────────────────────────
+
+  fetchSocialAccounts: async (clientId) => {
+    const res = await fetch(`/api/clients/${clientId}/social-accounts`)
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Error al cargar cuentas conectadas')
+    }
+    const json = await res.json()
+    return json.data as SocialAccount[]
+  },
+
+  addSocialAccount: async (clientId, network, username) => {
+    const res = await fetch(`/api/clients/${clientId}/social-accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ network, username }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      throw new Error(json.error || 'Error al conectar la red')
+    }
+    const account: SocialAccount = json.data
+    // Optimistic update: agregar la red a connectedNetworks del cliente
+    set((state) => ({
+      clients: state.clients.map((c) =>
+        c.id === clientId
+          ? {
+              ...c,
+              connectedNetworks: c.connectedNetworks.includes(network)
+                ? c.connectedNetworks
+                : [...c.connectedNetworks, network],
+            }
+          : c
+      ),
+    }))
+    return account
+  },
+
+  removeSocialAccount: async (clientId, accountId, network) => {
+    const res = await fetch(
+      `/api/clients/${clientId}/social-accounts/${accountId}`,
+      { method: 'DELETE' }
+    )
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Error al desconectar la red')
+    }
+    // Sacar la red de connectedNetworks
+    set((state) => ({
+      clients: state.clients.map((c) =>
+        c.id === clientId
+          ? {
+              ...c,
+              connectedNetworks: c.connectedNetworks.filter((n) => n !== network),
+            }
+          : c
+      ),
+    }))
+  },
+
   // ─── Posts ────────────────────────────────────────────────────────────────────
 
   posts: [],
@@ -165,6 +264,21 @@ export const useAppStore = create<AppState>((set) => ({
       throw new Error(json.error || 'Error al eliminar publicación')
     }
     set((state) => ({ posts: state.posts.filter((p) => p.id !== id) }))
+  },
+
+  requestApproval: async (postId) => {
+    const res = await fetch(`/api/posts/${postId}/request-approval`, {
+      method: 'POST',
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al generar link de aprobación')
+    // Actualizar el post en el estado local
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.id === postId ? { ...p, status: 'pending_approval' } : p
+      ),
+    }))
+    return { approvalUrl: json.data.approvalUrl }
   },
 
   // ─── Calendar Events ──────────────────────────────────────────────────────────

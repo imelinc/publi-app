@@ -6,6 +6,7 @@ import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { NETWORK_META } from '@/lib/networks'
 import { AiPanel } from './AiPanel'
 
 interface PostEditorProps {
@@ -17,18 +18,6 @@ interface PostEditorProps {
   onDescriptionChange: (text: string) => void
   onNetworksChange: (networks: Network[]) => void
   onImageChange: (url: string | null) => void
-}
-
-const NETWORK_LIMITS: Record<Network, number> = {
-  instagram: 2200,
-}
-
-const NETWORK_ICONS: Record<Network, string> = {
-  instagram: '/icons/instagram-color.svg',
-}
-
-const NETWORK_NAMES: Record<Network, string> = {
-  instagram: 'Instagram',
 }
 
 export function PostEditor({
@@ -46,7 +35,7 @@ export function PostEditor({
   const clients = useAppStore((s) => s.clients)
   const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
 
-  const charLimit = networks.length > 0 ? NETWORK_LIMITS[networks[0]] : 2200
+  const charLimit = networks.length > 0 ? NETWORK_META[networks[0]].charLimit : 2200
   const charCount = description.length
 
   const charCountColor =
@@ -127,13 +116,13 @@ export function PostEditor({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={NETWORK_ICONS[network]}
-                    alt={NETWORK_NAMES[network]}
+                    src={NETWORK_META[network].iconColor}
+                    alt={NETWORK_META[network].label}
                     width={16}
                     height={16}
                     className="size-4 object-contain"
                   />
-                  {NETWORK_NAMES[network]}
+                  {NETWORK_META[network].label}
                 </button>
               )
             })

@@ -2,9 +2,27 @@
 // publi — Tipos globales de TypeScript
 // ============================================
 
-export type Network = 'instagram'
+export type Network =
+  | 'instagram'
+  | 'facebook'
+  | 'tiktok'
+  | 'x'
+  | 'linkedin'
+  | 'youtube'
 
-export type PostStatus = 'draft' | 'scheduled' | 'published' | 'failed'
+export type PostStatus =
+  | 'draft'
+  | 'pending_approval'
+  | 'approved'
+  | 'scheduled'
+  | 'published'
+  | 'failed'
+
+export type PublicationStatus =
+  | 'pending'
+  | 'published'
+  | 'failed'
+  | 'simulated'
 
 export type Plan = 'free' | 'pro'
 
@@ -23,6 +41,40 @@ export interface Client {
   createdAt: string
 }
 
+export interface SocialAccount {
+  id: string
+  clientId: string
+  network: Network
+  externalUserId: string
+  username: string
+  avatarUrl: string | null
+  isSimulated: boolean
+  tokenExpiresAt: string | null
+  connectedAt: string
+}
+
+export interface PostPublication {
+  id: string
+  postId: string
+  network: Network
+  // Overrides (null = usa los del post base)
+  description: string | null
+  hashtags: string[] | null
+  // Resultado
+  status: PublicationStatus
+  externalPostId: string | null
+  publishedAt: string | null
+  errorMessage: string | null
+  // Métricas por red
+  engagement: {
+    likes: number
+    comments: number
+    views: number
+    reach: number
+  }
+  metricsUpdatedAt: string | null
+}
+
 export interface Post {
   id: string
   clientId: string
@@ -31,18 +83,16 @@ export interface Post {
   title: string
   description: string
   networks: Network[]
+  hashtags: string[]
+  mediaUrls: string[]
   status: PostStatus
   scheduledAt: string | null
-  publishedAt: string | null
-  mediaUrls: string[]
-  hashtags: string[]
-  instagramPostId: string | null
-  engagement: {
-    likes: number
-    comments: number
-    views: number
-    reach: number
-  }
+  // Aprobación
+  approvalToken: string | null
+  approvedAt: string | null
+  clientFeedback: string | null
+  // Publicaciones por red
+  publications: PostPublication[]
   createdAt: string
   updatedAt: string
 }
@@ -55,12 +105,26 @@ export interface UserProfile {
   workspaceName: string
   language: 'es' | 'en'
   timezone: string
+  notifications: {
+    onPostScheduled: boolean
+    onPostPublished: boolean
+    onPostFailed: boolean
+    reminderBeforePost: boolean
+    weeklySummary: boolean
+  }
   createdAt: string
 }
 
+export type NotificationType =
+  | 'post_published'
+  | 'post_failed'
+  | 'post_scheduled'
+  | 'post_approved'
+  | 'post_rejected'
+
 export interface Notification {
   id: string
-  type: 'post_published' | 'post_failed' | 'post_scheduled'
+  type: NotificationType
   title: string
   body: string
   read: boolean

@@ -41,7 +41,7 @@ function isInPrevious7Days(dateStr: string): boolean {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { posts, activeWorkspaceId, clients } = useAppStore()
+  const { posts, activeWorkspaceId, clients, userProfile } = useAppStore()
 
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
   const postsForClient = getPostsByClient(posts, activeWorkspaceId)
@@ -88,9 +88,19 @@ export default function DashboardPage() {
     (p) => p.scheduledAt !== null && new Date(p.scheduledAt) > now
   ).length
 
+  // publishedAt ahora vive en post_publications: tomamos el más temprano
+  // (cuándo se publicó por primera vez en cualquier red) o caemos a createdAt.
+  const getPublishedAt = (p: typeof posts[number]): string => {
+    const dates = (p.publications ?? [])
+      .map((pub) => pub.publishedAt)
+      .filter((d): d is string => d !== null)
+    if (dates.length === 0) return p.createdAt
+    return dates.reduce((a, b) => (a < b ? a : b))
+  }
+
   const recentPublished = posts
     .filter((p) => p.status === 'published')
-    .sort((a, b) => (b.publishedAt ?? b.createdAt).localeCompare(a.publishedAt ?? a.createdAt))
+    .sort((a, b) => getPublishedAt(b).localeCompare(getPublishedAt(a)))
     .slice(0, 4)
 
   const recentDrafts = posts
@@ -103,7 +113,7 @@ export default function DashboardPage() {
       id: p.id,
       clientName: p.clientName,
       text: `Post "${p.title}" publicado exitosamente.`,
-      timestamp: p.publishedAt ?? p.createdAt,
+      timestamp: getPublishedAt(p),
       type: 'post_published' as const,
     })),
     ...recentDrafts.map((p) => ({
@@ -135,7 +145,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Buen día, Nacho 👋</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Buen día, {userProfile?.name?.split(' ')[0] ?? '…'} 👋
+        </h1>
         <p className="text-sm text-gray-500 mt-1">
           {activeClient?.name ?? 'Todos'} · {todayFormatted}
         </p>

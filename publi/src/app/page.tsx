@@ -5,16 +5,21 @@ import { Footer } from "@/components/publi/Footer";
 import { Hero } from "@/components/publi/Hero";
 import { MultiPlatform } from "@/components/publi/MultiPlatform";
 import { Navbar } from "@/components/publi/Navbar";
+import { createClient } from "@/lib/supabase/server";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   return (
     <main className="min-h-screen bg-background">
-      <Navbar />
-      <Hero />
+      <Navbar isLoggedIn={isLoggedIn} />
+      <Hero isLoggedIn={isLoggedIn} />
       <FeatureTabs />
       <MultiPlatform />
       <FeaturesGrid />
-      <CTASection />
+      <CTASection isLoggedIn={isLoggedIn} />
       <Footer />
     </main>
   );

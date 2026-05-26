@@ -37,6 +37,7 @@ export function Sidebar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
 
   useEffect(() => {
@@ -199,15 +200,27 @@ export function Sidebar() {
       {/* ZONA BOTTOM */}
       <div className="px-4 pb-5 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-            style={{ backgroundColor: '#0095b6' }}
-          >
-            NM
-          </div>
+          {userProfile?.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt={userProfile.name}
+              className="w-8 h-8 rounded-full shrink-0 object-cover"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+              style={{ backgroundColor: '#0095b6' }}
+            >
+              {userProfile?.initials ?? '…'}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Nacho Melinc</p>
-            <p className="text-xs text-gray-400 truncate">nacho@publi.app</p>
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {userProfile?.name ?? '…'}
+            </p>
+            <p className="text-xs text-gray-400 truncate">
+              {userProfile?.email ?? ''}
+            </p>
           </div>
           <button
             onClick={async () => {

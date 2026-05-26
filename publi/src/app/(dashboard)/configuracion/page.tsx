@@ -37,13 +37,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
-
-const USER = {
-  name: "Nacho Melinc",
-  email: "nacho@publi.app",
-  avatar: "NM",
-  plan: "Pro",
-}
+import { useAppStore } from "@/store/use-app-store"
 
 type NotificationSettings = {
   scheduledSuccess: boolean
@@ -56,6 +50,7 @@ type NotificationSettings = {
 export default function ConfiguracionPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const userProfile = useAppStore((s) => s.userProfile)
 
   const [workspaceName, setWorkspaceName] = React.useState<string>("Mi workspace")
   const [language, setLanguage] = React.useState<string>("Español")
@@ -260,7 +255,7 @@ export default function ConfiguracionPage() {
               <Input
                 id="current-email"
                 disabled
-                value={USER.email}
+                value={userProfile?.email ?? ''}
                 className="h-10 pr-10"
               />
               <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

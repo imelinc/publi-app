@@ -33,13 +33,15 @@ export async function POST(req: NextRequest) {
           .single()
 
         if (client) {
-          const { data: igAccount } = await supabase
-            .from('instagram_accounts')
-            .select('id')
+          const { data: accounts } = await supabase
+            .from('social_accounts')
+            .select('network')
             .eq('client_id', clientId)
-            .maybeSingle()
 
-          const connectedNetworks = igAccount ? 'instagram' : 'ninguna'
+          const connectedNetworks =
+            accounts && accounts.length > 0
+              ? accounts.map((a: { network: string }) => a.network).join(', ')
+              : 'ninguna'
           clientExtra = ` Cliente activo: ${client.name}, redes: ${connectedNetworks}.`
         }
       }

@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import { MoreVertical } from 'lucide-react'
-import type { Client, Network } from '@/types'
-
-const NETWORK_META: Record<Network, { icon: string; label: string }> = {
-  instagram: { icon: '/icons/instagram.svg', label: 'Instagram' },
-}
+import type { Client } from '@/types'
+import { NETWORK_META } from '@/lib/networks'
 
 interface ClientCardProps {
   client: Client
   onEdit: (client: Client) => void
   onDelete: (id: string) => void
   onViewWorkspace: (client: Client) => void
+  onManageNetworks: (client: Client) => void
 }
 
-export function ClientCard({ client, onEdit, onDelete, onViewWorkspace }: ClientCardProps) {
+export function ClientCard({
+  client,
+  onEdit,
+  onDelete,
+  onViewWorkspace,
+  onManageNetworks,
+}: ClientCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   useEffect(() => {
@@ -69,6 +73,15 @@ export function ClientCard({ client, onEdit, onDelete, onViewWorkspace }: Client
                 className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
               >
                 Editar
+              </button>
+              <button
+                onClick={() => {
+                  setDropdownOpen(false)
+                  onManageNetworks(client)
+                }}
+                className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Gestionar redes
               </button>
               <button
                 onClick={() => {

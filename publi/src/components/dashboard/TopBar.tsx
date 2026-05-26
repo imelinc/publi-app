@@ -17,6 +17,7 @@ export function TopBar() {
   const pathname = usePathname()
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const clients = useAppStore((s) => s.clients)
+  const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
 
   const title = pageTitles[pathname] ?? 'Inicio'
@@ -45,12 +46,20 @@ export function TopBar() {
             <Bell className="w-5 h-5" />
           </button>
 
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-            style={{ backgroundColor: '#0095b6' }}
-          >
-            NM
-          </div>
+          {userProfile?.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt={userProfile.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+              style={{ backgroundColor: '#0095b6' }}
+            >
+              {userProfile?.initials ?? '…'}
+            </div>
+          )}
         </div>
       </header>
       <div

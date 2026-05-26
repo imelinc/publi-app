@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Copy, Check, Send } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
 import type { Network, PostStatus } from '@/types'
 import { PostEditor } from '@/components/dashboard/PostEditor'
@@ -22,12 +22,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/use-toast'
 
 export default function NuevaPublicacionPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { addPost, activeWorkspaceId, clients } = useAppStore()
+  const { addPost, requestApproval, activeWorkspaceId, clients } = useAppStore()
 
   const [clientId, setClientId] = useState(activeWorkspaceId)
   const [description, setDescription] = useState('')
@@ -38,6 +45,10 @@ export default function NuevaPublicacionPage() {
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
   const [showScheduleAi, setShowScheduleAi] = useState(false)
+  const [approvalLoading, setApprovalLoading] = useState(false)
+  const [approvalUrl, setApprovalUrl] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [savedPostId, setSavedPostId] = useState<string | null>(null)
 
   const client = clients.find((c) => c.id === clientId) ?? null
 
@@ -86,7 +97,7 @@ export default function NuevaPublicacionPage() {
 
   async function handleSaveDraft() {
     try {
-      await addPost({
+      const post = await addPost({
         clientId,
         title: description.slice(0, 50) || 'Sin título',
         description,
@@ -96,10 +107,55 @@ export default function NuevaPublicacionPage() {
         mediaUrls: imageUrl ? [imageUrl] : [],
         hashtags: [],
       })
+      setSavedPostId(post.id)
       toast({ title: 'Borrador guardado' })
     } catch {
       toast({ title: 'Error al guardar borrador' })
     }
+  }
+
+  async function handleRequestApproval() {
+    // Si todavía no se guardó el borrador, lo guardamos primero
+    let postId = savedPostId
+    if (!postId) {
+      try {
+        const post = await addPost({
+          clientId,
+          title: description.slice(0, 50) || 'Sin título',
+          description,
+          networks,
+          status: 'draft' as PostStatus,
+          scheduledAt: null,
+          mediaUrls: imageUrl ? [imageUrl] : [],
+          hashtags: [],
+        })
+        postId = post.id
+        setSavedPostId(post.id)
+      } catch {
+        toast({ title: 'Error al guardar el borrador' })
+        return
+      }
+    }
+
+    setApprovalLoading(true)
+    try {
+      const { approvalUrl: url } = await requestApproval(postId)
+      setApprovalUrl(url)
+    } catch (err) {
+      toast({
+        title: 'No se pudo generar el link',
+        description: err instanceof Error ? err.message : undefined,
+      })
+    } finally {
+      setApprovalLoading(false)
+    }
+  }
+
+  async function handleCopyLink() {
+    if (!approvalUrl) return
+    await navigator.clipboard.writeText(approvalUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   async function handleConfirmPublish() {
@@ -226,6 +282,22 @@ export default function NuevaPublicacionPage() {
                 Guardar borrador
               </Button>
 
+              <Button
+                variant="outline"
+                className="w-full text-sm border-[#0095b6] text-[#0095b6] hover:bg-[#cceef5]"
+                onClick={handleRequestApproval}
+                disabled={approvalLoading || !description.trim()}
+              >
+                {approvalLoading ? (
+                  'Generando link…'
+                ) : (
+                  <>
+                    <Send className="size-3.5 mr-1.5" />
+                    Pedir aprobación al cliente
+                  </>
+                )}
+              </Button>
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button className="w-full bg-[#0095b6] text-white font-medium rounded-lg py-2 text-sm hover:bg-[#007a94] transition-colors">
@@ -255,6 +327,49 @@ export default function NuevaPublicacionPage() {
           </div>
         </div>
       </div>
+
+      {/* Dialog: link de aprobación generado */}
+      <Dialog open={!!approvalUrl} onOpenChange={(open) => !open && setApprovalUrl(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="size-4 text-[#0095b6]" />
+              Link de aprobación listo
+            </DialogTitle>
+            <DialogDescription>
+              Copiá este link y enviáselo a tu cliente por WhatsApp, email o como prefieras.
+              No necesita crear una cuenta para responder.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 truncate">
+              {approvalUrl}
+            </div>
+            <button
+              onClick={handleCopyLink}
+              className="shrink-0 flex items-center gap-1.5 bg-[#0095b6] text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-[#007a94] transition-colors"
+            >
+              {copied ? (
+                <>
+                  <Check className="size-4" />
+                  Copiado
+                </>
+              ) : (
+                <>
+                  <Copy className="size-4" />
+                  Copiar
+                </>
+              )}
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-400 mt-2">
+            El post quedó en estado <strong>pendiente de aprobación</strong>.
+            Una vez que tu cliente responda, verás el resultado en el calendario.
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

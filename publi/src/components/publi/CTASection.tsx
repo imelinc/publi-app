@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
-export function CTASection() {
+interface CTASectionProps {
+  isLoggedIn?: boolean;
+}
+
+export function CTASection({ isLoggedIn = false }: CTASectionProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
 
@@ -100,13 +104,23 @@ export function CTASection() {
           )}
           style={{ transitionDelay: "220ms" }}
         >
-          <a
-            href="/waitlist"
-            className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-[15px] transition-opacity duration-150 hover:opacity-90"
-            style={{ backgroundColor: "#ffb703", color: "#1a1a2e" }}
-          >
-            Empezar gratis →
-          </a>
+          {isLoggedIn ? (
+            <a
+              href="/dashboard"
+              className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-[15px] transition-opacity duration-150 hover:opacity-90"
+              style={{ backgroundColor: "#ffb703", color: "#1a1a2e" }}
+            >
+              Ir al dashboard →
+            </a>
+          ) : (
+            <a
+              href="/waitlist"
+              className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-[15px] transition-opacity duration-150 hover:opacity-90"
+              style={{ backgroundColor: "#ffb703", color: "#1a1a2e" }}
+            >
+              Empezar gratis →
+            </a>
+          )}
           <a
             href="#"
             className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-medium text-[15px] border border-white text-white transition-colors duration-150 hover:bg-white/10"
