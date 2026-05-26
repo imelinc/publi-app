@@ -8,19 +8,19 @@ import type {
   PostStatus,
   EventType,
   SocialAccount,
+  UserProfile,
 } from '@/types'
 
-export interface UserProfile {
-  id: string
-  email: string
-  name: string
-  initials: string
-  avatarUrl: string | null
-}
+export type { UserProfile }
 
 interface AppState {
   activeWorkspaceId: string
   setActiveWorkspace: (id: string) => void
+
+  // ─── Navigation guard ──────────────────────────────────────────────────────────
+  /** Si está en true, otros componentes (ej. Sidebar) deben confirmar antes de navegar */
+  hasUnsavedChanges: boolean
+  setHasUnsavedChanges: (v: boolean) => void
 
   // ─── User profile ──────────────────────────────────────────────────────────────
   userProfile: UserProfile | null
@@ -38,7 +38,8 @@ interface AppState {
   addSocialAccount: (
     clientId: string,
     network: Network,
-    username: string
+    username: string,
+    password: string
   ) => Promise<SocialAccount>
   removeSocialAccount: (
     clientId: string,
@@ -60,8 +61,21 @@ interface AppState {
     hashtags: string[]
   }) => Promise<Post>
   updatePost: (id: string, updates: Partial<Post>) => void
+  updatePostRemote: (
+    id: string,
+    updates: {
+      title?: string
+      description?: string
+      hashtags?: string[]
+      mediaUrls?: string[]
+      networks?: Network[]
+      status?: 'draft' | 'scheduled' | 'published'
+      scheduledAt?: string | null
+    }
+  ) => Promise<Post>
   deletePost: (id: string) => Promise<void>
   requestApproval: (postId: string) => Promise<{ approvalUrl: string }>
+  uploadMedia: (file: File) => Promise<string>
 
   events: CalendarEvent[]
   eventsLoading: boolean
@@ -73,6 +87,8 @@ interface AppState {
     type: EventType
     color: string
     date: string
+    endAt?: string | null
+    isAllDay?: boolean
   }) => Promise<void>
   deleteEvent: (id: string) => void
 }
@@ -80,6 +96,9 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   activeWorkspaceId: '',
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+
+  hasUnsavedChanges: false,
+  setHasUnsavedChanges: (v) => set({ hasUnsavedChanges: v }),
 
   // ─── User profile ──────────────────────────────────────────────────────────────
 
@@ -167,11 +186,11 @@ export const useAppStore = create<AppState>((set) => ({
     return json.data as SocialAccount[]
   },
 
-  addSocialAccount: async (clientId, network, username) => {
+  addSocialAccount: async (clientId, network, username, password) => {
     const res = await fetch(`/api/clients/${clientId}/social-accounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ network, username }),
+      body: JSON.stringify({ network, username, password }),
     })
     const json = await res.json()
     if (!res.ok) {
@@ -257,6 +276,30 @@ export const useAppStore = create<AppState>((set) => ({
       posts: state.posts.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     })),
 
+  updatePostRemote: async (id, updates) => {
+    const res = await fetch(`/api/posts/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al actualizar publicación')
+    const updated: Post = json.data
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+    }))
+    return updated
+  },
+
+  uploadMedia: async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/posts/media', { method: 'POST', body: formData })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al subir la imagen')
+    return json.url as string
+  },
+
   deletePost: async (id) => {
     const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -312,7 +355,12 @@ export const useAppStore = create<AppState>((set) => ({
       const saved: CalendarEvent = json.data
       set((state) => ({ events: [...state.events, saved] }))
     } catch {
-      const fallback: CalendarEvent = { ...event, id: crypto.randomUUID() }
+      const fallback: CalendarEvent = {
+        ...event,
+        id: crypto.randomUUID(),
+        endAt: event.endAt ?? null,
+        isAllDay: event.isAllDay ?? true,
+      }
       set((state) => ({ events: [...state.events, fallback] }))
     }
   },

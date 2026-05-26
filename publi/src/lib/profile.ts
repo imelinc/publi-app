@@ -7,12 +7,14 @@ export interface ProfileRow {
   id: string
   name: string
   workspace_name: string
+  notif_post_published: boolean
   created_at: string
 }
 
 export interface PatchProfileBody {
   name?: string
   workspaceName?: string
+  notifPostPublished?: boolean
 }
 
 function defaultName(user: User): string {
@@ -23,6 +25,13 @@ function defaultName(user: User): string {
   return local || 'Usuario'
 }
 
+function computeInitials(name: string): string {
+  const words = name.trim().split(/\s+/)
+  return (
+    (words[0]?.[0] ?? '') + (words.length > 1 ? (words[1]?.[0] ?? '') : '')
+  ).toUpperCase()
+}
+
 export function mapProfileToResponse(
   user: User,
   row: ProfileRow
@@ -31,23 +40,18 @@ export function mapProfileToResponse(
   return {
     id: user.id,
     name: row.name,
+    initials: computeInitials(row.name),
     email: user.email ?? '',
-    avatarUrl:
-      typeof avatarMeta === 'string' && avatarMeta ? avatarMeta : null,
+    avatarUrl: typeof avatarMeta === 'string' && avatarMeta ? avatarMeta : null,
     workspaceName: row.workspace_name,
+    notifPostPublished: row.notif_post_published,
     createdAt: row.created_at,
   }
 }
 
 export function mapPatchBodyToDb(
   body: PatchProfileBody
-): Partial<
-  Pick<
-    ProfileRow,
-    | 'name'
-    | 'workspace_name'
-  >
-> {
+): Partial<Pick<ProfileRow, 'name' | 'workspace_name' | 'notif_post_published'>> {
   const update: ReturnType<typeof mapPatchBodyToDb> = {}
 
   if (body.name !== undefined) {
@@ -56,6 +60,9 @@ export function mapPatchBodyToDb(
   }
   if (body.workspaceName !== undefined) {
     update.workspace_name = body.workspaceName.trim() || 'Mi workspace'
+  }
+  if (body.notifPostPublished !== undefined) {
+    update.notif_post_published = body.notifPostPublished
   }
 
   return update

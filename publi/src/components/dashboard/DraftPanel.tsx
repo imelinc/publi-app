@@ -3,11 +3,19 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAppStore } from "@/store/use-app-store"
-import type { Post } from "@/types"
-
-const NETWORK_ICON_MAP: Record<string, string> = {
-  instagram: "/icons/instagram.svg",
-}
+import type { Post, Network } from "@/types"
+import { NETWORK_META } from "@/lib/networks"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/components/ui/use-toast"
 
 interface DraftPanelProps {
   posts: Post[]
@@ -15,11 +23,43 @@ interface DraftPanelProps {
 
 export function DraftPanel({ posts }: DraftPanelProps) {
   const [activeTab, setActiveTab] = useState<"drafts" | "scheduled">("drafts")
+  const [postToCancel, setPostToCancel] = useState<Post | null>(null)
   const deletePost = useAppStore((s) => s.deletePost)
+  const { toast } = useToast()
   const router = useRouter()
 
-  const draftPosts = posts.filter((p) => p.status === "draft")
+  async function confirmCancelScheduled() {
+    if (!postToCancel) return
+    try {
+      await deletePost(postToCancel.id)
+      toast({ title: "Publicación cancelada" })
+    } catch (err) {
+      toast({
+        title: "No se pudo cancelar",
+        description: err instanceof Error ? err.message : undefined,
+      })
+    } finally {
+      setPostToCancel(null)
+    }
+  }
+
+  // Borradores incluyen los pendientes de aprobación (siguen sin publicarse).
+  // Los rechazados vuelven a 'draft' con `clientFeedback`, ya entran acá.
+  const draftPosts = posts.filter(
+    (p) => p.status === "draft" || p.status === "pending_approval"
+  )
   const scheduledPosts = posts.filter((p) => p.status === "scheduled")
+
+  // Devuelve el badge a mostrar para cada borrador según su estado de aprobación.
+  function approvalBadge(post: Post) {
+    if (post.status === "pending_approval") {
+      return { label: "Pendiente aprobación", cls: "bg-amber-50 text-amber-700" }
+    }
+    if (post.status === "draft" && post.clientFeedback) {
+      return { label: "Rechazado por cliente", cls: "bg-red-50 text-red-600" }
+    }
+    return null
+  }
 
   const displayedPosts = activeTab === "drafts" ? draftPosts : scheduledPosts
 
@@ -59,9 +99,9 @@ export function DraftPanel({ posts }: DraftPanelProps) {
           </p>
         ) : (
           displayedPosts.map((post) => {
-            const iconPath =
-              NETWORK_ICON_MAP[post.networks[0]] ??
-              `/icons/${post.networks[0]}.svg`
+            const firstNetwork = post.networks[0] as Network | undefined
+            const iconPath = firstNetwork ? NETWORK_META[firstNetwork].icon : ""
+            const badge = approvalBadge(post)
 
             return (
               <div key={post.id} className="bg-gray-50 rounded-lg p-3">
@@ -95,20 +135,32 @@ export function DraftPanel({ posts }: DraftPanelProps) {
                 <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-1">
                   {post.title}
                 </p>
+                {badge && (
+                  <span
+                    className={`inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.cls}`}
+                  >
+                    {badge.label}
+                  </span>
+                )}
                 <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">
                   {post.description}
                 </p>
+                {post.status === "draft" && post.clientFeedback && (
+                  <p className="text-[11px] text-red-500 italic mt-1 line-clamp-2">
+                    “{post.clientFeedback}”
+                  </p>
+                )}
 
                 <div className="flex gap-2 mt-2">
                   <button
-                    onClick={() => router.push("/nueva-publicacion")}
+                    onClick={() => router.push(`/borrador/${post.id}`)}
                     className="border border-gray-200 text-gray-600 text-xs rounded px-2 py-1 hover:bg-gray-100 transition"
                   >
                     Editar
                   </button>
                   {post.status === "scheduled" && (
                     <button
-                      onClick={() => deletePost(post.id)}
+                      onClick={() => setPostToCancel(post)}
                       className="text-red-400 text-xs hover:text-red-600 transition"
                     >
                       Cancelar
@@ -120,6 +172,43 @@ export function DraftPanel({ posts }: DraftPanelProps) {
           })
         )}
       </div>
+
+      <AlertDialog
+        open={!!postToCancel}
+        onOpenChange={(open) => !open && setPostToCancel(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar publicación programada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {postToCancel ? (
+                <>
+                  Se va a eliminar “{postToCancel.title}” y no se va a publicar en{' '}
+                  {postToCancel.scheduledAt
+                    ? new Date(postToCancel.scheduledAt).toLocaleString('es-AR', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'la fecha programada'}
+                  . Esta acción no se puede deshacer.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelScheduled}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Sí, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Wand2, Hash, Clock, ImagePlus, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Wand2, Hash, Clock, ImagePlus, X, Loader2 } from 'lucide-react'
 import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
+import { useToast } from '@/components/ui/use-toast'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { NETWORK_META } from '@/lib/networks'
@@ -31,9 +32,28 @@ export function PostEditor({
   onImageChange,
 }: PostEditorProps) {
   const [aiPanelType, setAiPanelType] = useState<'rewrite' | 'hashtags' | 'schedule' | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
   const clients = useAppStore((s) => s.clients)
+  const uploadMedia = useAppStore((s) => s.uploadMedia)
   const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
+
+  async function handleFileSelected(file: File) {
+    setUploading(true)
+    try {
+      const url = await uploadMedia(file)
+      onImageChange(url)
+    } catch (err) {
+      toast({
+        title: 'No se pudo subir la imagen',
+        description: err instanceof Error ? err.message : undefined,
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const charLimit = networks.length > 0 ? NETWORK_META[networks[0]].charLimit : 2200
   const charCount = description.length
@@ -195,6 +215,18 @@ export function PostEditor({
 
       <div>
         <Label className="text-sm font-medium text-gray-700 mb-2 block">Multimedia</Label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) handleFileSelected(f)
+            // Reset para permitir re-elegir el mismo archivo
+            e.target.value = ''
+          }}
+        />
         {imageUrl ? (
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -206,19 +238,47 @@ export function PostEditor({
             <button
               onClick={() => onImageChange(null)}
               className="absolute top-2 right-2 bg-black/50 rounded-full p-1 text-white hover:bg-black/70 transition-colors"
+              aria-label="Quitar imagen"
             >
               <X className="size-4" />
             </button>
           </div>
         ) : (
           <div
-            onClick={() => onImageChange('/images/restaurant.jpg')}
-            className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-[#0095b6] hover:bg-[#cceef5]/20 transition-colors"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (uploading) return
+              const f = e.dataTransfer.files?.[0]
+              if (f) handleFileSelected(f)
+            }}
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+              uploading
+                ? 'border-gray-200 bg-gray-50 cursor-wait'
+                : 'border-gray-200 cursor-pointer hover:border-[#0095b6] hover:bg-[#cceef5]/20'
+            }`}
           >
-            <ImagePlus className="size-8 mx-auto text-gray-300" />
-            <p className="text-sm text-gray-400 mt-2">
-              Arrastrá una imagen o hacé click para seleccionar
-            </p>
+            {uploading ? (
+              <>
+                <Loader2 className="size-8 mx-auto text-[#0095b6] animate-spin" />
+                <p className="text-sm text-gray-500 mt-2">Subiendo imagen…</p>
+              </>
+            ) : (
+              <>
+                <ImagePlus className="size-8 mx-auto text-gray-300" />
+                <p className="text-sm text-gray-400 mt-2">
+                  Arrastrá una imagen o hacé click para seleccionar
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  JPG, PNG, WEBP o GIF · hasta 10 MB
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>

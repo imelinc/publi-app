@@ -202,7 +202,7 @@ export default function MetricasPage() {
               return (
                 <div key={net} className="flex items-center gap-3">
                   <div className="w-24 flex items-center gap-2">
-                    <img src={`/icons/${net}-color.svg`} alt={net} width={16} height={16} />
+                    <img src={NETWORK_META[net].iconColor} alt={NETWORK_META[net].label} width={16} height={16} />
                     <span className="text-sm font-medium text-gray-700">{NETWORK_META[net].label}</span>
                   </div>
                   <div className="flex-1 h-6 rounded-md relative" style={{ backgroundColor: `${NETWORK_META[net].color}15` }}>
@@ -255,7 +255,7 @@ export default function MetricasPage() {
                         <div className="flex items-center gap-2">
                           {primaryNetwork && (
                             <>
-                              <img src={`/icons/${primaryNetwork}.svg`} alt={primaryNetwork} width={16} height={16} />
+                              <img src={NETWORK_META[primaryNetwork as Network].icon} alt={NETWORK_META[primaryNetwork as Network].label} width={16} height={16} />
                               <span className="text-sm text-gray-700">{NETWORK_META[primaryNetwork as Network].label}</span>
                             </>
                           )}

@@ -52,8 +52,8 @@ export const NETWORK_META: Record<Network, NetworkMeta> = {
   },
   x: {
     label: 'X',
-    icon: '/icons/x.svg',
-    iconColor: '/icons/x-color.svg',
+    icon: '/icons/twitter.svg',
+    iconColor: '/icons/twitter-color.svg',
     color: '#000000',
     charLimit: 280,
     baselineEngagement: 0.9,
@@ -69,7 +69,7 @@ export const NETWORK_META: Record<Network, NetworkMeta> = {
   youtube: {
     label: 'YouTube',
     icon: '/icons/youtube.svg',
-    iconColor: '/icons/youtube-color.svg',
+    iconColor: '/icons/yt-color.svg',
     color: '#FF0000',
     charLimit: 5000,
     baselineEngagement: 1.6,

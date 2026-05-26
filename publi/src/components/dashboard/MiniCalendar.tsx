@@ -36,7 +36,11 @@ function isSameDay(a: Date, b: Date): boolean {
 }
 
 function toDateString(d: Date): string {
-  return d.toISOString().split('T')[0]
+  // Zona horaria local (no UTC) para evitar saltos de día en GMT-X
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
 }
 
 export function MiniCalendar({ posts, events = [] }: MiniCalendarProps) {
@@ -53,7 +57,8 @@ export function MiniCalendar({ posts, events = [] }: MiniCalendarProps) {
 
   const eventsByDay = weekDays.map((day) => {
     const dateStr = toDateString(day)
-    return events.filter((e) => e.date === dateStr)
+    // `e.date` puede ser 'YYYY-MM-DD' (all-day) o ISO completo con hora.
+    return events.filter((e) => (e.date ?? '').slice(0, 10) === dateStr)
   })
 
   const firstDay = weekDays[0]

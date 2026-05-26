@@ -31,17 +31,46 @@ const COLOR_OPTIONS = [
   "#f97316",
 ]
 
+function buildLocalDateTimeISO(dateStr: string, time: string): string {
+  // dateStr en formato 'YYYY-MM-DD'. time en 'HH:MM'.
+  // Devuelve un ISO en zona local convertido a UTC.
+  const [yyyy, mm, dd] = dateStr.split("-").map((n) => parseInt(n, 10))
+  const [hh, min] = time.split(":").map((n) => parseInt(n, 10))
+  const combined = new Date(yyyy, (mm ?? 1) - 1, dd, hh, min, 0, 0)
+  return combined.toISOString()
+}
+
+function toDateInputValue(date: Date): string {
+  // Devuelve 'YYYY-MM-DD' en zona local (no UTC, para que <input type="date"> muestre el día correcto)
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}`
+}
+
 export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [type, setType] = useState<EventType>("event")
   const [color, setColor] = useState("#0095b6")
   const [clientId, setClientId] = useState("")
+  const [isAllDay, setIsAllDay] = useState(true)
+  const [startTime, setStartTime] = useState("09:00")
+  const [endTime, setEndTime] = useState("10:00")
+  const [date, setDate] = useState<string>(toDateInputValue(new Date()))
 
   const addEvent = useAppStore((s) => s.addEvent)
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const clients = useAppStore((s) => s.clients)
   const { toast } = useToast()
+
+  // Cuando se abre el modal: pre-rellenar la fecha con la del día seleccionado
+  // (o el día de hoy si no se pasó ninguna). El usuario puede cambiarla.
+  useEffect(() => {
+    if (open) {
+      setDate(toDateInputValue(selectedDate ?? new Date()))
+    }
+  }, [open, selectedDate])
 
   useEffect(() => {
     if (!open) {
@@ -50,6 +79,9 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
       setType("event")
       setColor("#0095b6")
       setClientId(activeWorkspaceId)
+      setIsAllDay(true)
+      setStartTime("09:00")
+      setEndTime("10:00")
     }
   }, [open, activeWorkspaceId])
 
@@ -60,7 +92,37 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
   }, [open, activeWorkspaceId, clientId])
 
   function handleSave() {
-    if (!title.trim() || !selectedDate) return
+    if (!title.trim() || !date) return
+
+    // Validación de horario: solo para eventos con rango (type='event' && !isAllDay).
+    // Para deadlines basta con una sola hora límite.
+    if (!isAllDay && type === "event") {
+      if (endTime <= startTime) {
+        toast({
+          title: "Horario inválido",
+          description: "La hora de fin debe ser posterior a la de inicio.",
+        })
+        return
+      }
+    }
+
+    // Construir date y endAt según tipo:
+    //  - all-day: date es 'YYYY-MM-DD', endAt null
+    //  - deadline con hora: date = fecha+horaLímite, endAt null (punto en el tiempo)
+    //  - event con rango: date = fecha+horaInicio, endAt = fecha+horaFin
+    let dateValue: string
+    let endAt: string | null
+
+    if (isAllDay) {
+      dateValue = date
+      endAt = null
+    } else if (type === "deadline") {
+      dateValue = buildLocalDateTimeISO(date, startTime)
+      endAt = null
+    } else {
+      dateValue = buildLocalDateTimeISO(date, startTime)
+      endAt = buildLocalDateTimeISO(date, endTime)
+    }
 
     addEvent({
       clientId,
@@ -68,33 +130,20 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
       description: description.trim(),
       type,
       color,
-      date: selectedDate.toISOString().split("T")[0],
+      date: dateValue,
+      endAt,
+      isAllDay,
     })
 
     toast({ title: "Evento agregado" })
     onClose()
   }
 
-  const formattedDate = selectedDate
-    ? selectedDate.toLocaleDateString("es-AR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      })
-    : null
-
-  const capitalizedDate = formattedDate
-    ? formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)
-    : null
-
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Agregar al calendario</DialogTitle>
-          {capitalizedDate && (
-            <p className="text-sm text-gray-400">{capitalizedDate}</p>
-          )}
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
@@ -106,6 +155,17 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nombre del evento"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha <span className="text-red-400">*</span>
+            </label>
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
             />
           </div>
 
@@ -179,6 +239,53 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
           </div>
 
           <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                {type === "deadline" ? "Horario" : "Duración"}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAllDay}
+                  onChange={(e) => setIsAllDay(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-[#0095b6] focus:ring-[#0095b6]"
+                />
+                <span className="text-sm text-gray-700">Todo el día</span>
+              </label>
+            </div>
+            {!isAllDay && type === "deadline" && (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Hora límite</label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+            )}
+            {!isAllDay && type === "event" && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Inicio</label>
+                  <Input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Fin</label>
+                  <Input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Cliente
             </label>
@@ -202,7 +309,7 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!title.trim() || !selectedDate}
+            disabled={!title.trim() || !date}
             className="bg-[#0095b6] text-white hover:opacity-90"
           >
             Guardar

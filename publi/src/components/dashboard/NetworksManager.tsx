@@ -27,6 +27,7 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<Network | null>(null)
   const [drafts, setDrafts] = useState<Partial<Record<Network, string>>>({})
+  const [passwords, setPasswords] = useState<Partial<Record<Network, string>>>({})
 
   // Cargar cuentas al montar
   useEffect(() => {
@@ -54,16 +55,22 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
 
   async function handleConnect(network: Network) {
     const username = (drafts[network] ?? '').trim()
+    const password = (passwords[network] ?? '').trim()
     if (!username) {
       toast({ title: 'Escribí un nombre de usuario antes de conectar' })
+      return
+    }
+    if (!password) {
+      toast({ title: 'Escribí la contraseña antes de conectar' })
       return
     }
 
     setBusy(network)
     try {
-      const account = await addSocialAccount(clientId, network, username)
+      const account = await addSocialAccount(clientId, network, username, password)
       setAccounts((prev) => [...prev, account])
       setDrafts((prev) => ({ ...prev, [network]: '' }))
+      setPasswords((prev) => ({ ...prev, [network]: '' }))
       toast({ title: `${NETWORK_META[network].label} conectada` })
     } catch (err) {
       toast({
@@ -106,33 +113,62 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
         const account = accounts.find((a) => a.network === network)
         const isBusy = busy === network
         const draft = drafts[network] ?? ''
+        const password = passwords[network] ?? ''
 
         return (
-          <div key={network} className="flex items-center gap-3 py-3">
+          <div key={network} className="flex items-start gap-3 py-3">
             {/* Ícono */}
             <img
               src={meta.iconColor}
               alt={meta.label}
               width={28}
               height={28}
-              className="shrink-0"
+              className="shrink-0 mt-1"
             />
 
-            {/* Info principal */}
+            {/* Info + inputs */}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-800">{meta.label}</div>
               {account ? (
-                <div className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                <div className="flex items-center gap-1 text-xs text-gray-500 truncate mt-0.5">
                   <Check className="size-3 text-green-500 shrink-0" />
                   <span className="truncate">@{account.username}</span>
                 </div>
               ) : (
-                <div className="text-xs text-gray-400">Sin conectar</div>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  <Input
+                    value={draft}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({ ...prev, [network]: e.target.value }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isBusy) handleConnect(network)
+                    }}
+                    placeholder={network === 'instagram' ? '@minegocio' : '@usuario'}
+                    className="h-8 text-xs"
+                    disabled={isBusy}
+                    autoComplete="off"
+                  />
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) =>
+                      setPasswords((prev) => ({ ...prev, [network]: e.target.value }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isBusy) handleConnect(network)
+                    }}
+                    placeholder="Contraseña"
+                    className="h-8 text-xs"
+                    disabled={isBusy}
+                    autoComplete="new-password"
+                  />
+                </div>
               )}
             </div>
 
             {/* Acción */}
-            <div className="shrink-0">
+            <div className="shrink-0 mt-1">
               {account ? (
                 <Button
                   variant="outline"
@@ -151,35 +187,21 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                   )}
                 </Button>
               ) : (
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    value={draft}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({ ...prev, [network]: e.target.value }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !isBusy) handleConnect(network)
-                    }}
-                    placeholder={network === 'instagram' ? '@minegocio' : '@usuario'}
-                    className="h-8 text-xs w-32"
-                    disabled={isBusy}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => handleConnect(network)}
-                    disabled={isBusy || !draft.trim()}
-                    className="bg-[#0095b6] hover:bg-[#007a96] text-white h-8"
-                  >
-                    {isBusy ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="size-3.5 mr-0.5" />
-                        Conectar
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleConnect(network)}
+                  disabled={isBusy || !draft.trim() || !password.trim()}
+                  className="bg-[#0095b6] hover:bg-[#007a96] text-white h-8"
+                >
+                  {isBusy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="size-3.5 mr-0.5" />
+                      Conectar
+                    </>
+                  )}
+                </Button>
               )}
             </div>
           </div>

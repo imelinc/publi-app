@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAppStore, getScheduledPosts, getDraftPosts, getPostsByClient } from '@/store/use-app-store'
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar'
 import { CheckCircle2, FileText, TrendingUp, TrendingDown } from 'lucide-react'
+import { NETWORK_META } from '@/lib/networks'
 
 function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr)
@@ -41,10 +42,11 @@ function isInPrevious7Days(dateStr: string): boolean {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { posts, activeWorkspaceId, clients, userProfile } = useAppStore()
+  const { posts, events, activeWorkspaceId, clients, userProfile } = useAppStore()
 
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
   const postsForClient = getPostsByClient(posts, activeWorkspaceId)
+  const eventsForClient = events.filter((e) => e.clientId === activeWorkspaceId)
   const scheduledPosts = getScheduledPosts(postsForClient)
   const draftPosts = getDraftPosts(postsForClient)
   const publishedPosts = postsForClient.filter((p) => p.status === 'published')
@@ -98,12 +100,12 @@ export default function DashboardPage() {
     return dates.reduce((a, b) => (a < b ? a : b))
   }
 
-  const recentPublished = posts
+  const recentPublished = postsForClient
     .filter((p) => p.status === 'published')
     .sort((a, b) => getPublishedAt(b).localeCompare(getPublishedAt(a)))
     .slice(0, 4)
 
-  const recentDrafts = posts
+  const recentDrafts = postsForClient
     .filter((p) => p.status === 'draft')
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 4)
@@ -212,7 +214,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
-          <MiniCalendar posts={postsForClient} />
+          <MiniCalendar posts={postsForClient} events={eventsForClient} />
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -248,12 +250,15 @@ export default function DashboardPage() {
                       {post.title}
                     </p>
                     <div className="flex gap-1 items-center mt-1">
-                      {post.networks.map((net) => (
-                        <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
-                          <img src={`/icons/${net}.svg`} alt={net} width={12} height={12} />
-                          {net.charAt(0).toUpperCase() + net.slice(1)}
-                        </span>
-                      ))}
+                      {post.networks.map((net) => {
+                        const meta = NETWORK_META[net]
+                        return (
+                          <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
+                            <img src={meta.icon} alt={meta.label} width={12} height={12} />
+                            {meta.label}
+                          </span>
+                        )
+                      })}
                     </div>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0 text-right">

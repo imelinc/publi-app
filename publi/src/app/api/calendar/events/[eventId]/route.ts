@@ -42,6 +42,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return Response.json({ error: 'Evento no encontrado' }, { status: 404 })
   }
 
+  const isAllDay = (event.is_all_day as boolean | null) ?? true
   return Response.json({
     data: {
       id: event.id,
@@ -50,7 +51,11 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       description: event.description ?? '',
       type: (event.type as EventType) ?? 'event',
       color: event.color ?? '#0095b6',
-      date: (event.date as string ?? '').split('T')[0],
+      date: isAllDay
+        ? (event.date as string ?? '').split('T')[0]
+        : (event.date as string ?? ''),
+      endAt: (event.end_at as string | null) ?? null,
+      isAllDay,
     },
   })
 }
@@ -63,6 +68,8 @@ interface UpdateEventBody {
   type?: EventType
   color?: string
   date?: string
+  endAt?: string | null
+  isAllDay?: boolean
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -103,6 +110,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (body.type !== undefined) updates.type = body.type
   if (body.color !== undefined) updates.color = body.color
   if (body.date !== undefined) updates.date = body.date
+  if (body.endAt !== undefined) updates.end_at = body.endAt
+  if (body.isAllDay !== undefined) {
+    updates.is_all_day = body.isAllDay
+    // Si se marca como all-day, limpiar end_at automáticamente
+    if (body.isAllDay) updates.end_at = null
+  }
 
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: 'No hay campos para actualizar' }, { status: 400 })
@@ -119,6 +132,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return Response.json({ error: updateErr.message }, { status: 500 })
   }
 
+  const updatedIsAllDay = (updated.is_all_day as boolean | null) ?? true
   return Response.json({
     data: {
       id: updated.id,
@@ -127,7 +141,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       description: updated.description ?? '',
       type: (updated.type as EventType) ?? 'event',
       color: updated.color ?? '#0095b6',
-      date: (updated.date as string ?? '').split('T')[0],
+      date: updatedIsAllDay
+        ? (updated.date as string ?? '').split('T')[0]
+        : (updated.date as string ?? ''),
+      endAt: (updated.end_at as string | null) ?? null,
+      isAllDay: updatedIsAllDay,
     },
   })
 }

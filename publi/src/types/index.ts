@@ -100,19 +100,13 @@ export interface Post {
 export interface UserProfile {
   id: string
   name: string
+  initials: string
   email: string
   avatarUrl: string | null
-  workspaceName: string
-  language: 'es' | 'en'
-  timezone: string
-  notifications: {
-    onPostScheduled: boolean
-    onPostPublished: boolean
-    onPostFailed: boolean
-    reminderBeforePost: boolean
-    weeklySummary: boolean
-  }
-  createdAt: string
+  // Campos del perfil extendido (tabla profiles — opcionales si aún no existe la fila)
+  workspaceName?: string
+  notifPostPublished?: boolean
+  createdAt?: string
 }
 
 export type NotificationType =
@@ -156,5 +150,10 @@ export interface CalendarEvent {
   description: string
   type: EventType
   color: string
+  /** Fecha del evento en formato ISO. Si `isAllDay=false`, también lleva la hora de inicio. */
   date: string
+  /** Fecha y hora de fin (ISO). Null si `isAllDay=true` o si es un evento puntual sin duración. */
+  endAt: string | null
+  /** Si true, el evento abarca todo el día y no se respeta la hora. */
+  isAllDay: boolean
 }

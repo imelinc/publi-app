@@ -91,6 +91,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 interface CreateBody {
   network: Network
   username: string
+  password: string
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -136,6 +137,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 400 }
     )
   }
+
+  // Validar contraseña: obligatoria en todas las redes para consistencia del flujo.
+  // Para redes simuladas no tiene significado funcional, pero se exige igual.
+  // Para Instagram (cuando se implemente OAuth real) se intercambiará por un token aquí mismo
+  // y se descartará. En NINGÚN caso la guardamos en la DB.
+  const password = (body.password ?? '').toString()
+  if (!password.trim()) {
+    return Response.json({ error: 'La contraseña es obligatoria' }, { status: 400 })
+  }
+  // `password` queda en scope local del request y se descarta al finalizar la función.
 
   // Generar datos simulados
   const externalUserId = `sim_${body.network}_${randomBytes(3).toString('hex')}`
