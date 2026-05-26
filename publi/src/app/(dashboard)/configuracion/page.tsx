@@ -73,9 +73,42 @@ export default function ConfiguracionPage() {
     []
   )
 
-  const handleDangerDelete = React.useCallback(() => {
-    toast({ title: "Cuenta eliminada" })
-    router.push("/login")
+  const [savingGeneral, setSavingGeneral] = React.useState(false)
+
+  async function handleSaveGeneral() {
+    setSavingGeneral(true)
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceName }),
+      })
+      if (!res.ok) {
+        toast({ title: 'Error al guardar', description: 'Intentá de nuevo.' })
+        return
+      }
+      toast({ title: 'Configuración guardada' })
+    } catch {
+      toast({ title: 'Error al guardar', description: 'No se pudo conectar con el servidor.' })
+    } finally {
+      setSavingGeneral(false)
+    }
+  }
+
+  const handleDangerDelete = React.useCallback(async () => {
+    try {
+      const res = await fetch('/api/users/me', { method: 'DELETE' })
+      if (!res.ok && res.status !== 204) {
+        toast({ title: 'Error al eliminar cuenta', description: 'Intentá de nuevo.' })
+        return
+      }
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      toast({ title: 'Cuenta eliminada' })
+      router.push('/login')
+    } catch {
+      toast({ title: 'Error al eliminar cuenta', description: 'No se pudo conectar con el servidor.' })
+    }
   }, [router, toast])
 
   return (
@@ -147,8 +180,8 @@ export default function ConfiguracionPage() {
           </div>
 
           <div className="pt-1">
-            <Button onClick={() => toast({ title: "Configuración guardada" })}>
-              Guardar cambios
+            <Button onClick={handleSaveGeneral} disabled={savingGeneral}>
+              {savingGeneral ? 'Guardando…' : 'Guardar cambios'}
             </Button>
           </div>
         </CardContent>

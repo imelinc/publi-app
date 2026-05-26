@@ -90,7 +90,7 @@ interface AppState {
     endAt?: string | null
     isAllDay?: boolean
   }) => Promise<void>
-  deleteEvent: (id: string) => void
+  deleteEvent: (id: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -365,8 +365,14 @@ export const useAppStore = create<AppState>((set) => ({
     }
   },
 
-  deleteEvent: (id) =>
-    set((state) => ({ events: state.events.filter((e) => e.id !== id) })),
+  deleteEvent: async (id) => {
+    const res = await fetch(`/api/calendar/events/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Error al eliminar evento')
+    }
+    set((state) => ({ events: state.events.filter((e) => e.id !== id) }))
+  },
 }))
 
 // ─── Utility functions ────────────────────────────────────────────────────────
