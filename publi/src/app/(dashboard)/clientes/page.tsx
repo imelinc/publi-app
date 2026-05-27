@@ -96,7 +96,7 @@ export default function ClientesPage() {
     }
   }
 
-  async function handleSave(data: { name: string; color: string; plan: Plan }): Promise<Client> {
+  async function handleSave(data: { name: string; description?: string; color: string; plan: Plan }): Promise<Client> {
     try {
       if (editingClient) {
         await updateClient(editingClient.id, data)

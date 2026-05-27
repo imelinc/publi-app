@@ -29,6 +29,7 @@ export type Plan = 'free' | 'pro'
 export interface Client {
   id: string
   name: string
+  description: string
   color: string
   initials: string
   plan: Plan

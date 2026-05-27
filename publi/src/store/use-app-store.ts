@@ -29,8 +29,8 @@ interface AppState {
   clients: Client[]
   clientsLoading: boolean
   fetchClients: () => Promise<void>
-  addClient: (data: { name: string; color: string; plan: Plan }) => Promise<Client>
-  updateClient: (id: string, data: { name?: string; color?: string; plan?: Plan }) => Promise<void>
+  addClient: (data: { name: string; description?: string; color: string; plan: Plan }) => Promise<Client>
+  updateClient: (id: string, data: { name?: string; description?: string; color?: string; plan?: Plan }) => Promise<void>
   deleteClient: (id: string) => Promise<void>
 
   // ─── Social accounts (cuentas de redes sociales por cliente) ────────────────
