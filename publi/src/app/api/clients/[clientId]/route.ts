@@ -40,11 +40,14 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     else if (typed.status === 'published') stats.published++
   }
 
-  const { data: igAccount } = await supabase
-    .from('instagram_accounts')
-    .select('id')
+  const { data: socialAccounts } = await supabase
+    .from('social_accounts')
+    .select('network')
     .eq('client_id', clientId)
-    .maybeSingle()
+
+  const connectedNetworks = (socialAccounts ?? []).map(
+    (a: { network: Network }) => a.network
+  )
 
   const result = {
     id: client.id,
@@ -52,7 +55,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     color: client.color,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
-    connectedNetworks: igAccount ? (['instagram'] as Network[]) : ([] as Network[]),
+    connectedNetworks,
     stats,
   }
 

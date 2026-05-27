@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo } from "react"
-import type { Post, CalendarEvent } from "@/types"
+import type { Post, CalendarEvent, Network } from "@/types"
+import { NETWORK_META } from "@/lib/networks"
 
 interface CalendarGridProps {
   currentMonth: Date
@@ -14,10 +15,6 @@ interface CalendarGridProps {
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-
-const NETWORK_ICON_MAP: Record<string, string> = {
-  instagram: "/icons/instagram.svg",
-}
 
 function getDaysInGrid(month: Date): Date[] {
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1)
@@ -73,7 +70,18 @@ function getPostsForDay(posts: Post[], date: Date): Post[] {
 
 function getEventsForDay(events: CalendarEvent[], date: Date): CalendarEvent[] {
   const dateStr = formatDateKey(date)
-  return events.filter((e) => e.date === dateStr)
+  // `date` puede ser 'YYYY-MM-DD' (all-day) o ISO con hora.
+  // Comparamos solo la parte de fecha.
+  return events.filter((e) => (e.date ?? '').slice(0, 10) === dateStr)
+}
+
+function formatEventTime(event: CalendarEvent): string | null {
+  if (event.isAllDay) return null
+  const start = new Date(event.date)
+  if (isNaN(start.getTime())) return null
+  const hh = String(start.getHours()).padStart(2, '0')
+  const mm = String(start.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -159,9 +167,8 @@ export function CalendarGrid({
               </div>
               {dayPosts.slice(0, postsToShow).map((post) => {
                 const color = post.clientColor
-                const iconPath =
-                  NETWORK_ICON_MAP[post.networks[0]] ??
-                  `/icons/${post.networks[0]}.svg`
+                const firstNetwork = post.networks[0] as Network | undefined
+                const iconPath = firstNetwork ? NETWORK_META[firstNetwork].icon : ""
                 return (
                   <div
                     key={post.id}
@@ -189,20 +196,24 @@ export function CalendarGrid({
                   +{overflow} más
                 </div>
               )}
-              {dayEvents.slice(0, eventsToShow).map((event) => (
-                <div
-                  key={event.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEventClick(event)
-                  }}
-                  className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 mb-0.5 cursor-pointer truncate"
-                  style={{ backgroundColor: event.color + "25", color: event.color }}
-                >
-                  <span className="shrink-0 text-[9px]">{EVENT_TYPE_ICONS[event.type] ?? "📅"}</span>
-                  <span className="truncate font-medium">{event.title}</span>
-                </div>
-              ))}
+              {dayEvents.slice(0, eventsToShow).map((event) => {
+                const time = formatEventTime(event)
+                return (
+                  <div
+                    key={event.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEventClick(event)
+                    }}
+                    className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 mb-0.5 cursor-pointer truncate"
+                    style={{ backgroundColor: event.color + "25", color: event.color }}
+                  >
+                    <span className="shrink-0 text-[9px]">{EVENT_TYPE_ICONS[event.type] ?? "📅"}</span>
+                    {time && <span className="shrink-0 text-[9px] opacity-70">{time}</span>}
+                    <span className="truncate font-medium">{event.title}</span>
+                  </div>
+                )
+              })}
             </div>
           )
         })}

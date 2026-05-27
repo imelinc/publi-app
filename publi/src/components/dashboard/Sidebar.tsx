@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,16 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', Icon: LayoutDashboard },
@@ -33,21 +43,31 @@ export function Sidebar() {
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const setActiveWorkspace = useAppStore((s) => s.setActiveWorkspace)
   const clients = useAppStore((s) => s.clients)
+  const hasUnsavedChanges = useAppStore((s) => s.hasUnsavedChanges)
+  const setHasUnsavedChanges = useAppStore((s) => s.setHasUnsavedChanges)
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+
+  function safeNavigate(href: string) {
+    if (hasUnsavedChanges && href !== pathname) {
+      setPendingHref(href)
+    } else {
+      router.push(href)
+    }
+  }
+
+  function confirmDiscardAndNavigate() {
+    if (!pendingHref) return
+    setHasUnsavedChanges(false)
+    const href = pendingHref
+    setPendingHref(null)
+    router.push(href)
+  }
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const user = useAppStore((s) => s.user)
-
+  const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
-
-  const userInitials = useMemo(() => {
-    if (!user?.name) return 'U'
-    const parts = user.name.trim().split(/\s+/)
-    const first = parts[0]?.[0] ?? ''
-    const second = parts[1]?.[0] ?? ''
-    return (first + second).toUpperCase() || 'U'
-  }, [user?.name])
 
   useEffect(() => {
     if (clients.length > 0 && !activeWorkspaceId) {
@@ -140,7 +160,7 @@ export function Sidebar() {
       {/* ZONA MIDDLE */}
       <div className="flex-1 px-4 pb-4 flex flex-col overflow-y-auto">
         <button
-          onClick={() => router.push('/nueva-publicacion')}
+          onClick={() => safeNavigate('/nueva-publicacion')}
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-white text-sm font-medium mb-3 hover:opacity-90 transition-opacity"
           style={{ backgroundColor: '#0095b6' }}
         >
@@ -154,7 +174,7 @@ export function Sidebar() {
             return (
               <button
                 key={href}
-                onClick={() => router.push(href)}
+                onClick={() => safeNavigate(href)}
                 className={cn(
                   'w-full flex items-center gap-3 py-2 px-3 rounded-lg text-sm text-left transition-colors',
                   isActive
@@ -182,7 +202,7 @@ export function Sidebar() {
             const isActive = pathname.startsWith('/configuracion')
             return (
               <button
-                onClick={() => router.push('/configuracion')}
+                onClick={() => safeNavigate('/configuracion')}
                 className={cn(
                   'w-full flex items-center gap-3 py-2 px-3 rounded-lg text-sm text-left transition-colors',
                   isActive
@@ -209,18 +229,26 @@ export function Sidebar() {
       {/* ZONA BOTTOM */}
       <div className="px-4 pb-5 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-            style={{ backgroundColor: '#0095b6' }}
-          >
-            {userInitials}
-          </div>
+          {userProfile?.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt={userProfile.name}
+              className="w-8 h-8 rounded-full shrink-0 object-cover"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+              style={{ backgroundColor: '#0095b6' }}
+            >
+              {userProfile?.initials ?? '…'}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.name ?? 'Usuario'}
+              {userProfile?.name ?? '…'}
             </p>
             <p className="text-xs text-gray-400 truncate">
-              {user?.email ?? ''}
+              {userProfile?.email ?? ''}
             </p>
           </div>
           <button
@@ -236,6 +264,30 @@ export function Sidebar() {
           </button>
         </div>
       </div>
+
+      <AlertDialog
+        open={!!pendingHref}
+        onOpenChange={(open) => !open && setPendingHref(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Salir sin guardar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tenés cambios sin guardar en esta pantalla. Si salís ahora,
+              los vas a perder. ¿Querés salir igual o quedarte para guardar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver a la pantalla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDiscardAndNavigate}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Salir sin guardar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   )
 }

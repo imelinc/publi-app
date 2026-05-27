@@ -2,6 +2,7 @@
 
 import { Heart, MessageCircle, Send, Eye } from 'lucide-react'
 import type { Network, Client } from '@/types'
+import { NETWORK_META } from '@/lib/networks'
 
 interface PostPreviewProps {
   description: string
@@ -10,14 +11,6 @@ interface PostPreviewProps {
   networks: Network[]
   activeNetwork: Network | null
   onNetworkSelect: (network: Network) => void
-}
-
-const NETWORK_ICONS: Record<Network, string> = {
-  instagram: '/icons/instagram-color.svg',
-}
-
-const NETWORK_NAMES: Record<Network, string> = {
-  instagram: 'Instagram',
 }
 
 export function PostPreview({
@@ -46,13 +39,13 @@ export function PostPreview({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={NETWORK_ICONS[network]}
-                alt={NETWORK_NAMES[network]}
+                src={NETWORK_META[network].iconColor}
+                alt={NETWORK_META[network].label}
                 width={16}
                 height={16}
                 className="size-4 object-contain"
               />
-              {NETWORK_NAMES[network]}
+              {NETWORK_META[network].label}
             </button>
           ))}
         </div>

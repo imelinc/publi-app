@@ -15,49 +15,51 @@ interface ChatBody {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return Response.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
     const { message, clientId, history }: ChatBody = await req.json()
 
     let clientContext = ''
 
     if (clientId) {
-      const { data: client } = await supabase
-        .from('clients')
-        .select('id, name, color')
-        .eq('id', clientId)
-        .eq('user_id', user.id)
-        .single()
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
 
-      if (client) {
-        const { data: igAccount } = await supabase
-          .from('instagram_accounts')
-          .select('id')
-          .eq('client_id', client.id)
-          .maybeSingle()
+      if (user) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('id, name, plan, color')
+          .eq('id', clientId)
+          .eq('user_id', user.id)
+          .single()
 
-        const connectedNetworks = igAccount ? 'instagram' : 'ninguna'
+        if (client) {
+          const { data: accounts } = await supabase
+            .from('social_accounts')
+            .select('network')
+            .eq('client_id', client.id)
 
-        const { data: recentPosts } = await supabase
-          .from('posts')
-          .select('title, status')
-          .eq('client_id', client.id)
-          .order('created_at', { ascending: false })
-          .limit(3)
+          const connectedNetworks =
+            accounts && accounts.length > 0
+              ? accounts.map((a: { network: string }) => a.network).join(', ')
+              : 'ninguna'
 
-        const recentSummary = (recentPosts ?? [])
-          .map((p: { title: string; status: string }) => `"${p.title}" (${p.status})`)
-          .join(', ')
+          const { data: recentPosts } = await supabase
+            .from('posts')
+            .select('title, status')
+            .eq('client_id', client.id)
+            .order('created_at', { ascending: false })
+            .limit(3)
 
-        clientContext = `
+          const recentSummary = (recentPosts ?? [])
+            .map((p: { title: string; status: string }) => `"${p.title}" (${p.status})`)
+            .join(', ')
+
+          clientContext = `
 
 CLIENTE ACTIVO: ${client.name}
 Redes conectadas: ${connectedNetworks}
+Plan: ${client.plan}
 Posts recientes: ${recentSummary || 'ninguno'}`
+        }
       }
     }
 

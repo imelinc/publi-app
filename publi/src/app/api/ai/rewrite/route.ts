@@ -13,45 +13,36 @@ interface RewriteSuggestion {
   label: string
 }
 
-/** Limpia backticks de markdown que Groq a veces agrega al JSON */
-function extractJson(raw: string): string {
-  return raw.replace(/^```(?:json)?\n?/i, '').replace(/```$/i, '').trim()
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return Response.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
-    const body = await req.json()
-    const { text, clientId, tone } = body as RewriteBody
-
-    if (!text?.trim()) {
-      return Response.json({ error: 'El campo text es requerido' }, { status: 400 })
-    }
+    const { text, clientId, tone }: RewriteBody = await req.json()
 
     let clientExtra = ''
 
     if (clientId) {
-      const { data: client } = await supabase
-        .from('clients')
-        .select('name')
-        .eq('id', clientId)
-        .eq('user_id', user.id)
-        .single()
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
 
-      if (client) {
-        const { data: igAccount } = await supabase
-          .from('instagram_accounts')
-          .select('id')
-          .eq('client_id', clientId)
-          .maybeSingle()
+      if (user) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', clientId)
+          .eq('user_id', user.id)
+          .single()
 
-        const networks = igAccount ? 'instagram' : 'ninguna'
-        clientExtra = ` Cliente activo: ${client.name}, redes: ${networks}.`
+        if (client) {
+          const { data: accounts } = await supabase
+            .from('social_accounts')
+            .select('network')
+            .eq('client_id', clientId)
+
+          const networks =
+            accounts && accounts.length > 0
+              ? accounts.map((a: { network: string }) => a.network).join(', ')
+              : 'ninguna'
+          clientExtra = ` Cliente activo: ${client.name}, redes: ${networks}.`
+        }
       }
     }
 
@@ -74,11 +65,10 @@ export async function POST(req: NextRequest) {
     })
 
     const raw = completion.choices[0]?.message?.content ?? ''
-    const parsed: { suggestions: RewriteSuggestion[] } = JSON.parse(extractJson(raw))
+    const parsed: { suggestions: RewriteSuggestion[] } = JSON.parse(raw)
 
     return Response.json({ suggestions: parsed.suggestions }, { status: 200 })
-  } catch (err) {
-    const message = err instanceof SyntaxError ? 'Respuesta inválida del modelo' : 'Error interno'
-    return Response.json({ error: message }, { status: 500 })
+  } catch {
+    return Response.json({ error: 'Error interno' }, { status: 500 })
   }
 }

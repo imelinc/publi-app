@@ -52,15 +52,24 @@ export async function GET(request: NextRequest) {
     return Response.json({ data: [] })
   }
 
-  const result = (events ?? []).map((e: Record<string, unknown>) => ({
-    id: e.id,
-    clientId: e.client_id,
-    title: (e.title as string) ?? '',
-    description: (e.description as string) ?? '',
-    type: (e.type as EventType) ?? 'event',
-    color: (e.color as string) ?? '#0095b6',
-    date: ((e.date as string) ?? '').split('T')[0],
-  }))
+  const result = (events ?? []).map((e: Record<string, unknown>) => {
+    const isAllDay = (e.is_all_day as boolean | null) ?? true
+    return {
+      id: e.id,
+      clientId: e.client_id,
+      title: (e.title as string) ?? '',
+      description: (e.description as string) ?? '',
+      type: (e.type as EventType) ?? 'event',
+      color: (e.color as string) ?? '#0095b6',
+      // Si es all-day, devolvemos solo la fecha (YYYY-MM-DD).
+      // Si no, devolvemos el timestamp ISO completo con hora.
+      date: isAllDay
+        ? ((e.date as string) ?? '').split('T')[0]
+        : (e.date as string) ?? '',
+      endAt: (e.end_at as string | null) ?? null,
+      isAllDay,
+    }
+  })
 
   return Response.json({ data: result })
 }
@@ -71,7 +80,11 @@ interface CreateEventBody {
   description?: string
   type: EventType
   color?: string
+  /** Fecha del evento. Si isAllDay, formato 'YYYY-MM-DD'. Si no, ISO con hora ej '2026-05-26T14:30:00'. */
   date: string
+  /** Fecha-hora de fin (ISO). Solo si isAllDay=false y se quiere marcar duración. */
+  endAt?: string | null
+  isAllDay?: boolean
 }
 
 export async function POST(request: NextRequest) {
@@ -103,6 +116,23 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'La fecha es requerida' }, { status: 400 })
   }
 
+  const isAllDay = body.isAllDay ?? true
+
+  // Validación de coherencia de horas
+  if (!isAllDay && body.endAt) {
+    const start = new Date(body.date)
+    const end = new Date(body.endAt)
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return Response.json({ error: 'Fechas inválidas' }, { status: 400 })
+    }
+    if (end <= start) {
+      return Response.json(
+        { error: 'La hora de fin debe ser posterior a la de inicio' },
+        { status: 400 }
+      )
+    }
+  }
+
   // Verificar que el cliente pertenece al usuario
   const { data: client, error: clientErr } = await supabase
     .from('clients')
@@ -124,6 +154,8 @@ export async function POST(request: NextRequest) {
       type: body.type,
       color: body.color ?? '#0095b6',
       date: body.date,
+      end_at: isAllDay ? null : (body.endAt ?? null),
+      is_all_day: isAllDay,
     })
     .select()
     .single()
@@ -132,6 +164,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: insertErr.message }, { status: 500 })
   }
 
+  const eventIsAllDay = (event.is_all_day as boolean | null) ?? true
   const result = {
     id: event.id,
     clientId: event.client_id,
@@ -139,7 +172,11 @@ export async function POST(request: NextRequest) {
     description: event.description ?? '',
     type: (event.type as EventType) ?? 'event',
     color: event.color ?? '#0095b6',
-    date: (event.date as string ?? '').split('T')[0],
+    date: eventIsAllDay
+      ? (event.date as string ?? '').split('T')[0]
+      : (event.date as string ?? ''),
+    endAt: (event.end_at as string | null) ?? null,
+    isAllDay: eventIsAllDay,
   }
 
   return Response.json({ data: result }, { status: 201 })

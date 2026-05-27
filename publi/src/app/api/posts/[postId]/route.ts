@@ -82,7 +82,8 @@ interface UpdatePostBody {
   description?: string
   hashtags?: string[]
   mediaUrls?: string[]
-  status?: 'draft' | 'scheduled'
+  networks?: Network[]
+  status?: 'draft' | 'scheduled' | 'published'
   scheduledAt?: string | null
 }
 
@@ -119,10 +120,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return Response.json({ error: 'Post no encontrado' }, { status: 404 })
   }
 
-  // Solo se pueden editar posts en draft o scheduled
-  if (post.status !== 'draft' && post.status !== 'scheduled') {
+  // Solo se pueden editar posts en draft, scheduled, pending_approval o approved
+  // (no se pueden editar published o failed)
+  const editable = ['draft', 'scheduled', 'pending_approval', 'approved']
+  if (!editable.includes(post.status as string)) {
     return Response.json(
-      { error: 'Solo se pueden editar publicaciones en borrador o programadas' },
+      { error: 'Esta publicación ya no se puede editar' },
       { status: 409 }
     )
   }
@@ -135,9 +138,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   // Validar status si se envía
-  if (body.status && !['draft', 'scheduled'].includes(body.status)) {
+  if (body.status && !['draft', 'scheduled', 'published'].includes(body.status)) {
     return Response.json(
-      { error: 'El estado debe ser "draft" o "scheduled"' },
+      { error: 'El estado debe ser "draft", "scheduled" o "published"' },
       { status: 400 }
     )
   }
@@ -155,8 +158,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (body.description !== undefined) updates.description = body.description
   if (body.hashtags !== undefined) updates.hashtags = body.hashtags
   if (body.mediaUrls !== undefined) updates.media_urls = body.mediaUrls
+  if (body.networks !== undefined) updates.networks = body.networks
   if (body.status !== undefined) updates.status = body.status
   if (body.scheduledAt !== undefined) updates.scheduled_at = body.scheduledAt
+  // Si pasa a 'published' y no se pasó scheduled_at, marcar como publicado ahora
+  if (body.status === 'published' && body.scheduledAt === undefined && !post.scheduled_at) {
+    updates.scheduled_at = new Date().toISOString()
+  }
 
   const { data: updated, error: updateErr } = await supabase
     .from('posts')

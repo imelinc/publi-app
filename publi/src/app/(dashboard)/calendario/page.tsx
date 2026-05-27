@@ -22,6 +22,7 @@ import {
   Calendar,
   Clock,
   Trash2,
+  RefreshCw,
 } from "lucide-react"
 
 export default function CalendarioPage() {
@@ -34,7 +35,17 @@ export default function CalendarioPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
-  const { posts, events, deleteEvent, clients } = useAppStore()
+  const { posts, events, deleteEvent, clients, fetchPosts, fetchEvents } = useAppStore()
+  const [refreshing, setRefreshing] = useState(false)
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    try {
+      await Promise.all([fetchPosts(), fetchEvents()])
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const filteredPosts = useMemo(() => {
     if (clientFilter === "all") return posts
@@ -136,6 +147,17 @@ export default function CalendarioPage() {
                 </option>
               ))}
             </select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Refrescar para ver respuestas de aprobación recientes"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Actualizando…' : 'Actualizar'}
+            </Button>
 
             <Button
               onClick={() => {
@@ -289,17 +311,53 @@ export default function CalendarioPage() {
                 </p>
               )}
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-1.5 text-sm text-gray-500">
                   <Calendar className="w-4 h-4" />
                   <span>
-                    {new Date(selectedEvent.date + "T12:00:00").toLocaleDateString("es-AR", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {(() => {
+                      // `selectedEvent.date` puede ser:
+                      //  - 'YYYY-MM-DD' si isAllDay
+                      //  - ISO completo con hora si !isAllDay
+                      // En el primer caso, parseamos el mediodía local para evitar saltos de día por timezone.
+                      const raw = selectedEvent.date ?? ""
+                      const d = raw.includes("T")
+                        ? new Date(raw)
+                        : new Date(raw + "T12:00:00")
+                      return isNaN(d.getTime())
+                        ? raw
+                        : d.toLocaleDateString("es-AR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                    })()}
                   </span>
                 </div>
+
+                {!selectedEvent.isAllDay && (
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                    <Clock className="w-4 h-4" />
+                    <span>
+                      {(() => {
+                        const start = new Date(selectedEvent.date)
+                        if (isNaN(start.getTime())) return ""
+                        const fmt = (d: Date) =>
+                          `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+                        if (selectedEvent.type === "deadline") {
+                          return `Hasta las ${fmt(start)}`
+                        }
+                        if (selectedEvent.endAt) {
+                          const end = new Date(selectedEvent.endAt)
+                          if (!isNaN(end.getTime())) {
+                            return `${fmt(start)} – ${fmt(end)}`
+                          }
+                        }
+                        return fmt(start)
+                      })()}
+                    </span>
+                  </div>
+                )}
 
                 <span
                   className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium ${
@@ -308,7 +366,6 @@ export default function CalendarioPage() {
                       : "bg-blue-50 text-blue-600"
                   }`}
                 >
-                  <Clock className="w-3 h-3" />
                   {selectedEvent.type === "deadline" ? "Deadline" : "Evento"}
                 </span>
               </div>

@@ -3,27 +3,49 @@ import type {
   Client,
   Post,
   CalendarEvent,
+  Plan,
   Network,
   PostStatus,
   EventType,
+  SocialAccount,
   UserProfile,
 } from '@/types'
+
+export type { UserProfile }
 
 interface AppState {
   activeWorkspaceId: string
   setActiveWorkspace: (id: string) => void
 
-  user: UserProfile | null
-  userLoading: boolean
-  fetchUser: () => Promise<void>
-  setUser: (user: UserProfile) => void
+  // ─── Navigation guard ──────────────────────────────────────────────────────────
+  /** Si está en true, otros componentes (ej. Sidebar) deben confirmar antes de navegar */
+  hasUnsavedChanges: boolean
+  setHasUnsavedChanges: (v: boolean) => void
+
+  // ─── User profile ──────────────────────────────────────────────────────────────
+  userProfile: UserProfile | null
+  fetchUserProfile: () => Promise<void>
 
   clients: Client[]
   clientsLoading: boolean
   fetchClients: () => Promise<void>
-  addClient: (data: { name: string; color: string }) => Promise<Client>
-  updateClient: (id: string, data: { name?: string; color?: string }) => Promise<void>
+  addClient: (data: { name: string; color: string; plan: Plan }) => Promise<Client>
+  updateClient: (id: string, data: { name?: string; color?: string; plan?: Plan }) => Promise<void>
   deleteClient: (id: string) => Promise<void>
+
+  // ─── Social accounts (cuentas de redes sociales por cliente) ────────────────
+  fetchSocialAccounts: (clientId: string) => Promise<SocialAccount[]>
+  addSocialAccount: (
+    clientId: string,
+    network: Network,
+    username: string,
+    password: string
+  ) => Promise<SocialAccount>
+  removeSocialAccount: (
+    clientId: string,
+    accountId: string,
+    network: Network
+  ) => Promise<void>
 
   posts: Post[]
   postsLoading: boolean
@@ -39,7 +61,21 @@ interface AppState {
     hashtags: string[]
   }) => Promise<Post>
   updatePost: (id: string, updates: Partial<Post>) => void
+  updatePostRemote: (
+    id: string,
+    updates: {
+      title?: string
+      description?: string
+      hashtags?: string[]
+      mediaUrls?: string[]
+      networks?: Network[]
+      status?: 'draft' | 'scheduled' | 'published'
+      scheduledAt?: string | null
+    }
+  ) => Promise<Post>
   deletePost: (id: string) => Promise<void>
+  requestApproval: (postId: string) => Promise<{ approvalUrl: string }>
+  uploadMedia: (file: File) => Promise<string>
 
   events: CalendarEvent[]
   eventsLoading: boolean
@@ -51,6 +87,8 @@ interface AppState {
     type: EventType
     color: string
     date: string
+    endAt?: string | null
+    isAllDay?: boolean
   }) => Promise<void>
   deleteEvent: (id: string) => Promise<void>
 }
@@ -59,27 +97,19 @@ export const useAppStore = create<AppState>((set) => ({
   activeWorkspaceId: '',
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
 
-  // ─── User ─────────────────────────────────────────────────────────────────────
+  hasUnsavedChanges: false,
+  setHasUnsavedChanges: (v) => set({ hasUnsavedChanges: v }),
 
-  user: null,
-  userLoading: false,
+  // ─── User profile ──────────────────────────────────────────────────────────────
 
-  fetchUser: async () => {
-    set({ userLoading: true })
-    try {
-      const res = await fetch('/api/users/me')
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        throw new Error(json.error || 'Error al cargar perfil')
-      }
-      const profile = (await res.json()) as UserProfile
-      set({ user: profile })
-    } finally {
-      set({ userLoading: false })
-    }
+  userProfile: null,
+
+  fetchUserProfile: async () => {
+    const res = await fetch('/api/users/me')
+    if (!res.ok) return
+    const json = await res.json()
+    set({ userProfile: json as UserProfile })
   },
-
-  setUser: (user) => set({ user }),
 
   // ─── Clients ──────────────────────────────────────────────────────────────────
 
@@ -144,6 +174,67 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ clients: state.clients.filter((c) => c.id !== id) }))
   },
 
+  // ─── Social accounts ──────────────────────────────────────────────────────────
+
+  fetchSocialAccounts: async (clientId) => {
+    const res = await fetch(`/api/clients/${clientId}/social-accounts`)
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Error al cargar cuentas conectadas')
+    }
+    const json = await res.json()
+    return json.data as SocialAccount[]
+  },
+
+  addSocialAccount: async (clientId, network, username, password) => {
+    const res = await fetch(`/api/clients/${clientId}/social-accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ network, username, password }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      throw new Error(json.error || 'Error al conectar la red')
+    }
+    const account: SocialAccount = json.data
+    // Optimistic update: agregar la red a connectedNetworks del cliente
+    set((state) => ({
+      clients: state.clients.map((c) =>
+        c.id === clientId
+          ? {
+              ...c,
+              connectedNetworks: c.connectedNetworks.includes(network)
+                ? c.connectedNetworks
+                : [...c.connectedNetworks, network],
+            }
+          : c
+      ),
+    }))
+    return account
+  },
+
+  removeSocialAccount: async (clientId, accountId, network) => {
+    const res = await fetch(
+      `/api/clients/${clientId}/social-accounts/${accountId}`,
+      { method: 'DELETE' }
+    )
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Error al desconectar la red')
+    }
+    // Sacar la red de connectedNetworks
+    set((state) => ({
+      clients: state.clients.map((c) =>
+        c.id === clientId
+          ? {
+              ...c,
+              connectedNetworks: c.connectedNetworks.filter((n) => n !== network),
+            }
+          : c
+      ),
+    }))
+  },
+
   // ─── Posts ────────────────────────────────────────────────────────────────────
 
   posts: [],
@@ -185,6 +276,30 @@ export const useAppStore = create<AppState>((set) => ({
       posts: state.posts.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     })),
 
+  updatePostRemote: async (id, updates) => {
+    const res = await fetch(`/api/posts/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al actualizar publicación')
+    const updated: Post = json.data
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+    }))
+    return updated
+  },
+
+  uploadMedia: async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/posts/media', { method: 'POST', body: formData })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al subir la imagen')
+    return json.url as string
+  },
+
   deletePost: async (id) => {
     const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -192,6 +307,21 @@ export const useAppStore = create<AppState>((set) => ({
       throw new Error(json.error || 'Error al eliminar publicación')
     }
     set((state) => ({ posts: state.posts.filter((p) => p.id !== id) }))
+  },
+
+  requestApproval: async (postId) => {
+    const res = await fetch(`/api/posts/${postId}/request-approval`, {
+      method: 'POST',
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Error al generar link de aprobación')
+    // Actualizar el post en el estado local
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.id === postId ? { ...p, status: 'pending_approval' } : p
+      ),
+    }))
+    return { approvalUrl: json.data.approvalUrl }
   },
 
   // ─── Calendar Events ──────────────────────────────────────────────────────────
@@ -225,7 +355,12 @@ export const useAppStore = create<AppState>((set) => ({
       const saved: CalendarEvent = json.data
       set((state) => ({ events: [...state.events, saved] }))
     } catch {
-      const fallback: CalendarEvent = { ...event, id: crypto.randomUUID() }
+      const fallback: CalendarEvent = {
+        ...event,
+        id: crypto.randomUUID(),
+        endAt: event.endAt ?? null,
+        isAllDay: event.isAllDay ?? true,
+      }
       set((state) => ({ events: [...state.events, fallback] }))
     }
   },

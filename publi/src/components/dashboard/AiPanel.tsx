@@ -6,11 +6,22 @@ import Image from 'next/image'
 import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
 
+export interface ScheduleRecommendation {
+  dayOfWeek: string
+  time: string // 'HH:MM'
+  reason: string
+}
+
 interface AiPanelProps {
   type: 'rewrite' | 'hashtags' | 'schedule'
   content: string
   networks: Network[]
-  onAccept: (result: string) => void
+  /**
+   * Callback al aceptar la sugerencia.
+   * - rewrite / hashtags: `result` es el texto sugerido. `schedule` es null.
+   * - schedule: `result` es el texto formateado. `schedule` trae la data parseada.
+   */
+  onAccept: (result: string, schedule?: ScheduleRecommendation) => void
   onDiscard: () => void
 }
 
@@ -42,6 +53,7 @@ const TYPE_LABELS: Record<string, string> = {
 export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPanelProps) {
   const [loading, setLoading] = useState(true)
   const [suggestion, setSuggestion] = useState<string | null>(null)
+  const [scheduleData, setScheduleData] = useState<ScheduleRecommendation | null>(null)
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -93,8 +105,18 @@ export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPane
           const rec = data.recommendation
           if (rec?.dayOfWeek && rec?.time && rec?.reason) {
             setSuggestion(`📅 ${rec.dayOfWeek} a las ${rec.time} hs\n\n${rec.reason}`)
+            setScheduleData({ dayOfWeek: rec.dayOfWeek, time: rec.time, reason: rec.reason })
           } else {
             setSuggestion(fallback)
+            // Parsear el fallback "📅 Miércoles a las 18:00 hs\n\nReason..."
+            const match = fallback.match(/📅\s+(\S+)\s+a las\s+(\d{1,2}:\d{2})/)
+            if (match) {
+              setScheduleData({
+                dayOfWeek: match[1],
+                time: match[2],
+                reason: fallback.split('\n\n')[1] ?? '',
+              })
+            }
           }
         }
       } catch (err) {
@@ -152,7 +174,9 @@ export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPane
             </p>
           )}
           <button
-            onClick={() => onAccept(suggestion)}
+            onClick={() =>
+              onAccept(suggestion, type === 'schedule' ? scheduleData ?? undefined : undefined)
+            }
             className="w-full mt-3 bg-[#0095b6] text-white text-sm rounded-lg py-2 hover:bg-[#007a94] transition-colors"
           >
             Aplicar sugerencia

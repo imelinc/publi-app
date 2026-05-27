@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAppStore, getScheduledPosts, getDraftPosts, getPostsByClient } from '@/store/use-app-store'
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar'
 import { CheckCircle2, FileText, TrendingUp, TrendingDown } from 'lucide-react'
+import { NETWORK_META } from '@/lib/networks'
 
 function formatDateShort(dateStr: string): string {
   const d = new Date(dateStr)
@@ -41,7 +42,7 @@ function isInPrevious7Days(dateStr: string): boolean {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { posts, events, activeWorkspaceId, clients, user } = useAppStore()
+  const { posts, events, activeWorkspaceId, clients, userProfile } = useAppStore()
 
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
   const postsForClient = getPostsByClient(posts, activeWorkspaceId)
@@ -66,16 +67,6 @@ export default function DashboardPage() {
   const upcomingPosts = scheduledPosts
     .filter((p) => p.scheduledAt !== null && new Date(p.scheduledAt) >= now)
     .sort((a, b) => (a.scheduledAt ?? '').localeCompare(b.scheduledAt ?? ''))
-
-  const upcomingEvents = eventsForClient
-    .filter((e) => new Date(e.date + 'T12:00:00') >= now)
-    .sort((a, b) => a.date.localeCompare(b.date))
-
-  const upcomingItems = [
-    ...upcomingPosts.map((p) => ({ type: 'post' as const, data: p, date: p.scheduledAt! })),
-    ...upcomingEvents.map((e) => ({ type: 'event' as const, data: e, date: e.date })),
-  ]
-    .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5)
 
   const publishedThisWeek = publishedPosts.filter((p) =>
@@ -99,12 +90,22 @@ export default function DashboardPage() {
     (p) => p.scheduledAt !== null && new Date(p.scheduledAt) > now
   ).length
 
-  const recentPublished = posts
+  // publishedAt ahora vive en post_publications: tomamos el más temprano
+  // (cuándo se publicó por primera vez en cualquier red) o caemos a createdAt.
+  const getPublishedAt = (p: typeof posts[number]): string => {
+    const dates = (p.publications ?? [])
+      .map((pub) => pub.publishedAt)
+      .filter((d): d is string => d !== null)
+    if (dates.length === 0) return p.createdAt
+    return dates.reduce((a, b) => (a < b ? a : b))
+  }
+
+  const recentPublished = postsForClient
     .filter((p) => p.status === 'published')
-    .sort((a, b) => (b.publishedAt ?? b.createdAt).localeCompare(a.publishedAt ?? a.createdAt))
+    .sort((a, b) => getPublishedAt(b).localeCompare(getPublishedAt(a)))
     .slice(0, 4)
 
-  const recentDrafts = posts
+  const recentDrafts = postsForClient
     .filter((p) => p.status === 'draft')
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 4)
@@ -114,7 +115,7 @@ export default function DashboardPage() {
       id: p.id,
       clientName: p.clientName,
       text: `Post "${p.title}" publicado exitosamente.`,
-      timestamp: p.publishedAt ?? p.createdAt,
+      timestamp: getPublishedAt(p),
       type: 'post_published' as const,
     })),
     ...recentDrafts.map((p) => ({
@@ -146,7 +147,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Hola, {user?.name ?? 'Usuario'} 👋</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Buen día, {userProfile?.name?.split(' ')[0] ?? '…'} 👋
+        </h1>
         <p className="text-sm text-gray-500 mt-1">
           {activeClient?.name ?? 'Todos'} · {todayFormatted}
         </p>
@@ -225,79 +228,44 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {upcomingItems.length === 0 ? (
+          {upcomingPosts.length === 0 ? (
             <p className="text-sm text-gray-400 py-4 text-center">
-              No hay publicaciones ni eventos programados
+              No hay publicaciones programadas
             </p>
           ) : (
             <div className="mt-3">
-              {upcomingItems.map((item) => {
-                if (item.type === 'post') {
-                  const post = item.data
-                  return (
-                    <div
-                      key={post.id}
-                      className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
-                    >
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
-                        style={{ backgroundColor: post.clientColor }}
-                      >
-                        {post.clientName.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                          {post.title}
-                        </p>
-                        <div className="flex gap-1 items-center mt-1">
-                          {post.networks.map((net) => (
-                            <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
-                              <img src={`/icons/${net}.svg`} alt={net} width={12} height={12} />
-                              {net.charAt(0).toUpperCase() + net.slice(1)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0 text-right">
-                        {post.scheduledAt ? formatDateShort(post.scheduledAt) : ''}
-                      </span>
-                    </div>
-                  )
-                }
-
-                const event = item.data
-                const eventClient = clients.find((c) => c.id === event.clientId)
-                return (
+              {upcomingPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                >
                   <div
-                    key={event.id}
-                    className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
+                    style={{ backgroundColor: post.clientColor }}
                   >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
-                      style={{ backgroundColor: eventClient?.color ?? event.color }}
-                    >
-                      {eventClient?.initials ?? event.title.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                        {event.title}
-                      </p>
-                      <span
-                        className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-1 ${
-                          event.type === 'deadline'
-                            ? 'bg-red-50 text-red-600'
-                            : 'bg-blue-50 text-blue-600'
-                        }`}
-                      >
-                        {event.type === 'deadline' ? '⏰ Deadline' : '📅 Evento'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0 text-right">
-                      {formatDateShort(event.date + 'T12:00:00')}
-                    </span>
+                    {post.clientName.slice(0, 2).toUpperCase()}
                   </div>
-                )
-              })}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                      {post.title}
+                    </p>
+                    <div className="flex gap-1 items-center mt-1">
+                      {post.networks.map((net) => {
+                        const meta = NETWORK_META[net]
+                        return (
+                          <span key={net} className="flex gap-0.5 items-center text-xs text-gray-400">
+                            <img src={meta.icon} alt={meta.label} width={12} height={12} />
+                            {meta.label}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400 flex-shrink-0 text-right">
+                    {post.scheduledAt ? formatDateShort(post.scheduledAt) : ''}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>

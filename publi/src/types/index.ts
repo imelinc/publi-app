@@ -2,15 +2,36 @@
 // publi — Tipos globales de TypeScript
 // ============================================
 
-export type Network = 'instagram'
+export type Network =
+  | 'instagram'
+  | 'facebook'
+  | 'tiktok'
+  | 'x'
+  | 'linkedin'
+  | 'youtube'
 
-export type PostStatus = 'draft' | 'scheduled' | 'published' | 'failed'
+export type PostStatus =
+  | 'draft'
+  | 'pending_approval'
+  | 'approved'
+  | 'scheduled'
+  | 'published'
+  | 'failed'
+
+export type PublicationStatus =
+  | 'pending'
+  | 'published'
+  | 'failed'
+  | 'simulated'
+
+export type Plan = 'free' | 'pro'
 
 export interface Client {
   id: string
   name: string
   color: string
   initials: string
+  plan: Plan
   connectedNetworks: Network[]
   stats: {
     scheduled: number
@@ -18,6 +39,40 @@ export interface Client {
     published: number
   }
   createdAt: string
+}
+
+export interface SocialAccount {
+  id: string
+  clientId: string
+  network: Network
+  externalUserId: string
+  username: string
+  avatarUrl: string | null
+  isSimulated: boolean
+  tokenExpiresAt: string | null
+  connectedAt: string
+}
+
+export interface PostPublication {
+  id: string
+  postId: string
+  network: Network
+  // Overrides (null = usa los del post base)
+  description: string | null
+  hashtags: string[] | null
+  // Resultado
+  status: PublicationStatus
+  externalPostId: string | null
+  publishedAt: string | null
+  errorMessage: string | null
+  // Métricas por red
+  engagement: {
+    likes: number
+    comments: number
+    views: number
+    reach: number
+  }
+  metricsUpdatedAt: string | null
 }
 
 export interface Post {
@@ -28,18 +83,16 @@ export interface Post {
   title: string
   description: string
   networks: Network[]
+  hashtags: string[]
+  mediaUrls: string[]
   status: PostStatus
   scheduledAt: string | null
-  publishedAt: string | null
-  mediaUrls: string[]
-  hashtags: string[]
-  instagramPostId: string | null
-  engagement: {
-    likes: number
-    comments: number
-    views: number
-    reach: number
-  }
+  // Aprobación
+  approvalToken: string | null
+  approvedAt: string | null
+  clientFeedback: string | null
+  // Publicaciones por red
+  publications: PostPublication[]
   createdAt: string
   updatedAt: string
 }
@@ -47,15 +100,25 @@ export interface Post {
 export interface UserProfile {
   id: string
   name: string
+  initials: string
   email: string
   avatarUrl: string | null
-  workspaceName: string
-  createdAt: string
+  // Campos del perfil extendido (tabla profiles — opcionales si aún no existe la fila)
+  workspaceName?: string
+  notifPostPublished?: boolean
+  createdAt?: string
 }
+
+export type NotificationType =
+  | 'post_published'
+  | 'post_failed'
+  | 'post_scheduled'
+  | 'post_approved'
+  | 'post_rejected'
 
 export interface Notification {
   id: string
-  type: 'post_published' | 'post_failed' | 'post_scheduled'
+  type: NotificationType
   title: string
   body: string
   read: boolean
@@ -87,5 +150,10 @@ export interface CalendarEvent {
   description: string
   type: EventType
   color: string
+  /** Fecha del evento en formato ISO. Si `isAllDay=false`, también lleva la hora de inicio. */
   date: string
+  /** Fecha y hora de fin (ISO). Null si `isAllDay=true` o si es un evento puntual sin duración. */
+  endAt: string | null
+  /** Si true, el evento abarca todo el día y no se respeta la hora. */
+  isAllDay: boolean
 }
