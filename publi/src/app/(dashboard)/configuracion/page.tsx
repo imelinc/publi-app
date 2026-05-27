@@ -2,9 +2,6 @@
 
 import {
   AlertTriangle,
-  Bell,
-  Lock,
-  Settings,
   User,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -26,57 +23,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 import { useAppStore } from "@/store/use-app-store"
-
-type NotificationSettings = {
-  scheduledSuccess: boolean
-  published: boolean
-  publishError: boolean
-  reminder: boolean
-  weeklySummary: boolean
-}
 
 export default function ConfiguracionPage() {
   const router = useRouter()
   const { toast } = useToast()
   const userProfile = useAppStore((s) => s.userProfile)
 
-  const [workspaceName, setWorkspaceName] = React.useState<string>("Mi workspace")
-  const [language, setLanguage] = React.useState<string>("Español")
-  const [timezone, setTimezone] = React.useState<string>("America/Buenos_Aires (GMT-3)")
-  const [currentPassword, setCurrentPassword] = React.useState<string>("")
-  const [newPassword, setNewPassword] = React.useState<string>("")
-  const [confirmPassword, setConfirmPassword] = React.useState<string>("")
-  const [notifications, setNotifications] = React.useState<NotificationSettings>({
-    scheduledSuccess: true,
-    published: true,
-    publishError: true,
-    reminder: false,
-    weeklySummary: false,
-  })
-
-  const updateNotification = React.useCallback(
-    (key: keyof NotificationSettings, value: boolean) => {
-      setNotifications((current) => ({ ...current, [key]: value }))
-    },
-    []
+  const [workspaceName, setWorkspaceName] = React.useState<string>(
+    userProfile?.workspaceName ?? "Mi workspace"
   )
+  const [accountName, setAccountName] = React.useState<string>(
+    userProfile?.name ?? ""
+  )
+  const [savingWorkspace, setSavingWorkspace] = React.useState(false)
+  const [savingAccount, setSavingAccount] = React.useState(false)
 
-  const [savingGeneral, setSavingGeneral] = React.useState(false)
+  React.useEffect(() => {
+    if (userProfile) {
+      setWorkspaceName(userProfile.workspaceName ?? "Mi workspace")
+      setAccountName(userProfile.name ?? "")
+    }
+  }, [userProfile])
 
-  async function handleSaveGeneral() {
-    setSavingGeneral(true)
+  async function handleSaveWorkspace() {
+    setSavingWorkspace(true)
     try {
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
@@ -87,11 +61,31 @@ export default function ConfiguracionPage() {
         toast({ title: 'Error al guardar', description: 'Intentá de nuevo.' })
         return
       }
-      toast({ title: 'Configuración guardada' })
+      toast({ title: 'Workspace actualizado' })
     } catch {
       toast({ title: 'Error al guardar', description: 'No se pudo conectar con el servidor.' })
     } finally {
-      setSavingGeneral(false)
+      setSavingWorkspace(false)
+    }
+  }
+
+  async function handleSaveAccount() {
+    setSavingAccount(true)
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: accountName }),
+      })
+      if (!res.ok) {
+        toast({ title: 'Error al guardar', description: 'Intentá de nuevo.' })
+        return
+      }
+      toast({ title: 'Nombre actualizado' })
+    } catch {
+      toast({ title: 'Error al guardar', description: 'No se pudo conectar con el servidor.' })
+    } finally {
+      setSavingAccount(false)
     }
   }
 
@@ -124,8 +118,45 @@ export default function ConfiguracionPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-4 w-4 text-primary" />
-            General
+            <User className="h-4 w-4 text-primary" />
+            Cuenta
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="account-name">Nombre</Label>
+            <Input
+              id="account-name"
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="current-email">Email</Label>
+            <div className="relative">
+              <Input
+                id="current-email"
+                disabled
+                value={userProfile?.email ?? ''}
+                className="h-10"
+              />
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <Button onClick={handleSaveAccount} disabled={savingAccount}>
+              {savingAccount ? 'Guardando…' : 'Guardar cambios'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Workspace
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -134,7 +165,7 @@ export default function ConfiguracionPage() {
             <Input
               id="workspace"
               value={workspaceName}
-              onChange={(event) => setWorkspaceName(event.target.value)}
+              onChange={(e) => setWorkspaceName(e.target.value)}
               className="h-10"
             />
             <p className="text-xs text-muted-foreground">
@@ -142,203 +173,11 @@ export default function ConfiguracionPage() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Idioma</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Español">Español</SelectItem>
-                <SelectItem value="English">English</SelectItem>
-                <SelectItem value="Português">Português</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Zona horaria</Label>
-            <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="America/Buenos_Aires (GMT-3)">
-                  America/Buenos_Aires (GMT-3)
-                </SelectItem>
-                <SelectItem value="America/New_York (GMT-5)">
-                  America/New_York (GMT-5)
-                </SelectItem>
-                <SelectItem value="Europe/Madrid (GMT+1)">
-                  Europe/Madrid (GMT+1)
-                </SelectItem>
-                <SelectItem value="America/Mexico_City (GMT-6)">
-                  America/Mexico_City (GMT-6)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="pt-1">
-            <Button onClick={handleSaveGeneral} disabled={savingGeneral}>
-              {savingGeneral ? 'Guardando…' : 'Guardar cambios'}
+            <Button onClick={handleSaveWorkspace} disabled={savingWorkspace}>
+              {savingWorkspace ? 'Guardando…' : 'Guardar cambios'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            Notificaciones
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Publicación programada exitosamente
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Recibí una notificación cada vez que una publicación se programe correctamente
-                </p>
-              </div>
-              <Switch
-                checked={notifications.scheduledSuccess}
-                onCheckedChange={(value) => updateNotification("scheduledSuccess", value)}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Publicación publicada</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Notificación cuando una publicación se publica en la red social
-                </p>
-              </div>
-              <Switch
-                checked={notifications.published}
-                onCheckedChange={(value) => updateNotification("published", value)}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Error al publicar</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Alerta cuando una publicación falla al intentar publicarse
-                </p>
-              </div>
-              <Switch
-                checked={notifications.publishError}
-                onCheckedChange={(value) => updateNotification("publishError", value)}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Recordatorio previo a publicación
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Recibí un aviso 1 hora antes de cada publicación programada
-                </p>
-              </div>
-              <Switch
-                checked={notifications.reminder}
-                onCheckedChange={(value) => updateNotification("reminder", value)}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Resumen semanal</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Recibí un resumen de actividad todos los lunes
-                </p>
-              </div>
-              <Switch
-                checked={notifications.weeklySummary}
-                onCheckedChange={(value) => updateNotification("weeklySummary", value)}
-              />
-            </div>
-          </div>
-
-          <div className="pt-1">
-            <Button onClick={() => toast({ title: "Preferencias guardadas" })}>
-              Guardar preferencias
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
-            Cuenta
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-email">Email actual</Label>
-            <div className="relative">
-              <Input
-                id="current-email"
-                disabled
-                value={userProfile?.email ?? ''}
-                className="h-10 pr-10"
-              />
-              <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Contraseña actual</Label>
-            <Input
-              id="current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              className="h-10"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="new-password">Nueva contraseña</Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              className="h-10"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className="h-10"
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setCurrentPassword("")
-              setNewPassword("")
-              setConfirmPassword("")
-              toast({ title: "Contraseña actualizada correctamente" })
-            }}
-          >
-            Actualizar contraseña
-          </Button>
         </CardContent>
       </Card>
 
