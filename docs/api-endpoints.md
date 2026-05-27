@@ -1,14 +1,14 @@
 # publi — Documentación de API Endpoints
 
-> **Stack:** Next.js 14 (TypeScript) · Supabase (DB + Auth) · Vercel Blob (storage) · Upstash QStash (scheduling) · Groq API (IA)  
-> **Convención de rutas:** Next.js API Routes en `app/api/...`  
-> **Autenticación:** Supabase Auth — el cliente JS maneja la sesión automáticamente. Los endpoints del servidor validan con `supabase.auth.getUser()`.  
+> **Stack:** Next.js 14 (TypeScript) · Supabase (DB + Auth + Storage) · Upstash QStash (scheduling) · Groq API (IA)
+> **Convención de rutas:** Next.js API Routes en `app/api/...`
+> **Autenticación:** Supabase Auth — el cliente JS maneja la sesión automáticamente. Los endpoints del servidor validan con `supabase.auth.getUser()`.
 > **Fecha de relevamiento:** Mayo 2026 — actualizado con inspección del repositorio
 
 > **Estado de implementación:** verificado contra `publi/src/app/api/**/route.ts`.
 >
 > - ✅ Implementado: existe el endpoint y cubre el contrato principal.
-> - ⚠️ Parcial: existe el endpoint, pero falta parte del contrato documentado.
+> - ⚠️ Parcial: existe el endpoint, pero falta parte del contrato documentado o hay diferencias con la implementación.
 > - ⬜ Pendiente: no existe implementación en el repositorio.
 
 ---
@@ -18,13 +18,16 @@
 1. [Auth](#1-auth)
 2. [Usuarios](#2-usuarios)
 3. [Clientes (Workspaces)](#3-clientes-workspaces)
-4. [Publicaciones](#4-publicaciones)
-5. [Calendario (Eventos)](#5-calendario-eventos)
-6. [Métricas](#6-métricas)
-7. [IA — Asistente (Groq)](#7-ia--asistente-groq)
-8. [Waitlist](#8-waitlist)
-9. [Instagram — OAuth & Publicación](#9-instagram--oauth--publicación)
-10. [Jobs internos (QStash)](#10-jobs-internos-qstash)
+4. [Cuentas sociales (Social Accounts)](#4-cuentas-sociales-social-accounts)
+5. [Publicaciones](#5-publicaciones)
+6. [Aprobación de posts](#6-aprobación-de-posts)
+7. [Calendario (Eventos)](#7-calendario-eventos)
+8. [Métricas](#8-métricas)
+9. [IA — Asistente (Groq)](#9-ia--asistente-groq)
+10. [Waitlist](#10-waitlist)
+11. [Instagram — OAuth & Publicación](#11-instagram--oauth--publicación)
+12. [Jobs internos (QStash)](#12-jobs-internos-qstash)
+13. [Configuración](#13-configuración)
 
 ---
 
@@ -35,8 +38,8 @@
 ### ✅ `POST /api/auth/logout`
 Cierra la sesión del usuario actual.
 
-**Auth:** Sesión Supabase activa (cookie)  
-**Response `200`** — `{ "success": true }`  
+**Auth:** Sesión Supabase activa (cookie)
+**Response `200`** — `{ "success": true }`
 **Nota:** El frontend también puede usar `supabase.auth.signOut()` directamente.
 
 ---
@@ -48,7 +51,7 @@ Cierra la sesión del usuario actual.
 ### ✅ `GET /api/users/me`
 Devuelve el perfil del usuario autenticado.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Response `200`**
 ```json
 {
@@ -56,8 +59,8 @@ Devuelve el perfil del usuario autenticado.
   "name": "string",
   "email": "string",
   "avatarUrl": "string | null",
-  "workspaceName": "string",
-  "createdAt": "ISO 8601"
+  "initials": "string",
+  "workspaceName": "string"
 }
 ```
 
@@ -66,7 +69,7 @@ Devuelve el perfil del usuario autenticado.
 ### ✅ `PATCH /api/users/me`
 Actualiza el perfil del usuario: nombre o nombre del workspace. Todos los campos son opcionales; solo se actualiza lo que se envía.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body** (todos opcionales)
 ```json
 {
@@ -74,26 +77,26 @@ Actualiza el perfil del usuario: nombre o nombre del workspace. Todos los campos
   "workspaceName": "string"
 }
 ```
-**Response `200`** — perfil actualizado
+**Response `200`** — perfil actualizado (mismo formato que GET)
 
 ---
 
 ### ✅ `DELETE /api/users/me`
 Elimina la cuenta del usuario. Acción irreversible. Elimina también todos sus clientes y publicaciones (cascade en DB).
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Response `204`** — sin body
 
 ---
 
 ## 3. Clientes (Workspaces)
 
-> Cada "cliente" es un workspace aislado que agrupa publicaciones y la cuenta de Instagram conectada.
+> Cada "cliente" es un workspace aislado que agrupa publicaciones y las cuentas sociales conectadas (no solo Instagram). La conexión de redes se maneja a través de `/api/clients/:clientId/social-accounts`.
 
 ### ✅ `GET /api/clients`
-Lista todos los clientes del usuario autenticado con sus estadísticas.
+Lista todos los clientes del usuario autenticado con sus estadísticas y redes conectadas.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Response `200`**
 ```json
 {
@@ -101,7 +104,9 @@ Lista todos los clientes del usuario autenticado con sus estadísticas.
     {
       "id": "uuid",
       "name": "string",
+      "description": "string",
       "color": "string (hex)",
+      "plan": "free | pro",
       "initials": "string",
       "connectedNetworks": ["instagram"],
       "stats": {
@@ -120,24 +125,28 @@ Lista todos los clientes del usuario autenticado con sus estadísticas.
 ### ✅ `POST /api/clients`
 Crea un nuevo cliente.
 
-**Nota sobre Redes (`networks`):** El parámetro `networks` en el cuerpo es opcional y no se persiste directamente en la tabla `clients`. La conexión real con Instagram (única red soportada) se realiza posteriormente mediante el flujo de autorización Meta OAuth (que crea un registro en `instagram_accounts`). Si existe la cuenta conectada, se devolverá automáticamente `"instagram"` en `connectedNetworks`.
-
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body**
 ```json
 {
-  "name": "string",
+  "name": "string (obligatorio)",
   "color": "string (hex)",
+  "description": "string | null",
+  "plan": "free | pro",
   "networks": ["instagram"]
 }
 ```
+**Nota:** `networks` es opcional y no se persiste directamente. La conexión real se hace vía `/api/clients/:clientId/social-accounts`. `description` y `plan` son opcionales (default: `null` y `"free"` respectivamente).
+
 **Response `201`**
 ```json
 {
   "data": {
     "id": "uuid",
     "name": "string",
+    "description": "string",
     "color": "string (hex)",
+    "plan": "free | pro",
     "initials": "string",
     "connectedNetworks": [],
     "stats": { "scheduled": 0, "drafts": 0, "published": 0 },
@@ -152,13 +161,14 @@ Crea un nuevo cliente.
 ### ✅ `GET /api/clients/:clientId`
 Detalle de un cliente específico.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Response `200`**
 ```json
 {
   "data": {
     "id": "uuid",
     "name": "string",
+    "description": "string",
     "color": "string (hex)",
     "initials": "string",
     "connectedNetworks": ["instagram"],
@@ -175,13 +185,14 @@ Detalle de un cliente específico.
 ---
 
 ### ✅ `PATCH /api/clients/:clientId`
-Edita nombre o color de un cliente. (El campo `networks` es ignorado ya que se maneja dinámicamente mediante la conexión OAuth de Instagram).
+Edita nombre, descripción o color de un cliente.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body** (todos opcionales)
 ```json
 {
   "name": "string",
+  "description": "string | null",
   "color": "string (hex)"
 }
 ```
@@ -191,6 +202,7 @@ Edita nombre o color de un cliente. (El campo `networks` es ignorado ya que se m
   "data": {
     "id": "uuid",
     "name": "string",
+    "description": "string",
     "color": "string (hex)",
     "initials": "string",
     "createdAt": "ISO 8601"
@@ -203,30 +215,97 @@ Edita nombre o color de un cliente. (El campo `networks` es ignorado ya que se m
 ### ✅ `DELETE /api/clients/:clientId`
 Elimina un cliente y todas sus publicaciones (cascade).
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Response `204`** — sin body
 
 ---
 
-## 4. Publicaciones
+## 4. Cuentas sociales (Social Accounts)
 
-> Este endpoint es el núcleo del sistema. También cubre la vista de **Calendario**: usando los parámetros `from`, `to` y `view` se obtienen las publicaciones agrupadas por día sin necesidad de un endpoint separado. La creación de eventos desde el calendario usa directamente `POST /api/posts`.
+> Las cuentas sociales (Instagram, Facebook, TikTok, X, LinkedIn, YouTube) se conectan de forma simulada en el MVP. El flujo real de OAuth para Instagram no está implementado todavía. Las redes soportadas están definidas en el código: `instagram`, `facebook`, `tiktok`, `x`, `linkedin`, `youtube`.
 
-### ✅ `GET /api/posts`
-Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
+### ✅ `GET /api/clients/:clientId/social-accounts`
+Lista las cuentas sociales conectadas de un cliente.
 
-**Auth:** Sesión Supabase activa  
-**Query Params**
-| Param | Tipo | Descripción |
-|---|---|---|
-| `clientId` | string | UUID o `all` (default: todos los clientes del usuario) |
-| `status` | string | `draft \| scheduled \| published \| failed` |
-| `from` | ISO date | Filtra por `scheduled_at >= from` |
-| `to` | ISO date | Filtra por `scheduled_at <= to` |
-| `view` | string | `month \| week` — sin efecto en la query, informativo para el frontend |
-| `page` | number | Default: 1 |
-| `limit` | number | Default: 20, máximo: 100 |
+**Auth:** Sesión Supabase activa
+**Response `200`**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "clientId": "uuid",
+      "network": "instagram | facebook | tiktok | x | linkedin | youtube",
+      "externalUserId": "string",
+      "username": "string",
+      "avatarUrl": "string",
+      "isSimulated": true,
+      "tokenExpiresAt": "ISO 8601 | null",
+      "connectedAt": "ISO 8601"
+    }
+  ]
+}
+```
+**Errores:** `404` cliente no encontrado
 
+---
+
+### ✅ `POST /api/clients/:clientId/social-accounts`
+Crea una conexión de red social (simulada en el MVP). Para Instagram, valida el formato de username según reglas oficiales de Meta (1-30 caracteres alfanuméricos, puntos y guiones bajos, sin puntos consecutivos, no empieza con punto).
+
+**Auth:** Sesión Supabase activa
+**Request Body**
+```json
+{
+  "network": "instagram | facebook | tiktok | x | linkedin | youtube",
+  "username": "string (obligatorio)",
+  "password": "string (obligatorio, no se persiste)"
+}
+```
+**Nota:** `password` es obligatorio para consistencia del flujo UI. Para redes simuladas no tiene significado funcional y nunca se guarda en la DB. Para Instagram (cuando se implemente OAuth real), se intercambiará por un token y se descartará.
+
+**Response `201`**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "clientId": "uuid",
+    "network": "instagram",
+    "externalUserId": "sim_instagram_abc123",
+    "username": "string",
+    "avatarUrl": "string (generado con ui-avatars.com)",
+    "isSimulated": true,
+    "tokenExpiresAt": null,
+    "connectedAt": "ISO 8601"
+  }
+}
+```
+**Errores:**
+- `400` red inválida, username vacío, username de Instagram inválido, password vacío
+- `404` cliente no encontrado
+- `409` ya existe una cuenta de esa red para este cliente
+
+---
+
+### ✅ `DELETE /api/clients/:clientId/social-accounts/:accountId`
+Desconecta una cuenta social de un cliente. Las publicaciones históricas se mantienen (no hay cascade desde `social_accounts`).
+
+**Auth:** Sesión Supabase activa
+**Response `204`** — sin body
+**Errores:** `404` cliente o cuenta no encontrada
+
+---
+
+## 5. Publicaciones
+
+> Este endpoint es el núcleo del sistema. También cubre la vista de **Calendario** usando los mismos datos. La creación de eventos desde el calendario usa directamente `POST /api/posts`.
+
+### ⚠️ `GET /api/posts`
+Lista publicaciones del usuario autenticado.
+
+**⚠️ Nota:** El endpoint actual NO implementa los query params de filtrado ni paginación documentados originalmente. Devuelve todas las publicaciones de todos los clientes del usuario sin filtrar.
+
+**Auth:** Sesión Supabase activa
 **Response `200`**
 ```json
 {
@@ -239,40 +318,54 @@ Lista publicaciones con filtros. Usado en calendario, métricas y dashboard.
       "title": "string",
       "description": "string",
       "networks": ["instagram"],
-      "status": "draft | scheduled | published | failed",
-      "scheduledAt": "ISO 8601 | null",
-      "publishedAt": "ISO 8601 | null",
-      "mediaUrls": ["string"],
       "hashtags": ["string"],
-      "instagramPostId": "string | null",
-      "engagement": {
-        "likes": 0,
-        "comments": 0,
-        "views": 0,
-        "reach": 0
-      },
+      "mediaUrls": ["string"],
+      "status": "draft | scheduled | published | failed | pending_approval | approved",
+      "scheduledAt": "ISO 8601 | null",
+      "approvalToken": "string | null",
+      "approvedAt": "string | null",
+      "clientFeedback": "string | null",
+      "publications": [
+        {
+          "id": "uuid",
+          "postId": "uuid",
+          "network": "instagram",
+          "description": "string | null",
+          "hashtags": ["string"] | null,
+          "status": "pending | simulated | published | failed",
+          "externalPostId": "string | null",
+          "publishedAt": "ISO 8601 | null",
+          "errorMessage": "string | null",
+          "engagement": {
+            "likes": 0,
+            "comments": 0,
+            "views": 0,
+            "reach": 0
+          },
+          "metricsUpdatedAt": "ISO 8601 | null"
+        }
+      ],
       "createdAt": "ISO 8601",
       "updatedAt": "ISO 8601"
     }
-  ],
-  "total": 0,
-  "page": 1,
-  "limit": 20
+  ]
 }
 ```
+
+**Query params no implementados (pendiente):** `clientId`, `status`, `from`, `to`, `view`, `page`, `limit`
 
 ---
 
 ### ⚠️ `POST /api/posts`
 Crea una publicación nueva (borrador, programada o inmediata).
 
-**Estado repo:** crea publicaciones básicas, pero todavía no encola QStash para `scheduled`, no publica en Instagram para `published` y no valida cuenta de Instagram conectada.
+**Estado repo:** crea publicaciones y genera registros en `post_publications` por cada red target. Para cuentas simuladas con `status = "published"`, marca la publicación como `"simulated"` automáticamente. Aún no encola QStash para scheduled ni publica en Instagram real.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body**
 ```json
 {
-  "clientId": "uuid",
+  "clientId": "uuid (obligatorio)",
   "title": "string",
   "networks": ["instagram"],
   "description": "string",
@@ -282,9 +375,6 @@ Crea una publicación nueva (borrador, programada o inmediata).
   "scheduledAt": "ISO 8601 | null"
 }
 ```
-**Lógica interna:**
-- `status = "scheduled"` → guarda en DB + encola job en QStash con fecha `scheduledAt`
-- `status = "published"` → guarda en DB + llama a Instagram Graph API inmediatamente
 
 **Response `201`**
 ```json
@@ -297,26 +387,27 @@ Crea una publicación nueva (borrador, programada o inmediata).
     "title": "string",
     "description": "string",
     "networks": ["instagram"],
+    "hashtags": ["string"],
+    "mediaUrls": ["string"],
     "status": "draft | scheduled | published",
     "scheduledAt": "ISO 8601 | null",
-    "publishedAt": "ISO 8601 | null",
-    "mediaUrls": ["string"],
-    "hashtags": ["string"],
-    "instagramPostId": "string | null",
-    "engagement": { "likes": 0, "comments": 0, "views": 0, "reach": 0 },
+    "approvalToken": "string | null",
+    "approvedAt": "string | null",
+    "clientFeedback": "string | null",
+    "publications": ["... (ver estructura arriba)"],
     "createdAt": "ISO 8601",
     "updatedAt": "ISO 8601"
   }
 }
 ```
-**Errores:** `400` validación · `403` cuenta de Instagram no conectada
+**Errores:** `400` validación · `404` cliente no encontrado
 
 ---
 
 ### ✅ `GET /api/posts/:postId`
 Detalle completo de una publicación.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Response `200`**
 ```json
 {
@@ -328,7 +419,7 @@ Detalle completo de una publicación.
     "title": "string",
     "description": "string",
     "networks": ["instagram"],
-    "status": "draft | scheduled | published | failed",
+    "status": "draft | scheduled | published | failed | pending_approval | approved",
     "scheduledAt": "ISO 8601 | null",
     "publishedAt": "ISO 8601 | null",
     "mediaUrls": ["string"],
@@ -340,13 +431,14 @@ Detalle completo de una publicación.
   }
 }
 ```
+**Nota:** Este endpoint usa un mapper diferente al GET list. Devuelve `instagramPostId` y `engagement` a nivel de post (formato legacy), no el array `publications`.
 
 ---
 
 ### ✅ `PATCH /api/posts/:postId`
-Edita una publicación (solo borradores o programadas aún no ejecutadas).
+Edita una publicación. Se pueden editar posts en estado `draft`, `scheduled`, `pending_approval` o `approved`. Posts en estado `published` o `failed` no son editables.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body** (todos opcionales)
 ```json
 {
@@ -354,74 +446,137 @@ Edita una publicación (solo borradores o programadas aún no ejecutadas).
   "description": "string",
   "hashtags": ["string"],
   "mediaUrls": ["string"],
-  "status": "draft | scheduled",
+  "networks": ["instagram"],
+  "status": "draft | scheduled | published",
   "scheduledAt": "ISO 8601 | null"
 }
 ```
-**Nota:** Si cambia `scheduledAt` en una futura versión con QStash integrado, se cancelará el job anterior y se encolará uno nuevo.  
+**Nota:** Si se cambia `status` a `"published"` y no se pasa `scheduledAt`, se establece automáticamente a la fecha actual.
+**Response `200`** — mismos campos que GET por ID
+**Errores:**
+- `404` post no encontrado
+- `409` no editable (ya publicada o fallida)
+
+---
+
+### ⚠️ `DELETE /api/posts/:postId`
+Elimina una publicación. Valida ownership del post vía cliente.
+
+**Estado repo:** elimina la publicación validando ownership vía cliente, pero todavía no cancela jobs de QStash.
+
+**Auth:** Sesión Supabase activa
+**Response `204`** — sin body
+
+---
+
+### ✅ `POST /api/posts/media`
+Sube una imagen al bucket `post-media` de Supabase Storage y devuelve la URL pública.
+
+**Auth:** Sesión Supabase activa
+**Request:** `multipart/form-data` con campo `file`
+**Validaciones:**
+- Solo imágenes: JPG, PNG, WEBP, GIF
+- Tamaño máximo: 10 MB
+- Se almacena bajo `{user_id}/{uuid}.{ext}` para RLS por owner
+
+**Response `201`**
+```json
+{
+  "url": "string (URL pública en Supabase Storage)",
+  "path": "string (ruta interna del archivo)"
+}
+```
+**Errores:**
+- `400` no se envió archivo, formato no soportado, imagen demasiado pesada
+- `401` no autenticado
+- `500` error de upload
+
+---
+
+### ✅ `POST /api/posts/:postId/request-approval`
+Genera un token único de aprobación y cambia el estado del post a `"pending_approval"`. Devuelve la URL pública que el CM puede copiar y enviarle al cliente final.
+
+**Auth:** Sesión Supabase activa
+**Response `200`**
+```json
+{
+  "data": {
+    "approvalUrl": "https://.../aprobar/{token}",
+    "token": "uuid"
+  }
+}
+```
+**Errores:**
+- `404` post no encontrado
+- `409` el post no está en estado `draft`
+
+---
+
+## 6. Aprobación de posts
+
+> Flujo público (no requiere autenticación) para que el cliente final apruebe o rechace un post. Se accede via el link generado por `POST /api/posts/:postId/request-approval`.
+
+### ✅ `GET /api/approve/:token`
+Devuelve los datos del post para preview. No requiere autenticación — es un endpoint público.
+
 **Response `200`**
 ```json
 {
   "data": {
     "id": "uuid",
-    "clientId": "uuid",
-    "clientName": "string",
-    "clientColor": "string",
-    "title": "string",
     "description": "string",
     "networks": ["instagram"],
-    "status": "draft | scheduled",
-    "scheduledAt": "ISO 8601 | null",
-    "publishedAt": "ISO 8601 | null",
-    "mediaUrls": ["string"],
     "hashtags": ["string"],
-    "instagramPostId": "string | null",
-    "engagement": { "likes": 0, "comments": 0, "views": 0, "reach": 0 },
-    "createdAt": "ISO 8601",
-    "updatedAt": "ISO 8601"
+    "mediaUrls": ["string"],
+    "scheduledAt": "ISO 8601 | null",
+    "clientName": "string",
+    "clientColor": "string"
   }
 }
 ```
-**Errores:** `409` no editable (ya publicada o fallida)
+**Errores:**
+- `404` token inválido o expirado
+- `409` el post ya fue procesado (no está en `pending_approval`)
 
 ---
 
-### ⚠️ `DELETE /api/posts/:postId`
-Elimina una publicación. Si estaba programada, cancela el job de QStash.
+### ✅ `POST /api/approve/:token`
+El cliente final envía su decisión de aprobación. No requiere autenticación.
 
-**Estado repo:** elimina la publicación validando ownership vía cliente, pero todavía no cancela jobs de QStash.
-
-**Auth:** Sesión Supabase activa  
-**Response `204`** — sin body
-
----
-
-### ⬜ `POST /api/posts/media`
-Sube una imagen o video a Vercel Blob y devuelve la URL pública.
-
-**Auth:** Sesión Supabase activa  
-**Request:** `multipart/form-data` con campo `file`  
-**Response `201`**
+**Request Body**
 ```json
 {
-  "url": "string (URL pública en Vercel Blob)",
-  "type": "image | video",
-  "size": 0,
-  "filename": "string"
+  "approved": true,
+  "feedback": "string | null"
 }
 ```
-**Errores:** `413` archivo demasiado grande (max 50MB) · `415` formato no soportado
+**Lógica interna:**
+- Si `approved: true` → `status = "approved"`, guarda `approved_at` y `feedback`
+- Si `approved: false` → `status = "draft"`, guarda `feedback`, el CM puede editar y reenviar
+
+**Response `200`**
+```json
+{
+  "data": {
+    "approved": true,
+    "message": "¡Gracias! El post fue aprobado."
+  }
+}
+```
+**Errores:**
+- `404` token inválido o expirado
+- `409` el post ya fue procesado
 
 ---
 
-## 5. Calendario (Eventos)
+## 7. Calendario (Eventos)
 
 > Módulo para gestionar eventos de planificación general y fechas límites (deadlines) en el calendario, persistiendo las entradas de manera independiente de las publicaciones.
 
 ### ✅ `GET /api/calendar/events`
 Obtiene los eventos del calendario de los clientes del usuario autenticado.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Query Params**
 | Param | Tipo | Descripción |
 |---|---|---|
@@ -440,7 +595,9 @@ Obtiene los eventos del calendario de los clientes del usuario autenticado.
       "description": "string",
       "type": "event | deadline",
       "color": "string (hex)",
-      "date": "ISO 8601"
+      "date": "ISO 8601 o YYYY-MM-DD (si isAllDay)",
+      "endAt": "ISO 8601 | null",
+      "isAllDay": true
     }
   ]
 }
@@ -451,20 +608,24 @@ Obtiene los eventos del calendario de los clientes del usuario autenticado.
 ### ✅ `POST /api/calendar/events`
 Crea un nuevo evento o fecha límite en el calendario.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body**
 ```json
 {
-  "clientId": "uuid",
-  "title": "string",
-  "description": "string",
-  "type": "event | deadline",
-  "color": "string (hex)",
-  "date": "ISO 8601"
+  "clientId": "uuid (obligatorio)",
+  "title": "string (obligatorio)",
+  "description": "string (default: \"\")",
+  "type": "event | deadline (obligatorio)",
+  "color": "string (hex, default: \"#0095b6\")",
+  "date": "ISO 8601 o YYYY-MM-DD (obligatorio)",
+  "endAt": "ISO 8601 | null (solo si isAllDay=false)",
+  "isAllDay": "boolean (default: true)"
 }
 ```
-**Campos obligatorios:** `clientId`, `title`, `type`, `date`  
-**Campos opcionales:** `description` (default: `""`), `color` (default: `"#0095b6"`)  
+**Validaciones:**
+- Si `isAllDay=true`, se ignora `endAt` y se guarda como `null`
+- Si `isAllDay=false` y se envía `endAt`, debe ser posterior a `date`
+
 **Response `201`**
 ```json
 {
@@ -475,32 +636,21 @@ Crea un nuevo evento o fecha límite en el calendario.
     "description": "string",
     "type": "event | deadline",
     "color": "string (hex)",
-    "date": "ISO 8601"
+    "date": "ISO 8601 o YYYY-MM-DD",
+    "endAt": "ISO 8601 | null",
+    "isAllDay": true
   }
 }
 ```
-**Errores:** `400` campos obligatorios faltantes o tipo inválido · `404` cliente no encontrado
+**Errores:** `400` campos obligatorios faltantes, tipo inválido, fechas inválidas · `404` cliente no encontrado
 
 ---
 
 ### ✅ `GET /api/calendar/events/:eventId`
 Detalle de un evento de calendario.
 
-**Auth:** Sesión Supabase activa  
-**Response `200`**
-```json
-{
-  "data": {
-    "id": "uuid",
-    "clientId": "uuid",
-    "title": "string",
-    "description": "string",
-    "type": "event | deadline",
-    "color": "string (hex)",
-    "date": "ISO 8601"
-  }
-}
-```
+**Auth:** Sesión Supabase activa
+**Response `200`** — mismo formato que POST response
 **Errores:** `404` evento no encontrado o no pertenece al usuario
 
 ---
@@ -508,7 +658,7 @@ Detalle de un evento de calendario.
 ### ✅ `PATCH /api/calendar/events/:eventId`
 Actualiza un evento de calendario. Todos los campos son opcionales; solo se actualizan los campos enviados.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Request Body** (todos opcionales)
 ```json
 {
@@ -516,23 +666,13 @@ Actualiza un evento de calendario. Todos los campos son opcionales; solo se actu
   "description": "string",
   "type": "event | deadline",
   "color": "string (hex)",
-  "date": "ISO 8601"
+  "date": "ISO 8601 o YYYY-MM-DD",
+  "endAt": "ISO 8601 | null",
+  "isAllDay": "boolean"
 }
 ```
-**Response `200`**
-```json
-{
-  "data": {
-    "id": "uuid",
-    "clientId": "uuid",
-    "title": "string",
-    "description": "string",
-    "type": "event | deadline",
-    "color": "string (hex)",
-    "date": "ISO 8601"
-  }
-}
-```
+**Nota:** Si se marca `isAllDay=true`, se limpia automáticamente `endAt`.
+**Response `200`** — mismo formato que POST response
 **Errores:** `400` tipo inválido o título vacío · `404` evento no encontrado o no pertenece al usuario
 
 ---
@@ -540,28 +680,28 @@ Actualiza un evento de calendario. Todos los campos son opcionales; solo se actu
 ### ✅ `DELETE /api/calendar/events/:eventId`
 Elimina un evento de calendario.
 
-**Auth:** Sesión Supabase activa  
-**Response `204`** — sin body  
+**Auth:** Sesión Supabase activa
+**Response `204`** — sin body
 **Errores:** `404` evento no encontrado o no pertenece al usuario
 
 ---
 
-## 6. Métricas
+## 8. Métricas
 
-> Endpoint único que cubre tanto la página de Métricas como el resumen del Dashboard. El frontend lo consume con distintos parámetros según el contexto: `period=7d` para el inicio del dashboard, períodos más amplios para la página de Métricas.
+> Endpoint pendiente de implementación. Solo existe la carpeta `/api/metrics/dashboard/` con un `.gitkeep` de placeholder.
 
 ### ⬜ `GET /api/metrics`
 Estadísticas agregadas para la página de Métricas y el resumen del dashboard.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** Sesión Supabase activa
 **Query Params**
 | Param | Tipo | Descripción |
 |---|---|---|
 | `clientId` | string | UUID o `all` |
-| `period` | string | `7d \| 30d \| 90d \| custom` |
+| `period` | string | `7d | 30d | 90d | custom` |
 | `from` | ISO date | Si `period=custom` |
 | `to` | ISO date | Si `period=custom` |
-| `network` | string | `all \| instagram` |
+| `network` | string | `all | instagram` |
 
 **Response `200`**
 ```json
@@ -598,35 +738,37 @@ Estadísticas agregadas para la página de Métricas y el resumen del dashboard.
 
 ---
 
-## 7. IA — Asistente (Groq)
+## 9. IA — Asistente (Groq)
 
-> Todos los endpoints llaman a la **Groq API** con un system prompt fijo definido por el equipo. El "pre-entrenamiento" se logra mediante **prompt engineering** en el system prompt: se incluye el contexto del CM, el cliente activo, instrucciones de tono y comportamiento esperado. No hay entrenamiento real del modelo.
+> Todos los endpoints llaman a la **Groq API** con un system prompt fijo definido por el equipo. El "pre-entrenamiento" se logra mediante **prompt engineering** en el system prompt: se incluye el contexto del CM, el cliente activo (nombre, descripción, redes conectadas), instrucciones de tono y comportamiento esperado. No hay entrenamiento real del modelo.
 >
 > **Modelo:** `llama-3.3-70b-versatile` (gratis en Groq, latencia muy baja)
+>
+> **⚠️ Nota:** Los endpoints de IA **no validan sesión Supabase**. Solo consultan datos del cliente si se proporciona `clientId`.
 
 ### System prompt base (estructura)
 ```
-Sos un asistente experto en community management para el CM que gestiona el cliente [clientName].
-Siempre respondés en español rioplatense, de forma concisa y accionable.
-Para sugerencias de horario, priorizás entre las 18 y 21hs ya que es el pico histórico de engagement.
-Cuando sugerís hashtags, balanceás alcance alto, medio y nicho.
+Sos Copi, asistente de publi para Community Managers.
+Respondés en español rioplatense, conciso y creativo.
+Cuando reescribís copy ofrecés 2 variantes. Nunca uses relleno.
+[+ contexto del cliente si se proporciona clientId]
 ```
 
 ---
 
 ### ✅ `POST /api/ai/rewrite`
-Reescribe o mejora el copy de una publicación para Instagram.
+Reescribe o mejora el copy de una publicación.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** No requerida (pero usa contexto del cliente si hay sesión)
 **Request Body**
 ```json
 {
   "text": "string",
-  "clientId": "uuid",
+  "clientId": "uuid | null",
   "tone": "profesional | casual | divertido | informativo | null"
 }
 ```
-**Lógica interna:** Construye el prompt con el texto + contexto del cliente desde Supabase, llama a Groq.
+**Lógica interna:** Construye el prompt con el texto + contexto del cliente desde Supabase (nombre, descripción, redes), llama a Groq.
 
 **Response `200`**
 ```json
@@ -640,36 +782,32 @@ Reescribe o mejora el copy de una publicación para Instagram.
 
 ---
 
-### ✅ `POST /api/ai/hashtags`
-Genera hashtags relevantes para el copy e Instagram.
+### ⚠️ `POST /api/ai/hashtags`
+Genera hashtags relevantes para el copy.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** No requerida (pero usa contexto del cliente si hay sesión)
 **Request Body**
 ```json
 {
   "text": "string",
-  "clientId": "uuid",
+  "clientId": "uuid | null",
   "count": 10
 }
 ```
 **Response `200`**
 ```json
 {
-  "hashtags": ["#cafe", "#buenosaires", "#cafeteria"],
-  "grouped": {
-    "highReach": ["#cafe"],
-    "mediumReach": ["#cafeteria"],
-    "niche": ["#buenosaires"]
-  }
+  "hashtags": ["#cafe", "#buenosaires", "#cafeteria"]
 }
 ```
+**⚠️ Diferencia con diseño original:** El diseño original incluía un campo `grouped` con `{ highReach, mediumReach, niche }` pero la implementación actual solo devuelve la lista plana de hashtags.
 
 ---
 
 ### ✅ `POST /api/ai/best-time`
-Sugiere el mejor horario para publicar en Instagram. Combina el historial real de publicaciones del cliente en Supabase con el system prompt configurado.
+Sugiere el mejor horario para publicar.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** No requerida (pero usa contexto del cliente si hay sesión)
 **Request Body**
 ```json
 {
@@ -694,7 +832,7 @@ Sugiere el mejor horario para publicar en Instagram. Combina el historial real d
 ### ✅ `POST /api/ai/chat`
 Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrategia de contenido, análisis, ideas de posts.
 
-**Auth:** Sesión Supabase activa  
+**Auth:** No requerida (pero usa contexto del cliente si hay sesión)
 **Request Body**
 ```json
 {
@@ -705,7 +843,7 @@ Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrate
   ]
 }
 ```
-**Nota:** El historial se mantiene en React state en el frontend y se envía en cada request. No se persiste en DB para simplificar el MVP.
+**Nota:** El historial se mantiene en React state en el frontend y se envía en cada request. No se persiste en DB para simplificar el MVP. Si se proporciona `clientId`, se inyecta contexto del cliente (nombre, plan, redes, posts recientes, descripción) en el system prompt.
 
 **Response `200`**
 ```json
@@ -716,17 +854,17 @@ Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrate
 
 ---
 
-## 7. Waitlist
+## 10. Waitlist
 
 ### ✅ `POST /api/waitlist`
 Registra a alguien en la lista de espera (beta cerrada).
 
-**Auth:** No requerida — endpoint público  
+**Auth:** No requerida — endpoint público. Usa `SUPABASE_SERVICE_ROLE_KEY` para escribir en la tabla `waitlist` sin sesión.
 **Request Body**
 ```json
 {
-  "fullName": "string",
-  "email": "string",
+  "fullName": "string (obligatorio)",
+  "email": "string (obligatorio)",
   "clientCount": "1-3 | 4-10 | 11-20 | 20+",
   "currentTools": "string | null"
 }
@@ -738,19 +876,19 @@ Registra a alguien en la lista de espera (beta cerrada).
   "position": 42
 }
 ```
-**Errores:** `409` email ya registrado
+**Errores:** `400` campos obligatorios faltantes · `409` email ya registrado
 
 ---
 
-## 8. Instagram — OAuth & Publicación
+## 11. Instagram — OAuth & Publicación
 
-> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta). El refresh del token se maneja automáticamente dentro del proceso de publicación: antes de publicar, el endpoint verifica si el token expira en menos de 10 días y lo renueva si es necesario.
+> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta). Actualmente no implementado — los directorios existen con `.gitkeep` de placeholder.
 
 ### ⬜ `GET /api/instagram/connect`
 Genera la URL de autorización de Meta OAuth y redirige al usuario.
 
-**Auth:** Sesión Supabase activa  
-**Query Params:** `clientId` (uuid)  
+**Auth:** Sesión Supabase activa
+**Query Params:** `clientId` (uuid)
 **Response:** Redirect `302` a la URL de OAuth de Meta
 
 ---
@@ -758,7 +896,7 @@ Genera la URL de autorización de Meta OAuth y redirige al usuario.
 ### ⬜ `GET /api/instagram/callback`
 Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda en Supabase.
 
-**Query Params:** `code` (string), `state` (uuid del clientId)  
+**Query Params:** `code` (string), `state` (uuid del clientId)
 **Lógica interna:**
 1. Intercambia `code` por short-lived token (vía Meta API)
 2. Convierte a long-lived token (válido 60 días)
@@ -768,36 +906,10 @@ Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda en
 
 ---
 
-### ⬜ `GET /api/clients/:clientId/instagram`
-Estado de la cuenta de Instagram conectada a un cliente.
-
-**Auth:** Sesión Supabase activa  
-**Response `200`**
-```json
-{
-  "connected": true,
-  "accountId": "string",
-  "username": "string",
-  "avatarUrl": "string | null",
-  "status": "connected | expired | error",
-  "tokenExpiresAt": "ISO 8601"
-}
-```
-
----
-
-### ⬜ `DELETE /api/clients/:clientId/instagram`
-Desconecta la cuenta de Instagram de un cliente.
-
-**Auth:** Sesión Supabase activa  
-**Response `204`** — sin body
-
----
-
 ### ⬜ `POST /api/instagram/publish`
 Publica un post en Instagram via Graph API. Llamado directamente (publicación inmediata) o desde el job de QStash (publicación programada). Refresca el token automáticamente si está próximo a vencer.
 
-**Auth:** Sesión Supabase activa (directo) o header `x-qstash-signature` (desde QStash)  
+**Auth:** Sesión Supabase activa (directo) o header `x-qstash-signature` (desde QStash)
 **Request Body**
 ```json
 {
@@ -824,14 +936,19 @@ Publica un post en Instagram via Graph API. Llamado directamente (publicación i
 
 ---
 
-## 9. Jobs internos (QStash)
+### ⬜ `GET /api/instagram/refresh-token`
+Endpoint placeholder para refresco manual de tokens de Instagram.
+
+---
+
+## 12. Jobs internos (QStash)
 
 > Estos endpoints son llamados automáticamente por **Upstash QStash** en el momento programado. No son accesibles desde el frontend. Validan la firma con el header `x-qstash-signature`.
 
 ### ⬜ `POST /api/jobs/publish`
 Job principal de publicación programada. QStash llama este endpoint cuando llega el horario de un post.
 
-**Headers:** `x-qstash-signature: <firma HMAC>`  
+**Headers:** `x-qstash-signature: <firma HMAC>`
 **Request Body** (definido al encolar el job en QStash)
 ```json
 {
@@ -839,9 +956,27 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
   "clientId": "uuid"
 }
 ```
-**Lógica interna:** Valida la firma → delega a `/api/instagram/publish`  
-**Response `200`** — `{ "success": true }`  
+**Lógica interna:** Valida la firma → delega a `/api/instagram/publish`
+**Response `200`** — `{ "success": true }`
 **Errores:** `401` firma inválida · `500` error de publicación (QStash reintenta automáticamente con backoff)
+
+---
+
+## 13. Configuración
+
+> Endpoints pendientes de implementación. Solo existen carpetas con `.gitkeep` de placeholder.
+
+### ⬜ `GET /api/settings/general`
+Configuración general del usuario. (No implementado)
+
+### ⬜ `PATCH /api/settings/general`
+Actualizar configuración general. (No implementado)
+
+### ⬜ `GET /api/settings/notifications`
+Preferencias de notificaciones del usuario. (No implementado)
+
+### ⬜ `PATCH /api/settings/notifications`
+Actualizar preferencias de notificaciones. (No implementado)
 
 ---
 
@@ -852,21 +987,25 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 | Landing page | ✅ | `POST /api/waitlist` |
 | Login (email/password) | ✅ | Supabase Auth SDK — sin endpoint propio |
 | Waitlist | ✅ | `POST /api/waitlist` |
-| Dashboard / Inicio | ⚠️ | `GET /api/metrics?period=7d` · `GET /api/posts?view=week` |
+| Dashboard / Inicio | ⚠️ | `GET /api/metrics?period=7d` (⬜) · `GET /api/posts` |
 | Clientes — listado | ✅ | `GET /api/clients` |
 | Clientes — crear | ✅ | `POST /api/clients` |
 | Clientes — editar | ✅ | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
 | Clientes — eliminar | ✅ | `DELETE /api/clients/:id` |
-| Clientes — conectar Instagram | ⬜ | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
-| Clientes — estado Instagram | ⬜ | `GET /api/clients/:id/instagram` |
-| Calendario | ✅ | `GET /api/posts?view=month&from=&to=` · `POST /api/posts` · `GET/POST /api/calendar/events` · `GET/PATCH/DELETE /api/calendar/events/:eventId` |
+| Clientes — cuentas sociales | ✅ | `GET /api/clients/:id/social-accounts` · `POST /api/clients/:id/social-accounts` · `DELETE /api/clients/:id/social-accounts/:accountId` |
+| Clientes — conectar Instagram (OAuth) | ⬜ | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
+| Calendario | ✅ | `GET /api/posts` · `POST /api/posts` · `GET/POST /api/calendar/events` · `GET/PATCH/DELETE /api/calendar/events/:eventId` |
 | Métricas | ⬜ | `GET /api/metrics` |
 | Nueva publicación — crear | ⚠️ | `POST /api/posts` · `POST /api/posts/media` |
 | Nueva publicación — editar borrador | ✅ | `GET /api/posts/:id` · `PATCH /api/posts/:id` |
+| Nueva publicación — solicitud de aprobación | ✅ | `POST /api/posts/:id/request-approval` |
+| Aprobación de posts (público) | ✅ | `GET /api/approve/:token` · `POST /api/approve/:token` |
 | Nueva publicación — IA reescribir | ✅ | `POST /api/ai/rewrite` |
-| Nueva publicación — IA hashtags | ✅ | `POST /api/ai/hashtags` |
+| Nueva publicación — IA hashtags | ⚠️ | `POST /api/ai/hashtags` (sin `grouped`) |
 | Nueva publicación — IA horario | ✅ | `POST /api/ai/best-time` |
-| Configuración — General | ✅ | `GET /api/users/me` · `PATCH /api/users/me` |
+| Configuración — General | ⬜ | `GET /api/settings/general` · `PATCH /api/settings/general` |
+| Configuración — Notificaciones | ⬜ | `GET /api/settings/notifications` · `PATCH /api/settings/notifications` |
+| Configuración — Perfil | ✅ | `GET /api/users/me` · `PATCH /api/users/me` |
 | Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
 | Configuración — Eliminar cuenta | ✅ | `DELETE /api/users/me` |
 | Chat IA (sidebar) | ✅ | `POST /api/ai/chat` |
@@ -876,7 +1015,7 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
 
 ## Convenciones generales
 
-- **Autenticación:** Supabase Auth. El frontend maneja cookies de sesión automáticamente. El servidor valida con `supabase.auth.getUser()` en cada request protegido.
+- **Autenticación:** Supabase Auth. El frontend maneja cookies de sesión automáticamente. El servidor valida con `supabase.auth.getUser()` en cada request protegido. Excepción: los endpoints de IA (`/api/ai/*`) no validan sesión, y `/api/approve/:token` es público sin autenticación.
 - **Content-Type:** `application/json` para todos los endpoints salvo `POST /api/posts/media` que usa `multipart/form-data`.
 - **Errores estándar:**
   - `400` Bad Request — validación de campos
@@ -884,10 +1023,11 @@ Job principal de publicación programada. QStash llama este endpoint cuando lleg
   - `403` Forbidden — recurso de otro usuario
   - `404` Not Found — recurso inexistente
   - `409` Conflict — duplicado o estado inválido
-  - `413` Payload Too Large — imagen demasiado grande
   - `500` Internal Server Error
 - **IDs:** UUIDs v4 generados por Supabase.
 - **Fechas:** ISO 8601 con timezone UTC.
-- **Paginación:** `page` + `limit` en endpoints de listado.
+- **Paginación:** `page` + `limit` no implementados en `GET /api/posts` (pendiente).
+- **Storage:** Imágenes se suben a Supabase Storage (bucket `post-media`), no a Vercel Blob. Máximo 10 MB, solo imágenes.
 - **Jobs QStash:** validados con HMAC signature. Si falla, QStash reintenta automáticamente hasta 3 veces con backoff exponencial.
-- **Tokens de Instagram:** long-lived tokens (60 días), guardados encriptados en Supabase. El refresh es automático dentro de `/api/instagram/publish` cuando quedan menos de 10 días.
+- **Redes simuladas:** En el MVP, las cuentas sociales se conectan de forma simulada (no hay OAuth real salvo Instagram que está pendiente). El flag `is_simulated` en `social_accounts` indica si es una conexión real o de demo.
+- **Aprobación de posts:** Los posts pasan por un flujo de estados: `draft` → `pending_approval` → `approved` / `draft` (rechazado). El CM solicita aprobación con `POST /api/posts/:postId/request-approval` y el cliente usa `/api/approve/:token` (público).
