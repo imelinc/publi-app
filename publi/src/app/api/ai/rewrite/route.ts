@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       if (user) {
         const { data: client } = await supabase
           .from('clients')
-          .select('name')
+          .select('name, descriptions')
           .eq('id', clientId)
           .eq('user_id', user.id)
           .single()
@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
               ? accounts.map((a: { network: string }) => a.network).join(', ')
               : 'ninguna'
           clientExtra = ` Cliente activo: ${client.name}, redes: ${networks}.`
+          if (client.descriptions) {
+            clientExtra += ` Descripción del cliente: ${client.descriptions}`
+          }
         }
       }
     }
