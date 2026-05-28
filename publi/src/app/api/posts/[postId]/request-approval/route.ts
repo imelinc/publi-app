@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 import { randomUUID } from 'crypto'
+import { resolveBaseUrl } from '@/lib/url'
 
 interface RouteParams {
   params: Promise<{ postId: string }>
@@ -13,7 +14,7 @@ interface RouteParams {
  * a "pending_approval". Devuelve la URL pública que el CM puede
  * copiar y enviarle al cliente final.
  */
-export async function POST(_request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: RouteParams) {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -44,7 +45,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   }
 
   const token = randomUUID()
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const baseUrl = resolveBaseUrl(request)
   const approvalUrl = `${baseUrl}/aprobar/${token}`
 
   const { error: updateErr } = await supabase

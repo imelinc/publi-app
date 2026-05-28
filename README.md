@@ -55,13 +55,41 @@ Abrí [http://localhost:3000](http://localhost:3000) en el navegador.
 | `META_APP_ID` | App ID de Meta Developers |
 | `META_APP_SECRET` | App Secret de Meta (solo servidor) |
 | `META_REDIRECT_URI` | Callback URL del OAuth de Meta |
+| `QSTASH_URL` | URL del servidor QStash (solo local, ver más abajo) |
 | `QSTASH_TOKEN` | Token de Upstash QStash |
 | `QSTASH_CURRENT_SIGNING_KEY` | Firma QStash actual |
 | `QSTASH_NEXT_SIGNING_KEY` | Firma QStash siguiente |
+| `CRON_SECRET` | Secreto que protege el cron `/api/cron/enqueue-due` (Vercel) |
 | `BLOB_READ_WRITE_TOKEN` | Token de Vercel Blob |
 | `NEXT_PUBLIC_APP_URL` | URL base de la app |
 
 > Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El resto son exclusivas del servidor.
+
+---
+
+## Probar el scheduling de publicaciones localmente
+
+Las publicaciones programadas se publican vía **Upstash QStash**: al programar un post se encola un job que, al llegar la fecha, hace un callback a `/api/qstash/publish/[postId]` (hoy simula la publicación).
+
+QStash **no puede llamar a `localhost`**, así que para probar el ciclo completo en local se usa el **servidor QStash de desarrollo** que provee Upstash (corre en tu máquina y sí alcanza a `localhost`):
+
+```bash
+# En una terminal aparte, dejándola corriendo junto al dev server:
+npx @upstash/qstash-cli dev
+```
+
+Al arrancar imprime credenciales de desarrollo fijas. Copiá las 4 a tu `.env.local`:
+
+```bash
+QSTASH_URL=http://127.0.0.1:8080
+QSTASH_TOKEN=...                 # el que imprime el CLI
+QSTASH_CURRENT_SIGNING_KEY=...   # el que imprime el CLI
+QSTASH_NEXT_SIGNING_KEY=...      # el que imprime el CLI
+```
+
+Reiniciá `npm run dev` y listo: programá un post para dentro de unos minutos y se publicará solo (la card pasa de **Programada** a **Publicada** automáticamente vía Supabase Realtime). No hace falta tocar código: el SDK toma `QSTASH_URL` del entorno.
+
+> **Producción / Vercel preview:** en vez de las credenciales de dev, usá las reales del [dashboard de QStash](https://console.upstash.com/qstash) y configurá `CRON_SECRET`. El cron diario (`vercel.json`) encola las publicaciones programadas a más de 7 días cuando entran en ventana.
 
 ---
 

@@ -6,6 +6,9 @@ import type {
   PostPublication,
   PublicationStatus,
 } from '@/types'
+import { simulateEngagement } from '@/lib/simulation'
+import { resolveBaseUrl } from '@/lib/url'
+import { shouldEnqueueNow, enqueuePostPublish } from '@/lib/qstash'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,30 +47,6 @@ function mapPublication(row: PublicationRow): PostPublication {
       reach: row.reach ?? 0,
     },
     metricsUpdatedAt: row.metrics_updated_at,
-  }
-}
-
-// Para redes simuladas: generar números plausibles deterministas a partir del id.
-// Determinístico = misma publicación da siempre los mismos números.
-function pseudoRandom(seed: string): number {
-  let h = 2166136261
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i)
-    h = Math.imul(h, 16777619)
-  }
-  return (h >>> 0) / 4294967295
-}
-
-function simulateEngagement(publicationId: string) {
-  const r1 = pseudoRandom(publicationId)
-  const r2 = pseudoRandom(publicationId + 'x')
-  const r3 = pseudoRandom(publicationId + 'y')
-  const r4 = pseudoRandom(publicationId + 'z')
-  return {
-    likes: Math.floor(50 + r1 * 850),
-    comments: Math.floor(2 + r2 * 80),
-    views: Math.floor(200 + r3 * 4800),
-    reach: Math.floor(300 + r4 * 7000),
   }
 }
 
@@ -261,6 +240,34 @@ export async function POST(request: NextRequest) {
     }
 
     publications = (insertedPubs as PublicationRow[]).map(mapPublication)
+  }
+
+  // Si se programó y la fecha entra en la ventana de QStash, encolar el job.
+  // Ante cualquier falla hacemos rollback completo (post + publications) y 503,
+  // así el CM puede reintentar sin quedar con un post "fantasma" sin programar.
+  let qstashMessageId: string | null = null
+  if (post.status === 'scheduled' && post.scheduled_at && shouldEnqueueNow(post.scheduled_at)) {
+    try {
+      qstashMessageId = await enqueuePostPublish(
+        post.id,
+        post.scheduled_at,
+        resolveBaseUrl(request)
+      )
+      const { error: updErr } = await supabase
+        .from('posts')
+        .update({ qstash_message_id: qstashMessageId })
+        .eq('id', post.id)
+      if (updErr) throw new Error(updErr.message)
+    } catch (err) {
+      // Rollback: borrar publications y post huérfano.
+      await supabase.from('post_publications').delete().eq('post_id', post.id)
+      await supabase.from('posts').delete().eq('id', post.id)
+      console.error('Error encolando en QStash, rollback del post:', err)
+      return Response.json(
+        { error: 'No se pudo programar la publicación, intentá de nuevo' },
+        { status: 503 }
+      )
+    }
   }
 
   const result = {
