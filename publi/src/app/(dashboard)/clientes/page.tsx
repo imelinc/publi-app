@@ -60,6 +60,36 @@ export default function ClientesPage() {
     })
   }, [fetchClients, toast])
 
+  // Resultado del OAuth de Instagram (el callback redirige acá con query params).
+  // Se maneja a nivel página porque el flujo saca al usuario de la app: cuando
+  // vuelve, el dialog de "Gestionar redes" ya está cerrado.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const connected = params.get('ig_connected')
+    const igError = params.get('ig_error')
+    if (!connected && !igError) return
+
+    if (connected) {
+      toast({ title: 'Instagram conectado' })
+      fetchClients().catch(() => {})
+    } else if (igError) {
+      const messages: Record<string, string> = {
+        denied: 'Cancelaste la autorización de Instagram.',
+        not_business:
+          'Esa cuenta no es Business ni Creator. Convertila en Instagram (Configuración → Cuenta → Cambiar a cuenta profesional) y reintentá.',
+        not_configured:
+          'La integración con Instagram no está configurada (falta la app de Meta).',
+        token: 'No pudimos conectar con Instagram. Probá de nuevo.',
+      }
+      toast({
+        title: 'No se pudo conectar Instagram',
+        description: messages[igError] ?? messages.token,
+      })
+    }
+    // Limpiar los query params de la URL.
+    router.replace('/clientes')
+  }, [router, toast, fetchClients])
+
   function handleEdit(client: Client) {
     setEditingClient(client)
     setModalOpen(true)

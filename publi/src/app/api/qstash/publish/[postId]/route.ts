@@ -1,10 +1,49 @@
 import { NextRequest } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyQStashSignature } from '@/lib/qstash'
 import { simulateEngagement } from '@/lib/simulation'
+import { publishToInstagram, refreshLongLived } from '@/lib/instagram'
 
 interface RouteParams {
   params: Promise<{ postId: string }>
+}
+
+// Cuenta social con lo necesario para publicar de verdad.
+interface AccountRow {
+  id: string
+  network: string
+  is_simulated: boolean
+  access_token: string | null
+  external_user_id: string | null
+  token_expires_at: string | null
+}
+
+// Refresca el token si vence en <10 días (Meta sólo refresca tokens con >24h de
+// vida). Si el refresh falla, devolvemos el token actual y dejamos que el
+// publish surfacee el error real. Persiste el token nuevo en la DB.
+async function ensureValidInstagramToken(
+  supabase: SupabaseClient,
+  account: AccountRow
+): Promise<string> {
+  const token = account.access_token ?? ''
+  const expMs = account.token_expires_at
+    ? new Date(account.token_expires_at).getTime()
+    : 0
+  const tenDays = 10 * 24 * 60 * 60 * 1000
+  if (!token || expMs - Date.now() > tenDays) return token
+  try {
+    const refreshed = await refreshLongLived(token)
+    const newExp = new Date(Date.now() + refreshed.expiresIn * 1000).toISOString()
+    await supabase
+      .from('social_accounts')
+      .update({ access_token: refreshed.accessToken, token_expires_at: newExp })
+      .eq('id', account.id)
+    return refreshed.accessToken
+  } catch (err) {
+    console.error(`[qstash/publish] no se pudo refrescar el token IG ${account.id}:`, err)
+    return token
+  }
 }
 
 /**
@@ -14,8 +53,9 @@ interface RouteParams {
  * NO tiene sesión de usuario (QStash llama sin cookies) → usa el admin client
  * y se protege con la firma HMAC de QStash.
  *
- * Hoy SIMULA la publicación. En el futuro, para redes con cuenta real
- * (is_simulated=false), va a hacer la llamada real a la API de la red.
+ * Publica DE VERDAD en las redes con cuenta real (hoy: Instagram, is_simulated
+ * =false) y SIMULA el resto. Es idempotente: si QStash reintenta, las
+ * publicaciones ya resueltas se saltean (no se re-publica en Instagram).
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { postId } = await params
@@ -40,11 +80,12 @@ async function handlePublish(request: NextRequest, postId: string) {
 
   const supabase = createAdminClient()
 
-  // 2. Buscar el post. Si no existe (se borró entre el encolado y el callback),
-  //    respondemos 200 para que QStash NO reintente.
+  // 2. Buscar el post (con lo necesario para armar el caption y publicar).
+  //    Si no existe (se borró entre el encolado y el callback), 200 para que
+  //    QStash NO reintente.
   const { data: post, error: pErr } = await supabase
     .from('posts')
-    .select('id, status')
+    .select('id, status, client_id, description, hashtags, media_urls')
     .eq('id', postId)
     .single()
 
@@ -60,53 +101,73 @@ async function handlePublish(request: NextRequest, postId: string) {
 
   const now = new Date().toISOString()
 
-  // 4. Marcar el post como publicado y limpiar el message_id (ya se consumió).
-  //    OJO: published_at NO vive en `posts` sino en `post_publications`
-  //    (ver dashboard/page.tsx). Acá solo tocamos status/message_id.
-  const { error: updPostErr } = await supabase
-    .from('posts')
-    .update({ status: 'published', qstash_message_id: null, updated_at: now })
-    .eq('id', postId)
-
-  if (updPostErr) {
-    // 500 → QStash reintenta más tarde (la operación es idempotente).
-    console.error(
-      `[qstash/publish] Error actualizando post ${postId}:`,
-      updPostErr.message,
-      updPostErr
-    )
-    return Response.json({ error: updPostErr.message }, { status: 500 })
+  // 4. Cuentas conectadas del cliente (para saber cuáles son reales).
+  const accountsByNetwork = new Map<string, AccountRow>()
+  const { data: accounts } = await supabase
+    .from('social_accounts')
+    .select('id, network, is_simulated, access_token, external_user_id, token_expires_at')
+    .eq('client_id', post.client_id as string)
+  for (const a of (accounts ?? []) as AccountRow[]) {
+    accountsByNetwork.set(a.network, a)
   }
 
-  // 5. Resolver qué redes del cliente están simuladas.
-  const { data: clientRow } = await supabase
-    .from('posts')
-    .select('client_id')
-    .eq('id', postId)
-    .single()
+  // Caption real: descripción + hashtags.
+  const tags = ((post.hashtags as string[] | null) ?? [])
+    .map((h) => (h.startsWith('#') ? h : `#${h}`))
+    .join(' ')
+  const caption = [post.description as string | null, tags].filter(Boolean).join('\n\n')
+  const mediaUrls = (post.media_urls as string[] | null) ?? []
 
-  const clientId = clientRow?.client_id as string | undefined
-
-  const simulatedByNetwork = new Map<string, boolean>()
-  if (clientId) {
-    const { data: accounts } = await supabase
-      .from('social_accounts')
-      .select('network, is_simulated')
-      .eq('client_id', clientId)
-    for (const a of (accounts ?? []) as { network: string; is_simulated: boolean }[]) {
-      simulatedByNetwork.set(a.network, a.is_simulated)
-    }
-  }
-
-  // 6. Publicar cada red.
+  // 5. Resolver cada publication. Idempotente: las ya resueltas se saltean
+  //    (clave para no re-publicar en Instagram si QStash reintenta).
   const { data: pubs } = await supabase
     .from('post_publications')
     .select('id, network, status')
     .eq('post_id', postId)
 
+  const results: string[] = [] // estado final de cada pub (para el agregado)
+
   for (const pub of (pubs ?? []) as { id: string; network: string; status: string }[]) {
-    if (simulatedByNetwork.get(pub.network)) {
-      // Red simulada → marcamos publicada con métricas plausibles.
+    if (pub.status === 'published' || pub.status === 'simulated') {
+      results.push(pub.status)
+      continue
+    }
+
+    const account = accountsByNetwork.get(pub.network)
+    const isRealInstagram =
+      pub.network === 'instagram' && account && !account.is_simulated && account.access_token
+
+    if (isRealInstagram) {
+      // Publicación REAL en Instagram.
+      try {
+        const token = await ensureValidInstagramToken(supabase, account!)
+        const mediaId = await publishToInstagram({
+          igUserId: account!.external_user_id ?? '',
+          accessToken: token,
+          imageUrls: mediaUrls,
+          caption,
+        })
+        await supabase
+          .from('post_publications')
+          .update({
+            status: 'published',
+            external_post_id: mediaId,
+            published_at: now,
+            error_message: null,
+          })
+          .eq('id', pub.id)
+        results.push('published')
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido'
+        console.error(`[qstash/publish] Instagram falló (pub ${pub.id}):`, message)
+        await supabase
+          .from('post_publications')
+          .update({ status: 'failed', error_message: message.slice(0, 500), published_at: null })
+          .eq('id', pub.id)
+        results.push('failed')
+      }
+    } else {
+      // Red simulada (o sin cuenta real) → métricas plausibles.
       const eng = simulateEngagement(pub.id)
       await supabase
         .from('post_publications')
@@ -119,17 +180,27 @@ async function handlePublish(request: NextRequest, postId: string) {
           reach: eng.reach,
         })
         .eq('id', pub.id)
-    } else {
-      // TODO: when is_simulated=false, llamar a la API real de la red
-      // correspondiente (Instagram Graph API, etc), guardar external_post_id
-      // y en caso de error marcar status='failed' con error_message.
-      // Por ahora la marcamos como publicada igual para no dejarla colgada.
-      await supabase
-        .from('post_publications')
-        .update({ status: 'simulated', published_at: now })
-        .eq('id', pub.id)
+      results.push('simulated')
     }
   }
 
-  return Response.json({ published: true, postId }, { status: 200 })
+  // 6. Estado agregado del post: 'failed' sólo si TODAS las redes fallaron;
+  //    si alguna se publicó/simuló, queda 'published'. Limpiamos el message_id.
+  const allFailed = results.length > 0 && results.every((r) => r === 'failed')
+  const { error: updPostErr } = await supabase
+    .from('posts')
+    .update({
+      status: allFailed ? 'failed' : 'published',
+      qstash_message_id: null,
+      updated_at: now,
+    })
+    .eq('id', postId)
+
+  if (updPostErr) {
+    // 500 → QStash reintenta (las pubs ya resueltas se saltean, no se duplica).
+    console.error(`[qstash/publish] Error actualizando post ${postId}:`, updPostErr.message)
+    return Response.json({ error: updPostErr.message }, { status: 500 })
+  }
+
+  return Response.json({ published: !allFailed, results }, { status: 200 })
 }
