@@ -581,13 +581,11 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                   if (!scheduleDate) return null
                   const dt = new Date(`${scheduleDate}T${scheduleTime || '00:00'}`)
                   if (isNaN(dt.getTime())) return null
-                  const farAway =
-                    dt.getTime() - Date.now() > 6.5 * 24 * 60 * 60 * 1000
-                  return farAway ? (
+                  return (
                     <p className="text-xs text-gray-400">
                       Se publicará automáticamente en la fecha indicada.
                     </p>
-                  ) : null
+                  )
                 })()}
                 <button
                   onClick={() => setShowScheduleAi(!showScheduleAi)}

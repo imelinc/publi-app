@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refreshLongLived } from '@/lib/instagram'
+import { isAuthorizedCronRequest } from '@/lib/cron-auth'
 
 /**
  * GET /api/instagram/refresh-token
@@ -14,9 +15,7 @@ import { refreshLongLived } from '@/lib/instagram'
  * que ya expiraron requieren reconexión manual (no se pueden refrescar).
  */
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  const authHeader = request.headers.get('authorization')
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!isAuthorizedCronRequest(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   let refreshed = 0
-  let failed = 0
+  const failedIds: string[] = []
 
   for (const acc of (accounts ?? []) as {
     id: string
@@ -56,9 +55,14 @@ export async function GET(request: NextRequest) {
       refreshed++
     } catch (err) {
       console.error(`[instagram/refresh-token] falló refrescar cuenta ${acc.id}:`, err)
-      failed++
+      failedIds.push(acc.id)
     }
   }
 
-  return Response.json({ refreshed, failed, scanned: accounts?.length ?? 0 })
+  return Response.json({
+    refreshed,
+    failed: failedIds.length,
+    failedIds,
+    scanned: accounts?.length ?? 0,
+  })
 }

@@ -259,8 +259,9 @@ export async function POST(request: NextRequest) {
         .eq('id', post.id)
       if (updErr) throw new Error(updErr.message)
     } catch (err) {
-      // Rollback: borrar publications y post huérfano.
-      await supabase.from('post_publications').delete().eq('post_id', post.id)
+      // Rollback: borrar solo el post; las post_publications caen por
+      // ON DELETE CASCADE (FK post_publications.post_id). Un único delete evita
+      // estados intermedios inconsistentes.
       await supabase.from('posts').delete().eq('id', post.id)
       console.error('Error encolando en QStash, rollback del post:', err)
       return Response.json(

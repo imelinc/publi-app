@@ -25,7 +25,12 @@ function getQStashClient(): Client {
   if (!token) {
     throw new Error('QSTASH_TOKEN no está configurado en las variables de entorno')
   }
-  _client = new Client({ token })
+  // baseUrl: respeta QSTASH_URL para apuntar al server local de desarrollo
+  // (npx @upstash/qstash-cli dev). Sin esto, los jobs no llegarían en local.
+  _client = new Client({
+    token,
+    ...(process.env.QSTASH_URL ? { baseUrl: process.env.QSTASH_URL } : {}),
+  })
   return _client
 }
 

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueuePostPublish } from '@/lib/qstash'
 import { resolveBaseUrl } from '@/lib/url'
+import { isAuthorizedCronRequest } from '@/lib/cron-auth'
 
 /**
  * GET /api/cron/enqueue-due
@@ -11,12 +12,11 @@ import { resolveBaseUrl } from '@/lib/url'
  * (qstash_message_id IS NULL). Resuelve el límite de 7 días del plan free:
  * lo lejano se encola recién cuando se acerca.
  *
- * Protegido por `CRON_SECRET` (Vercel lo manda como Bearer si está configurado).
+ * Autorizado por header de Vercel Cron (`x-vercel-cron`) en prod, o por
+ * `Bearer CRON_SECRET` en dev/preview/manual.
  */
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  const authHeader = request.headers.get('authorization')
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!isAuthorizedCronRequest(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
   const baseUrl = resolveBaseUrl(request)
   let enqueued = 0
-  let failed = 0
+  const failedIds: string[] = []
 
   for (const post of (due ?? []) as { id: string; scheduled_at: string }[]) {
     try {
@@ -52,9 +52,14 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       // No abortamos el batch: el próximo barrido reintenta este post.
       console.error(`Error encolando post ${post.id} en el cron:`, err)
-      failed++
+      failedIds.push(post.id)
     }
   }
 
-  return Response.json({ enqueued, failed, scanned: due?.length ?? 0 })
+  return Response.json({
+    enqueued,
+    failed: failedIds.length,
+    failedIds,
+    scanned: due?.length ?? 0,
+  })
 }

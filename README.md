@@ -92,6 +92,17 @@ QSTASH_NEXT_SIGNING_KEY=...      # el que imprime el CLI
 
 Reiniciá `npm run dev` y listo: programá un post para dentro de unos minutos y se publicará solo (la card pasa de **Programada** a **Publicada** automáticamente vía Supabase Realtime). No hace falta tocar código: el SDK toma `QSTASH_URL` del entorno.
 
+### Crons de Vercel
+
+`vercel.json` define dos crons diarios (los horarios están en **UTC**):
+
+| Cron | Horario | Equivale en Argentina (UTC-3) | Para qué |
+|---|---|---|---|
+| `/api/cron/enqueue-due` | `0 3 * * *` (03:00 UTC) | 00:00 | Encola en QStash las publicaciones programadas a >6.5 días que entran en ventana (límite de 7 días del plan free). |
+| `/api/instagram/refresh-token` | `0 4 * * *` (04:00 UTC) | 01:00 | Refresca los tokens long-lived de Instagram que vencen en <10 días. |
+
+Corren a la medianoche argentina, justo antes del horario pico de publicación. Ambos endpoints se autorizan con el header `x-vercel-cron` (que Vercel manda en prod) o con `Authorization: Bearer $CRON_SECRET` (para dispararlos a mano en dev/preview).
+
 ---
 
 ## Conexión de cuentas de Instagram

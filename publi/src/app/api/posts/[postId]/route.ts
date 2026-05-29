@@ -169,6 +169,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   // ─── Sincronizar la cola de QStash según la transición ──────────────────────
+  // NOTA (deuda técnica MVP): si dos PATCH llegan simultáneos sobre el mismo
+  // post, ambos leen el mismo oldState, cancelan el mismo qstash_message_id y
+  // encolan dos jobs → posible publicación duplicada. Futuro: SELECT FOR UPDATE
+  // o optimistic lock comparando updated_at antes de aplicar el sync de QStash.
   // Estado/fecha resultantes tras aplicar el body.
   const newStatus = (body.status ?? post.status) as string
   const newScheduledAt =
