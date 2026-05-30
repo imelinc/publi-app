@@ -86,12 +86,11 @@ export async function exchangeCodeForToken(
   if (!res.ok) {
     throw new Error(`exchangeCodeForToken falló: ${JSON.stringify(json)}`)
   }
-  // Formato: { data: [{ access_token, user_id, permissions }] }
-  const entry = Array.isArray(json?.data) ? json.data[0] : json
-  if (!entry?.access_token || !entry?.user_id) {
+  // Instagram API with Instagram Login devuelve { access_token, token_type } directamente
+  if (!json?.access_token) {
     throw new Error(`exchangeCodeForToken: respuesta inesperada ${JSON.stringify(json)}`)
   }
-  return { accessToken: entry.access_token, userId: String(entry.user_id) }
+  return { accessToken: json.access_token, userId: String(json.user_id ?? '') }
 }
 
 /** Convierte un token short-lived en uno LONG-LIVED (≈60 días). */
@@ -212,7 +211,7 @@ export async function publishToInstagram({
 /** Trae los datos básicos del perfil para validar y mostrar la cuenta. */
 export async function fetchInstagramProfile(token: string): Promise<InstagramProfile> {
   const params = new URLSearchParams({
-    fields: 'user_id,username,account_type,profile_picture_url',
+    fields: 'id,username,account_type,profile_picture_url',
     access_token: token,
   })
   const res = await fetch(`${GRAPH_BASE}/me?${params.toString()}`)
@@ -221,7 +220,7 @@ export async function fetchInstagramProfile(token: string): Promise<InstagramPro
     throw new Error(`fetchInstagramProfile falló: ${JSON.stringify(json)}`)
   }
   return {
-    userId: String(json.user_id ?? json.id ?? ''),
+    userId: String(json.id ?? ''),
     username: json.username,
     accountType: json.account_type ?? '',
     profilePictureUrl: json.profile_picture_url ?? null,

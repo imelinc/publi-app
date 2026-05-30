@@ -88,7 +88,8 @@ export default function ClientesPage() {
     }
     // Limpiar los query params de la URL.
     router.replace('/clientes')
-  }, [router, toast, fetchClients])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleEdit(client: Client) {
     setEditingClient(client)
