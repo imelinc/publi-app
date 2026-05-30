@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 import type { Network, PostStatus } from '@/types'
+import { resolveBaseUrl } from '@/lib/url'
+import { syncQStashForUpdate, cancelPostPublish } from '@/lib/qstash'
 
 interface RouteParams {
   params: Promise<{ postId: string }>
@@ -166,6 +168,40 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     updates.scheduled_at = new Date().toISOString()
   }
 
+  // ─── Sincronizar la cola de QStash según la transición ──────────────────────
+  // NOTA (deuda técnica MVP): si dos PATCH llegan simultáneos sobre el mismo
+  // post, ambos leen el mismo oldState, cancelan el mismo qstash_message_id y
+  // encolan dos jobs → posible publicación duplicada. Futuro: SELECT FOR UPDATE
+  // o optimistic lock comparando updated_at antes de aplicar el sync de QStash.
+  // Estado/fecha resultantes tras aplicar el body.
+  const newStatus = (body.status ?? post.status) as string
+  const newScheduledAt =
+    body.scheduledAt !== undefined
+      ? body.scheduledAt
+      : (post.scheduled_at as string | null)
+  try {
+    const messageId = await syncQStashForUpdate(
+      postId,
+      {
+        status: post.status as string,
+        scheduled_at: post.scheduled_at as string | null,
+        qstash_message_id: (post.qstash_message_id as string | null) ?? null,
+      },
+      newStatus,
+      newScheduledAt,
+      resolveBaseUrl(request)
+    )
+    // Persistimos el id resultante (string si quedó encolado, null si no).
+    updates.qstash_message_id = messageId
+  } catch (err) {
+    // Falla de QStash → no aplicamos el UPDATE (rollback implícito) y 503.
+    console.error('Error sincronizando QStash en PATCH, no se aplica el update:', err)
+    return Response.json(
+      { error: 'No se pudo actualizar la programación, intentá de nuevo' },
+      { status: 503 }
+    )
+  }
+
   const { data: updated, error: updateErr } = await supabase
     .from('posts')
     .update(updates)
@@ -194,7 +230,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
   const { data: post, error: findErr } = await supabase
     .from('posts')
-    .select('id, client_id')
+    .select('id, client_id, qstash_message_id')
     .eq('id', postId)
     .single()
 
@@ -211,6 +247,17 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
   if (ownerErr) {
     return Response.json({ error: 'Post no encontrado' }, { status: 404 })
+  }
+
+  // Cancelar el job de QStash si lo había. No bloqueamos el borrado por una
+  // falla de cola: el callback huérfano va a responder 200 sin publicar nada
+  // (el post ya no existe). Por eso logueamos y seguimos.
+  if (post.qstash_message_id) {
+    try {
+      await cancelPostPublish(post.qstash_message_id as string)
+    } catch (err) {
+      console.error('No se pudo cancelar el job de QStash al borrar el post:', err)
+    }
   }
 
   const { error: deleteErr } = await supabase

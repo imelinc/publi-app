@@ -165,7 +165,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       access_token: null,
       token_expires_at: null,
     })
-    .select()
+    .select('id, client_id, network, external_user_id, username, avatar_url, is_simulated, token_expires_at, connected_at')
     .single()
 
   if (insertErr) {

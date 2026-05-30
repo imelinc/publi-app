@@ -577,6 +577,16 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                     />
                   </div>
                 </div>
+                {(() => {
+                  if (!scheduleDate) return null
+                  const dt = new Date(`${scheduleDate}T${scheduleTime || '00:00'}`)
+                  if (isNaN(dt.getTime())) return null
+                  return (
+                    <p className="text-xs text-gray-400">
+                      Se publicará automáticamente en la fecha indicada.
+                    </p>
+                  )
+                })()}
                 <button
                   onClick={() => setShowScheduleAi(!showScheduleAi)}
                   className="inline-flex items-center gap-1.5 border border-[#0095b6] text-[#0095b6] text-sm rounded-lg px-3 py-1.5 hover:bg-[#cceef5] transition-colors"

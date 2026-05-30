@@ -15,6 +15,7 @@ import {
   ChevronDown,
   LogOut,
   Check,
+  FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
@@ -32,6 +33,7 @@ import {
 const navItems = [
   { label: 'Inicio', href: '/dashboard', Icon: LayoutDashboard },
   { label: 'Clientes', href: '/clientes', Icon: Users },
+  { label: 'Publicaciones', href: '/publicaciones', Icon: FileText },
   { label: 'Calendario', href: '/calendario', Icon: Calendar },
   { label: 'Métricas', href: '/metricas', Icon: BarChart2 },
   { label: 'Copi IA', href: '/ai', Icon: Sparkles },

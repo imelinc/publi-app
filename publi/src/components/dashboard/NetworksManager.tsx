@@ -114,6 +114,8 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
         const isBusy = busy === network
         const draft = drafts[network] ?? ''
         const password = passwords[network] ?? ''
+        // Instagram usa OAuth real (no el form simulado de usuario+contraseña).
+        const isInstagram = network === 'instagram'
 
         return (
           <div key={network} className="flex items-start gap-3 py-3">
@@ -134,6 +136,11 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                   <Check className="size-3 text-green-500 shrink-0" />
                   <span className="truncate">@{account.username}</span>
                 </div>
+              ) : isInstagram ? (
+                <p className="text-xs text-gray-400 mt-1 leading-snug">
+                  Requiere una cuenta Business o Creator. Vas a iniciar sesión en
+                  Instagram para autorizar.
+                </p>
               ) : (
                 <div className="mt-2 flex flex-col gap-1.5">
                   <Input
@@ -144,7 +151,7 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !isBusy) handleConnect(network)
                     }}
-                    placeholder={network === 'instagram' ? '@minegocio' : '@usuario'}
+                    placeholder="@usuario"
                     className="h-8 text-xs"
                     disabled={isBusy}
                     autoComplete="off"
@@ -185,6 +192,16 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                       Desconectar
                     </>
                   )}
+                </Button>
+              ) : isInstagram ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = `/api/instagram/connect?clientId=${clientId}`
+                  }}
+                  className="bg-[#0095b6] hover:bg-[#007a96] text-white h-8"
+                >
+                  Conectar con Instagram
                 </Button>
               ) : (
                 <Button
