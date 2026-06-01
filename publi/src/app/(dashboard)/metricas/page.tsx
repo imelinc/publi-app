@@ -226,9 +226,9 @@ export default function MetricasPage() {
               <div className="absolute top-0 right-0 p-3 opacity-10 text-[#0095b6] group-hover:scale-110 transition duration-300">
                 <Clock className="w-12 h-12" />
               </div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tiempo creando</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Tiempo en la app</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{formatDuration(data?.summary.timeSpentCreating ?? 0)}</p>
-              <p className="text-xs text-gray-400 mt-2">Editando en nueva publicación</p>
+              <p className="text-xs text-gray-400 mt-2">Tiempo total en la plataforma</p>
             </div>
           </div>
 
