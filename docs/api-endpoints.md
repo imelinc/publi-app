@@ -1027,7 +1027,7 @@ Actualizar preferencias de notificaciones. (No implementado)
 - **IDs:** UUIDs v4 generados por Supabase.
 - **Fechas:** ISO 8601 con timezone UTC.
 - **Paginación:** `page` + `limit` no implementados en `GET /api/posts` (pendiente).
-- **Storage:** Imágenes se suben a Supabase Storage (bucket `post-media`), no a Vercel Blob. Máximo 10 MB, solo imágenes.
+- **Storage:** Imágenes se suben a Supabase Storage (bucket `post-media`). Máximo 10 MB, solo imágenes.
 - **Jobs QStash:** validados con HMAC signature. Si falla, QStash reintenta automáticamente hasta 3 veces con backoff exponencial.
 - **Redes simuladas:** En el MVP, las cuentas sociales se conectan de forma simulada (no hay OAuth real salvo Instagram que está pendiente). El flag `is_simulated` en `social_accounts` indica si es una conexión real o de demo.
 - **Aprobación de posts:** Los posts pasan por un flujo de estados: `draft` → `pending_approval` → `approved` / `draft` (rechazado). El CM solicita aprobación con `POST /api/posts/:postId/request-approval` y el cliente usa `/api/approve/:token` (público).
