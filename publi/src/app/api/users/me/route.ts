@@ -11,13 +11,15 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, workspace_name')
+    .select('name, workspace_name, login_count, time_spent_creating')
     .eq('id', user.id)
     .single()
 
   const meta = user.user_metadata ?? {}
   const name: string = profile?.name ?? meta.full_name ?? meta.name ?? user.email?.split('@')[0] ?? 'Usuario'
   const workspaceName: string = profile?.workspace_name ?? 'Mi workspace'
+  const loginCount: number = profile?.login_count ?? 0
+  const timeSpentCreating: number = profile?.time_spent_creating ?? 0
 
   const words = name.trim().split(/\s+/)
   const initials = (
@@ -31,6 +33,8 @@ export async function GET() {
     initials,
     avatarUrl: meta.avatar_url ?? null,
     workspaceName,
+    loginCount,
+    timeSpentCreating,
   })
 }
 
@@ -60,7 +64,7 @@ export async function PATCH(request: NextRequest) {
   const { data: profile, error: upsertError } = await supabase
     .from('profiles')
     .upsert({ id: user.id, ...updates })
-    .select()
+    .select('name, workspace_name, login_count, time_spent_creating')
     .single()
 
   if (upsertError) {
@@ -70,6 +74,8 @@ export async function PATCH(request: NextRequest) {
   const meta = user.user_metadata ?? {}
   const name: string = profile?.name ?? meta.full_name ?? meta.name ?? user.email?.split('@')[0] ?? 'Usuario'
   const workspaceName: string = profile?.workspace_name ?? 'Mi workspace'
+  const loginCount: number = profile?.login_count ?? 0
+  const timeSpentCreating: number = profile?.time_spent_creating ?? 0
 
   const words = name.trim().split(/\s+/)
   const initials = (
@@ -83,6 +89,8 @@ export async function PATCH(request: NextRequest) {
     initials,
     avatarUrl: meta.avatar_url ?? null,
     workspaceName,
+    loginCount,
+    timeSpentCreating,
   })
 }
 
