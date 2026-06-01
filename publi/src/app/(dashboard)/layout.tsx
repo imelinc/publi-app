@@ -24,6 +24,16 @@ export default function DashboardLayout({
     fetchEvents().catch(() => {})
   }, [fetchUserProfile, fetchClients, fetchPosts, fetchEvents])
 
+  // Track session login once per browser tab session
+  useEffect(() => {
+    const sessionKey = 'publi_login_tracked'
+    const isTracked = sessionStorage.getItem(sessionKey)
+    if (!isTracked) {
+      sessionStorage.setItem(sessionKey, 'true')
+      fetch('/api/users/me/login-event', { method: 'POST' }).catch(() => {})
+    }
+  }, [])
+
   // Cuando la pestaña vuelve a tener foco, refrescamos posts y eventos.
   // Backup por si Realtime se cayó o el sistema operativo suspendió la conexión.
   useEffect(() => {

@@ -108,6 +108,8 @@ export interface UserProfile {
   workspaceName?: string
   notifPostPublished?: boolean
   createdAt?: string
+  loginCount?: number
+  timeSpentCreating?: number
 }
 
 export type NotificationType =

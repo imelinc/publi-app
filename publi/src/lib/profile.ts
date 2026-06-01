@@ -9,6 +9,8 @@ export interface ProfileRow {
   workspace_name: string
   notif_post_published: boolean
   created_at: string
+  login_count?: number
+  time_spent_creating?: number
 }
 
 export interface PatchProfileBody {
@@ -46,6 +48,8 @@ export function mapProfileToResponse(
     workspaceName: row.workspace_name,
     notifPostPublished: row.notif_post_published,
     createdAt: row.created_at,
+    loginCount: row.login_count ?? 0,
+    timeSpentCreating: row.time_spent_creating ?? 0,
   }
 }
 
