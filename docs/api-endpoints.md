@@ -3,7 +3,7 @@
 > **Stack:** Next.js 14 (TypeScript) · Supabase (DB + Auth + Storage) · Upstash QStash (scheduling) · Groq API (IA)
 > **Convención de rutas:** Next.js API Routes en `app/api/...`
 > **Autenticación:** Supabase Auth — el cliente JS maneja la sesión automáticamente. Los endpoints del servidor validan con `supabase.auth.getUser()`.
-> **Fecha de relevamiento:** Mayo 2026 — actualizado con inspección del repositorio
+> **Fecha de relevamiento:** Junio 2026 — actualizado con inspección del repositorio
 
 > **Estado de implementación:** verificado contra `publi/src/app/api/**/route.ts`.
 >
@@ -27,7 +27,8 @@
 10. [Waitlist](#10-waitlist)
 11. [Instagram — OAuth & Publicación](#11-instagram--oauth--publicación)
 12. [Jobs internos (QStash)](#12-jobs-internos-qstash)
-13. [Configuración](#13-configuración)
+13. [Cron de Vercel](#13-cron-de-vercel)
+14. [Configuración](#14-configuración)
 
 ---
 
@@ -356,10 +357,10 @@ Lista publicaciones del usuario autenticado.
 
 ---
 
-### ⚠️ `POST /api/posts`
+### ✅ `POST /api/posts`
 Crea una publicación nueva (borrador, programada o inmediata).
 
-**Estado repo:** crea publicaciones y genera registros en `post_publications` por cada red target. Para cuentas simuladas con `status = "published"`, marca la publicación como `"simulated"` automáticamente. Aún no encola QStash para scheduled ni publica en Instagram real.
+**Estado repo:** crea publicaciones y genera registros en `post_publications` por cada red target. Para cuentas simuladas con `status = "published"`, marca la publicación como `"simulated"` automáticamente. Si se programa (`status = "scheduled"`), se encola automáticamente en Upstash QStash si entra dentro de la ventana de tiempo permitida (≤ 6.5 días).
 
 **Auth:** Sesión Supabase activa
 **Request Body**
@@ -459,10 +460,10 @@ Edita una publicación. Se pueden editar posts en estado `draft`, `scheduled`, `
 
 ---
 
-### ⚠️ `DELETE /api/posts/:postId`
+### ✅ `DELETE /api/posts/:postId`
 Elimina una publicación. Valida ownership del post vía cliente.
 
-**Estado repo:** elimina la publicación validando ownership vía cliente, pero todavía no cancela jobs de QStash.
+**Estado repo:** elimina la publicación validando ownership vía cliente y cancela automáticamente el job programado en QStash si existiera.
 
 **Auth:** Sesión Supabase activa
 **Response `204`** — sin body
@@ -882,87 +883,85 @@ Registra a alguien en la lista de espera (beta cerrada).
 
 ## 11. Instagram — OAuth & Publicación
 
-> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta). Actualmente no implementado — los directorios existen con `.gitkeep` de placeholder.
+> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta).
 
-### ⬜ `GET /api/instagram/connect`
+### ✅ `GET /api/instagram/connect`
 Genera la URL de autorización de Meta OAuth y redirige al usuario.
 
-**Auth:** Sesión Supabase activa
+**Auth:** Sesión Supabase activa (redirección si no está autenticado)
 **Query Params:** `clientId` (uuid)
-**Response:** Redirect `302` a la URL de OAuth de Meta
+**Response:** Redirect `302` a la URL de OAuth de Meta, guardando una cookie HTTP-only `ig_oauth_state` para protección CSRF.
 
 ---
 
-### ⬜ `GET /api/instagram/callback`
-Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda en Supabase.
+### ✅ `GET /api/instagram/callback`
+Callback de Meta OAuth. Intercambia el `code` por el access token y lo guarda/actualiza en Supabase.
 
-**Query Params:** `code` (string), `state` (uuid del clientId)
+**Query Params:** `code` (string), `state` (formato `clientId:nonce`)
 **Lógica interna:**
-1. Intercambia `code` por short-lived token (vía Meta API)
-2. Convierte a long-lived token (válido 60 días)
-3. Guarda encriptado en tabla `instagram_accounts` de Supabase
+1. Valida el nonce del `state` contra la cookie `ig_oauth_state`.
+2. Intercambia el código de autorización por un token short-lived.
+3. Intercambia el token short-lived por un token long-lived (válido por 60 días).
+4. Obtiene el perfil de Instagram (debe ser tipo `BUSINESS` o `MEDIA_CREATOR`).
+5. Guarda/actualiza en la tabla `social_accounts` de Supabase (`is_simulated: false`, `access_token` y `token_expires_at`).
 
-**Response:** Redirect `302` a `/clientes`
+**Response:** Redirect `302` a `/clientes?ig_connected=1` o `ig_error=<motivo>`
 
 ---
 
-### ⬜ `POST /api/instagram/publish`
-Publica un post en Instagram via Graph API. Llamado directamente (publicación inmediata) o desde el job de QStash (publicación programada). Refresca el token automáticamente si está próximo a vencer.
+### ⚠️ `POST /api/instagram/publish` (Helper interno)
+No está expuesto como un endpoint público/HTTP independiente. La publicación se ejecuta internamente mediante la función `publishToInstagram` en `@/lib/instagram` que es llamada por el job worker de QStash.
 
-**Auth:** Sesión Supabase activa (directo) o header `x-qstash-signature` (desde QStash)
-**Request Body**
-```json
-{
-  "postId": "uuid",
-  "clientId": "uuid"
-}
-```
 **Lógica interna:**
-1. Verifica el token de Instagram; si expira en menos de 10 días lo renueva automáticamente
-2. Obtiene el post y el access token desde Supabase
-3. Sube la imagen al Container de Instagram (paso 1 de la Graph API)
-4. Publica el container (paso 2 de la Graph API)
-5. Actualiza el post en Supabase: `status = "published"`, guarda `instagramPostId`
-
-**Response `200`**
-```json
-{
-  "success": true,
-  "instagramPostId": "string",
-  "publishedAt": "ISO 8601"
-}
-```
-**Errores:** `401` token expirado · `500` error de la Graph API
+1. Obtiene el token de Instagram; si expira en menos de 10 días, intenta renovarlo automáticamente.
+2. Si es una sola imagen, la sube al Container de Instagram y la publica.
+3. Si son múltiples imágenes (hasta 10), crea containers individuales, luego un container de carrusel y lo publica.
+4. Actualiza `post_publications` a `status = "published"`, guarda `external_post_id` y `published_at`.
 
 ---
 
-### ⬜ `GET /api/instagram/refresh-token`
-Endpoint placeholder para refresco manual de tokens de Instagram.
+### ✅ `GET /api/instagram/refresh-token`
+Cron diario (Vercel Cron) que mantiene vivos los tokens long-lived de Instagram.
+
+**Auth:** Protegido por firma de Cron (header `x-vercel-cron` o `Bearer CRON_SECRET`).
+**Lógica interna:** Escanea las cuentas de Instagram reales en `social_accounts` cuyo token expira en menos de 10 días y los refresca usando el token exchange de Meta.
+**Response `200`** — Estadísticas del refresco `{ refreshed, failed, failedIds, scanned }`
 
 ---
 
 ## 12. Jobs internos (QStash)
 
-> Estos endpoints son llamados automáticamente por **Upstash QStash** en el momento programado. No son accesibles desde el frontend. Validan la firma con el header `x-qstash-signature`.
+> Estos endpoints son llamados automáticamente por **Upstash QStash** en el momento programado. No son accesibles desde el frontend. Validan la firma con el header `upstash-signature`.
 
-### ⬜ `POST /api/jobs/publish`
-Job principal de publicación programada. QStash llama este endpoint cuando llega el horario de un post.
+### ✅ `POST /api/qstash/publish/:postId`
+Job principal de publicación. QStash llama este endpoint cuando llega el horario programado de un post.
 
-**Headers:** `x-qstash-signature: <firma HMAC>`
-**Request Body** (definido al encolar el job en QStash)
-```json
-{
-  "postId": "uuid",
-  "clientId": "uuid"
-}
-```
-**Lógica interna:** Valida la firma → delega a `/api/instagram/publish`
-**Response `200`** — `{ "success": true }`
-**Errores:** `401` firma inválida · `500` error de publicación (QStash reintenta automáticamente con backoff)
+**Headers:** `upstash-signature: <firma HMAC>`
+**Lógica interna:**
+1. Valida la firma HMAC de QStash para autenticar la llamada.
+2. Si el post no existe o no está en estado `scheduled`, responde `200` y salta la ejecución.
+3. Obtiene las redes y busca si la cuenta de red social asociada para cada una es real o simulada.
+4. Para redes reales (Instagram, `is_simulated = false`), intenta publicar de verdad usando la API de Instagram.
+5. Para redes simuladas, genera métricas de demo plausibles y marca la publicación como `"simulated"`.
+6. Si falla en todas las redes, marca el post como `failed`. Si alguna red tiene éxito (o es simulada), marca el post como `published`.
+
+**Response `200`** — `{ published: boolean, results: [...] }`
+**Errores:** `401` firma inválida · `500` error inesperado (QStash reintenta con backoff exponencial)
 
 ---
 
-## 13. Configuración
+## 13. Cron de Vercel
+
+> Endpoints para tareas programadas (barridos) llamados de manera recurrente por Vercel Cron. Protegidos por firma de Cron (header `x-vercel-cron` o `Bearer CRON_SECRET`).
+
+### ✅ `GET /api/cron/enqueue-due`
+Cron que "barre" y encola en QStash las publicaciones programadas que entran en la ventana de los próximos 6.5 días y aún no fueron encoladas (`qstash_message_id` nulo). Resuelve la limitación de 7 días del plan free de QStash.
+
+**Response `200`** — `{ enqueued, failed, failedIds, scanned }`
+
+---
+
+## 14. Configuración
 
 > Endpoints pendientes de implementación. Solo existen carpetas con `.gitkeep` de placeholder.
 
@@ -993,10 +992,10 @@ Actualizar preferencias de notificaciones. (No implementado)
 | Clientes — editar | ✅ | `GET /api/clients/:id` · `PATCH /api/clients/:id` |
 | Clientes — eliminar | ✅ | `DELETE /api/clients/:id` |
 | Clientes — cuentas sociales | ✅ | `GET /api/clients/:id/social-accounts` · `POST /api/clients/:id/social-accounts` · `DELETE /api/clients/:id/social-accounts/:accountId` |
-| Clientes — conectar Instagram (OAuth) | ⬜ | `GET /api/instagram/connect` → `GET /api/instagram/callback` |
+| Clientes — conectar Instagram (OAuth) | ✅ | `GET /api/instagram/connect` → `GET /api/instagram/callback` · `GET /api/instagram/refresh-token` |
 | Calendario | ✅ | `GET /api/posts` · `POST /api/posts` · `GET/POST /api/calendar/events` · `GET/PATCH/DELETE /api/calendar/events/:eventId` |
 | Métricas | ⬜ | `GET /api/metrics` |
-| Nueva publicación — crear | ⚠️ | `POST /api/posts` · `POST /api/posts/media` |
+| Nueva publicación — crear | ✅ | `POST /api/posts` · `POST /api/posts/media` |
 | Nueva publicación — editar borrador | ✅ | `GET /api/posts/:id` · `PATCH /api/posts/:id` |
 | Nueva publicación — solicitud de aprobación | ✅ | `POST /api/posts/:id/request-approval` |
 | Aprobación de posts (público) | ✅ | `GET /api/approve/:token` · `POST /api/approve/:token` |
@@ -1009,7 +1008,8 @@ Actualizar preferencias de notificaciones. (No implementado)
 | Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
 | Configuración — Eliminar cuenta | ✅ | `DELETE /api/users/me` |
 | Chat IA (sidebar) | ✅ | `POST /api/ai/chat` |
-| Job scheduling (interno) | ⬜ | `POST /api/jobs/publish` ← llamado por QStash |
+| Job scheduling (interno) | ✅ | `POST /api/qstash/publish/:postId` ← llamado por QStash |
+| Cron de barrido programado (interno) | ✅ | `GET /api/cron/enqueue-due` |
 
 ---
 
