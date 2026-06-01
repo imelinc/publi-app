@@ -16,7 +16,7 @@
 5. [Capa de datos — Supabase](#5-capa-de-datos--supabase)
 6. [Autenticación](#6-autenticación)
 7. [API — Next.js Route Handlers](#7-api--nextjs-route-handlers)
-8. [Storage de archivos — Vercel Blob](#8-storage-de-archivos--vercel-blob)
+8. [Storage de archivos — Supabase Storage](#8-storage-de-archivos--supabase-storage)
 9. [Scheduling — Upstash QStash](#9-scheduling--upstash-qstash)
 10. [Integración con Instagram](#10-integración-con-instagram)
 11. [Asistente IA — Groq](#11-asistente-ia--groq)
@@ -59,7 +59,7 @@
 | Auth | ⚠️ | Login email/contraseña vía Supabase SDK; logout implementado en `/api/auth/logout`. |
 | Usuarios / Configuración | ✅ | `GET/PATCH/DELETE /api/users/me`; UI en `/configuracion` conectada. |
 | Métricas | ⬜ | No existe `/api/metrics`. |
-| Storage Blob | ⬜ | No existe `/api/posts/media`; `src/lib/blob.ts` es placeholder. |
+| Storage | ✅ | Endpoint `/api/posts/media` implementado y subiendo imágenes al bucket `post-media` de Supabase Storage. |
 | Instagram Graph API | ⬜ | No existen endpoints OAuth/publish; `src/lib/instagram.ts` es placeholder. |
 | QStash | ⬜ | No existe `/api/jobs/publish`; `src/lib/qstash.ts` es placeholder. |
 
@@ -84,7 +84,7 @@
 | Base de datos | Supabase (PostgreSQL) | — | Gratis (tier free) |
 | Autenticación | Supabase Auth | — | Gratis |
 | ORM / Query builder | Supabase JS client | 2.x | Gratis |
-| Storage | Vercel Blob | — | Gratis (1 GB) |
+| Storage | Supabase Storage | — | Gratis (1 GB tier free) |
 | Scheduling | Upstash QStash | — | Gratis (500 msgs/día) |
 | IA | Groq API | — | Gratis |
 | Modelo IA | llama-3.3-70b-versatile | — | Gratis |
@@ -123,11 +123,11 @@
                     │                             │                      │
                     ▼                             ▼                      ▼
      ┌──────────────────────┐   ┌────────────────────────┐  ┌──────────────────┐
-     │  SUPABASE            │   │  UPSTASH QSTASH         │  │  VERCEL BLOB     │
-     │                      │   │                         │  │                  │
-     │  • PostgreSQL DB     │   │  • Job queue            │  │  • Imágenes      │
-     │  • Auth (JWT)        │   │  • Scheduling           │  │  • Videos        │
-     │  • Row Level Security│   │  • Retry automático     │  │                  │
+     │  SUPABASE            │   │  UPSTASH QSTASH         │  │ SUPABASE STORAGE │
+     │                      │   │                         │  │ (Bucket:         │
+     │  • PostgreSQL DB     │   │  • Job queue            │  │  post-media)     │
+     │  • Auth (JWT)        │   │  • Scheduling           │  │  • Imágenes      │
+     │  • Row Level Security│   │  • Retry automático     │  │  • Videos        │
      └──────────────────────┘   └──────────┬──────────────┘  └──────────────────┘
                                            │ HTTP callback
                                            ▼ (en el horario programado)
@@ -194,7 +194,7 @@ publi/                              ← raíz del proyecto Next.js
 │   │   │   │   └── [clientId]/
 │   │   │   │       └── instagram/  ← ⬜ estado cuenta Instagram por cliente
 │   │   │   ├── posts/              ← ⚠️ CRUD publicaciones + vista calendario
-│   │   │   │   ├── media/          ← ⬜ upload a Vercel Blob
+│   │   │   │   ├── media/          ← ✅ upload a Supabase Storage
 │   │   │   │   └── [postId]/
 │   │   │   ├── metrics/            ← ⬜ estadísticas (dashboard + detalle)
 │   │   │   ├── ai/                 ← ⚠️ rewrite, hashtags, best-time, chat
@@ -213,8 +213,6 @@ publi/                              ← raíz del proyecto Next.js
 │   │   ├── groq.ts                 ← cliente Groq + system prompts
 │   │   ├── instagram.ts            ← wrapper Instagram Graph API
 │   │   ├── qstash.ts               ← cliente Upstash QStash
-│   │   ├── blob.ts                 ← helper Vercel Blob
-│   │   ├── mock-data.ts            ← datos hardcodeados (frontend MVP)
 │   │   └── utils.ts                ← utilidades generales
 │   ├── store/
 │   │   └── use-app-store.ts        ← estado global (Zustand)
@@ -486,9 +484,9 @@ Las Serverless Functions en el tier gratuito de Vercel tienen un timeout de **10
 
 ---
 
-## 8. Storage de archivos — Vercel Blob
+## 8. Storage de archivos — Supabase Storage
 
-Las imágenes y videos que el usuario sube antes de publicar en Instagram se almacenan en Vercel Blob.
+Las imágenes y videos que el usuario sube antes de publicar en Instagram se almacenan en Supabase Storage (bucket `post-media`).
 
 ### Flujo de upload
 
@@ -499,13 +497,13 @@ Usuario selecciona imagen en /nueva-publicacion
 POST /api/posts/media (multipart/form-data)
         │
         ▼
-Vercel Blob recibe el archivo
+Endpoint sube el archivo al bucket "post-media" de Supabase Storage
         │
         ▼
-Devuelve URL pública permanente
+Devuelve la URL pública del CDN de Supabase
         │
         ▼
-URL se guarda en post.media_urls[]
+La URL se guarda en post.media_urls[]
         │
         ▼
 Al publicar, Instagram Graph API descarga la imagen desde esa URL
@@ -513,15 +511,21 @@ Al publicar, Instagram Graph API descarga la imagen desde esa URL
 
 ### Implementación
 
-```typescript
-// src/lib/blob.ts
-import { put } from '@vercel/blob'
+El endpoint `POST /api/posts/media` recibe la imagen y la almacena estructurada bajo la carpeta del usuario (`{userId}/{uuid}.{ext}`).
 
-export async function uploadMedia(file: File, userId: string) {
-  const filename = `${userId}/${Date.now()}-${file.name}`
-  const blob = await put(filename, file, { access: 'public' })
-  return blob.url
-}
+```typescript
+// En src/app/api/posts/media/route.ts
+const { error: uploadError } = await supabase.storage
+  .from('post-media')
+  .upload(path, file, {
+    contentType: file.type,
+    cacheControl: '31536000',
+    upsert: false,
+  })
+
+const { data: { publicUrl } } = supabase.storage
+  .from('post-media')
+  .getPublicUrl(path)
 ```
 
 ---
@@ -635,7 +639,7 @@ Instagram Graph API requiere **dos pasos** para publicar:
 ```
 Paso 1 — Crear container:
 POST https://graph.facebook.com/{ig-user-id}/media
-  image_url={URL pública de Vercel Blob}
+  image_url={URL pública de Supabase Storage}
   caption={descripción + hashtags}
   access_token={long-lived token}
 → Devuelve: creation_id
@@ -809,7 +813,6 @@ Cada push a `main` dispara un deploy automático. Los PRs generan preview deploy
 | `QSTASH_TOKEN` | Token de Upstash QStash | Solo servidor |
 | `QSTASH_CURRENT_SIGNING_KEY` | Clave de firma QStash (actual) | Solo servidor |
 | `QSTASH_NEXT_SIGNING_KEY` | Clave de firma QStash (siguiente) | Solo servidor |
-| `BLOB_READ_WRITE_TOKEN` | Token de Vercel Blob | Solo servidor |
 | `NEXT_PUBLIC_APP_URL` | URL base de la app | Cliente + Servidor |
 
 Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El resto solo están disponibles en el servidor. **Nunca exponer `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY` ni `META_APP_SECRET` al cliente.**
