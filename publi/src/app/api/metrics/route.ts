@@ -135,7 +135,8 @@ export async function GET(request: NextRequest) {
 
   // Filtrar para el periodo actual
   const filteredPosts = mappedPosts.filter(p => {
-    const postDate = new Date(p.scheduledAt || p.createdAt)
+    const dateToFilter = p.status === 'published' ? (p.publishedAt || p.createdAt) : p.createdAt
+    const postDate = new Date(dateToFilter)
     const matchesNetwork = network === 'all' || p.networks.includes(network)
     const matchesDate = postDate >= startDate && postDate <= endDate
     return matchesNetwork && matchesDate
@@ -143,7 +144,8 @@ export async function GET(request: NextRequest) {
 
   // Filtrar para el periodo anterior
   const previousPeriodPosts = mappedPosts.filter(p => {
-    const postDate = new Date(p.scheduledAt || p.createdAt)
+    const dateToFilter = p.status === 'published' ? (p.publishedAt || p.createdAt) : p.createdAt
+    const postDate = new Date(dateToFilter)
     const matchesNetwork = network === 'all' || p.networks.includes(network)
     const matchesDate = postDate >= prevStartDate && postDate < prevEndDate
     return matchesNetwork && matchesDate
