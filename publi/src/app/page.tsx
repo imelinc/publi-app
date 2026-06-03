@@ -6,11 +6,19 @@ import { Hero } from "@/components/publi/Hero";
 import { MultiPlatform } from "@/components/publi/MultiPlatform";
 import { Navbar } from "@/components/publi/Navbar";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export default async function LandingPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const isLoggedIn = !!user;
+  const cookieStore = await cookies();
+  const hasAuthCookie = cookieStore.getAll().some((c) => c.name.includes("-auth-token"));
+
+  let isLoggedIn = false;
+
+  if (hasAuthCookie) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isLoggedIn = !!user;
+  }
 
   return (
     <main className="min-h-screen bg-background">
