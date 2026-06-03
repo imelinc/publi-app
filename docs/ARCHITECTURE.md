@@ -197,7 +197,7 @@ publi/                              ← raíz del proyecto Next.js
 │   │   │   │   ├── media/          ← ✅ upload a Supabase Storage
 │   │   │   │   └── [postId]/
 │   │   │   ├── metrics/            ← ⬜ estadísticas (dashboard + detalle)
-│   │   │   ├── ai/                 ← ⚠️ rewrite, hashtags, best-time, chat
+│   │   │   ├── ai/                 ← ⚠️ rewrite, hashtags, best-time, chat, image
 │   │   │   ├── instagram/          ← ⬜ OAuth connect/callback, publish
 │   │   │   ├── waitlist/           ← ✅ registro de waitlist
 │   │   │   └── jobs/publish/       ← ⬜ receiver de QStash (scheduling)
@@ -206,6 +206,7 @@ publi/                              ← raíz del proyecto Next.js
 │   │   └── globals.css
 │   ├── components/
 │   │   ├── dashboard/              ← componentes del dashboard
+│   │   │   └── ai/                 ← ✅ ImageGenerator.tsx
 │   │   ├── publi/                  ← componentes de la landing
 │   │   └── ui/                     ← shadcn/ui components
 │   ├── lib/
@@ -661,9 +662,9 @@ Los long-lived tokens de Instagram duran **60 días** y se pueden refrescar ante
 
 ---
 
-## 11. Asistente IA — Groq
+## 11. Módulo de Inteligencia Artificial (Groq y Cloudflare)
 
-### Modelo
+### Modelo de Texto
 
 `llama-3.3-70b-versatile` — disponible gratuitamente en Groq con latencia muy baja (< 1 segundo para respuestas típicas).
 
@@ -814,8 +815,10 @@ Cada push a `main` dispara un deploy automático. Los PRs generan preview deploy
 | `QSTASH_CURRENT_SIGNING_KEY` | Clave de firma QStash (actual) | Solo servidor |
 | `QSTASH_NEXT_SIGNING_KEY` | Clave de firma QStash (siguiente) | Solo servidor |
 | `NEXT_PUBLIC_APP_URL` | URL base de la app | Cliente + Servidor |
+| `CLOUDFLARE_ACCOUNT_ID` | Account ID de Cloudflare | Solo servidor |
+| `CLOUDFLARE_API_TOKEN` | API Token de Cloudflare Workers AI | Solo servidor |
 
-Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El resto solo están disponibles en el servidor. **Nunca exponer `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY` ni `META_APP_SECRET` al cliente.**
+Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El resto solo están disponibles en el servidor. **Nunca exponer `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `CLOUDFLARE_API_TOKEN` ni `META_APP_SECRET` al cliente.**
 
 ---
 
