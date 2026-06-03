@@ -16,7 +16,7 @@ Permite programar publicaciones en Instagram, visualizar calendarios de contenid
 | Base de datos | Supabase (PostgreSQL + Auth) |
 | Storage | Vercel Blob |
 | Scheduling | Upstash QStash |
-| IA | Groq (llama-3.3-70b-versatile) |
+| IA | Groq (llama-3.3-70b-versatile) + Cloudflare (flux-1-schnell) |
 | Red social | Instagram Graph API |
 | Deploy | Vercel |
 
@@ -65,6 +65,8 @@ Abrí [http://localhost:3000](http://localhost:3000) en el navegador.
 | `CRON_SECRET` | Secreto que protege el cron `/api/cron/enqueue-due` (Vercel) |
 | `BLOB_READ_WRITE_TOKEN` | Token de Vercel Blob |
 | `NEXT_PUBLIC_APP_URL` | URL base de la app |
+| `CLOUDFLARE_ACCOUNT_ID` | Account ID de Cloudflare (solo servidor) |
+| `CLOUDFLARE_API_TOKEN` | API Token de Cloudflare Workers AI (solo servidor) |
 
 > Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El resto son exclusivas del servidor.
 

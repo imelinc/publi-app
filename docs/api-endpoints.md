@@ -855,6 +855,30 @@ Chat conversacional del asistente IA (sidebar). Consultas abiertas sobre estrate
 
 ---
 
+### ✅ `POST /api/ai/image`
+Genera una imagen a partir de un prompt usando Cloudflare Workers AI con el modelo `flux-1-schnell`.
+
+**Auth:** Sesión Supabase activa
+**Request Body**
+```json
+{
+  "prompt": "string (obligatorio)"
+}
+```
+
+**Response `200`**
+```json
+{
+  "image": "data:image/png;base64,... (cadena codificada en Base64 con el prefijo de URI de datos)"
+}
+```
+**Errores:**
+- `400` prompt vacío o inválido
+- `401` no autenticado
+- `500` error de Cloudflare AI o credenciales faltantes
+
+---
+
 ## 10. Waitlist
 
 ### ✅ `POST /api/waitlist`
@@ -1008,6 +1032,7 @@ Actualizar preferencias de notificaciones. (No implementado)
 | Configuración — Cerrar sesión | ✅ | `POST /api/auth/logout` |
 | Configuración — Eliminar cuenta | ✅ | `DELETE /api/users/me` |
 | Chat IA (sidebar) | ✅ | `POST /api/ai/chat` |
+| Generador de imágenes de Copi | ✅ | `POST /api/ai/image` |
 | Job scheduling (interno) | ✅ | `POST /api/qstash/publish/:postId` ← llamado por QStash |
 | Cron de barrido programado (interno) | ✅ | `GET /api/cron/enqueue-due` |
 
@@ -1015,7 +1040,7 @@ Actualizar preferencias de notificaciones. (No implementado)
 
 ## Convenciones generales
 
-- **Autenticación:** Supabase Auth. El frontend maneja cookies de sesión automáticamente. El servidor valida con `supabase.auth.getUser()` en cada request protegido. Excepción: los endpoints de IA (`/api/ai/*`) no validan sesión, y `/api/approve/:token` es público sin autenticación.
+- **Autenticación:** Supabase Auth. El frontend maneja cookies de sesión automáticamente. El servidor valida con `supabase.auth.getUser()` en cada request protegido. Excepción: los endpoints de IA (`/api/ai/*`) no validan sesión (salvo `/api/ai/image` que sí requiere sesión activa), y `/api/approve/:token` es público sin autenticación.
 - **Content-Type:** `application/json` para todos los endpoints salvo `POST /api/posts/media` que usa `multipart/form-data`.
 - **Errores estándar:**
   - `400` Bad Request — validación de campos
