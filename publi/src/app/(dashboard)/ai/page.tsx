@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react'
 import Image from 'next/image'
-import { Send, Plus, Trash2, MessageSquare, AlertCircle } from 'lucide-react'
+import { Send, Plus, Trash2, MessageSquare, AlertCircle, ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
+import ImageGenerator from '@/components/dashboard/ai/ImageGenerator'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -41,6 +42,7 @@ export default function AiPage() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [activeTab, setActiveTab] = useState<'chat' | 'images'>('chat')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -249,9 +251,40 @@ export default function AiPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] bg-white rounded-xl border border-gray-100 overflow-hidden">
-      {/* Sidebar de Chats */}
-      <div className="w-64 shrink-0 border-r border-gray-100 bg-[#fbf9f6] flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-7rem)] bg-white rounded-xl border border-gray-100 overflow-hidden">
+      {/* Tabs para conmutar entre Chat e Imágenes */}
+      <div className="flex border-b border-gray-100 bg-[#fbf9f6] shrink-0 px-6">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={cn(
+            'px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px flex items-center gap-2',
+            activeTab === 'chat'
+              ? 'border-[#0095b6] text-[#0095b6]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat con Copi
+        </button>
+        <button
+          onClick={() => setActiveTab('images')}
+          className={cn(
+            'px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px flex items-center gap-2',
+            activeTab === 'images'
+              ? 'border-[#0095b6] text-[#0095b6]'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <ImageIcon className="w-4 h-4" />
+          Generador de Imágenes
+        </button>
+      </div>
+
+      <div className="flex-grow min-h-0 flex">
+        {activeTab === 'chat' ? (
+          <>
+            {/* Sidebar de Chats */}
+            <div className="w-64 shrink-0 border-r border-gray-100 bg-[#fbf9f6] flex flex-col h-full">
         <div className="p-4 border-b border-gray-100">
           <button
             onClick={createNewSession}
@@ -461,6 +494,11 @@ export default function AiPage() {
             </div>
           )}
         </div>
+      </div>
+    </>
+  ) : (
+    <ImageGenerator />
+  )}
       </div>
     </div>
   )
