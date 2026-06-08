@@ -93,7 +93,7 @@ interface PostFormProps {
 export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const { addPost, updatePostRemote, deletePost, requestApproval, activeWorkspaceId, clients } = useAppStore()
+  const { addPost, updatePostRemote, deletePost, requestApproval, publishPostNow, activeWorkspaceId, clients } = useAppStore()
   const setHasUnsavedChanges = useAppStore((s) => s.setHasUnsavedChanges)
 
   // ─── Estado del form ──────────────────────────────────────────────────────────
@@ -340,8 +340,24 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         toast({ title: savedPost ? 'Borrador actualizado' : 'Borrador guardado' })
         router.push('/calendario')
       } else if (action === 'publish') {
-        await saveOrUpdate('published', finalTitle)
-        toast({ title: '¡Publicación publicada!' })
+        // 1) Asegurar que el post y sus post_publications existan (con id).
+        const post = await saveOrUpdate('published', finalTitle)
+        // 2) Disparar la publicación real (IG real + simulación del resto).
+        const result = await publishPostNow(post.id)
+        if (result.status === 'failed') {
+          const igErr = result.results.find((r) => r.status === 'failed')?.error
+          toast({
+            title: 'No se pudo publicar',
+            description: igErr ?? 'Revisá la cuenta conectada o la imagen.',
+          })
+        } else {
+          const partial = result.results.some((r) => r.status === 'failed')
+          toast({
+            title: partial
+              ? 'Publicado, pero alguna red falló'
+              : '¡Publicación publicada!',
+          })
+        }
         router.push('/calendario')
       } else if (action === 'schedule') {
         await saveOrUpdate('scheduled', finalTitle)
