@@ -340,9 +340,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         toast({ title: savedPost ? 'Borrador actualizado' : 'Borrador guardado' })
         router.push('/calendario')
       } else if (action === 'publish') {
-        // 1) Asegurar que el post y sus post_publications existan (con id).
-        const post = await saveOrUpdate('published', finalTitle)
-        // 2) Disparar la publicación real (IG real + simulación del resto).
+        // Guardamos como 'draft' primero; publishPostNow se encarga de actualizar
+        // el status a 'published' o 'failed' según el resultado real de Instagram.
+        const post = await saveOrUpdate('draft', finalTitle)
         const result = await publishPostNow(post.id)
         if (result.status === 'failed') {
           const igErr = result.results.find((r) => r.status === 'failed')?.error
