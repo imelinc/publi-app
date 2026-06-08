@@ -75,6 +75,12 @@ interface AppState {
   ) => Promise<Post>
   deletePost: (id: string) => Promise<void>
   requestApproval: (postId: string) => Promise<{ approvalUrl: string }>
+  publishPostNow: (
+    postId: string
+  ) => Promise<{
+    status: 'published' | 'failed'
+    results: { network: string; status: string; error?: string }[]
+  }>
   uploadMedia: (file: File) => Promise<string>
 
   events: CalendarEvent[]
@@ -307,6 +313,23 @@ export const useAppStore = create<AppState>((set) => ({
       throw new Error(json.error || 'Error al eliminar publicación')
     }
     set((state) => ({ posts: state.posts.filter((p) => p.id !== id) }))
+  },
+
+  publishPostNow: async (postId) => {
+    const res = await fetch(`/api/posts/${postId}/publish`, { method: 'POST' })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(json.error || 'Error al publicar')
+    // Reflejar el nuevo estado del post en el store (el realtime/refetch lo
+    // confirma, pero actualizamos local para feedback inmediato).
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.id === postId ? { ...p, status: json.status } : p
+      ),
+    }))
+    return json as {
+      status: 'published' | 'failed'
+      results: { network: string; status: string; error?: string }[]
+    }
   },
 
   requestApproval: async (postId) => {
