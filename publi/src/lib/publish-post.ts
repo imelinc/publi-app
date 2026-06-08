@@ -67,15 +67,25 @@ export async function ensureValidInstagramToken(
  */
 export async function publishPostPublications(
   supabase: SupabaseClient,
-  postId: string
+  postId: string,
+  preloadedPost?: {
+    client_id: string
+    description: string | null
+    hashtags: string[] | null
+    media_urls: string[] | null
+  }
 ): Promise<PublishResult> {
-  const { data: post } = await supabase
-    .from('posts')
-    .select('id, client_id, description, hashtags, media_urls')
-    .eq('id', postId)
-    .single()
+  const post = preloadedPost ?? await (async () => {
+    const { data } = await supabase
+      .from('posts')
+      .select('id, client_id, description, hashtags, media_urls')
+      .eq('id', postId)
+      .single()
+    return data
+  })()
 
   if (!post) {
+    console.error(`[publish] post ${postId} no encontrado`)
     return { status: 'failed', results: [] }
   }
 
