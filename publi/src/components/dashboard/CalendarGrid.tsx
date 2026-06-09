@@ -63,9 +63,14 @@ function formatDateKey(date: Date): string {
 
 function getPostsForDay(posts: Post[], date: Date): Post[] {
   const dateStr = formatDateKey(date)
-  return posts.filter(
-    (p) => p.scheduledAt !== null && p.scheduledAt.startsWith(dateStr)
-  )
+  return posts.filter((p) => {
+    if (!p.scheduledAt) return false
+    // scheduledAt es ISO UTC; lo convertimos a fecha LOCAL antes de comparar
+    // para que no se corra de día en zonas horarias negativas (ej: GMT-3).
+    const d = new Date(p.scheduledAt)
+    if (isNaN(d.getTime())) return false
+    return formatDateKey(d) === dateStr
+  })
 }
 
 function getEventsForDay(events: CalendarEvent[], date: Date): CalendarEvent[] {
