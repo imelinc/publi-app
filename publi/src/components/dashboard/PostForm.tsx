@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Copy, Check, Send, Clock4, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
+import { Sparkles, Send, Clock4, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
 import type { Network, PostStatus, Post } from '@/types'
 import { PostEditor } from '@/components/dashboard/PostEditor'
@@ -83,6 +83,12 @@ function toTimeInput(iso: string): string {
 interface PostFormProps {
   mode: 'create' | 'edit'
   initialPost?: Post | null
+  /**
+   * Se llama con la URL de aprobación cuando se genera. El diálogo del link lo
+   * renderiza la página (no este componente) para que sobreviva al remount que
+   * dispara el cambio de status a pending_approval.
+   */
+  onApprovalGenerated?: (url: string) => void
 }
 
 /**
@@ -90,7 +96,7 @@ interface PostFormProps {
  * - `create`: post nuevo, sin estado previo.
  * - `edit`: post ya guardado (típicamente borrador). Pre-llena todos los campos.
  */
-export function PostForm({ mode, initialPost = null }: PostFormProps) {
+export function PostForm({ mode, initialPost = null, onApprovalGenerated }: PostFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { addPost, updatePostRemote, deletePost, requestApproval, publishPostNow, activeWorkspaceId, clients } = useAppStore()
@@ -122,8 +128,6 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
 
   const [showScheduleAi, setShowScheduleAi] = useState(false)
   const [approvalLoading, setApprovalLoading] = useState(false)
-  const [approvalUrl, setApprovalUrl] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   const [savedPost, setSavedPost] = useState<Post | null>(initialPost ?? null)
   const [saving, setSaving] = useState(false)
   // Publicación inmediata en curso (Instagram tarda unos segundos): mantiene el
@@ -380,7 +384,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         setApprovalLoading(true)
         try {
           const { approvalUrl: url } = await requestApproval(post.id)
-          setApprovalUrl(url)
+          // El diálogo del link lo muestra la página (sobrevive al remount).
+          onApprovalGenerated?.(url)
           setSavedPost({ ...post, status: 'pending_approval' })
         } finally {
           setApprovalLoading(false)
@@ -394,13 +399,6 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     } finally {
       setPublishing(false)
     }
-  }
-
-  async function handleCopyLink() {
-    if (!approvalUrl) return
-    await navigator.clipboard.writeText(approvalUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   async function handleDelete() {
@@ -855,48 +853,6 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
               </>
             )
           })()}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!approvalUrl} onOpenChange={(open) => !open && setApprovalUrl(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="size-4 text-[#0095b6]" />
-              Link de aprobación listo
-            </DialogTitle>
-            <DialogDescription>
-              Copiá este link y enviáselo a tu cliente por WhatsApp, email o como prefieras.
-              No necesita crear una cuenta para responder.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 truncate">
-              {approvalUrl}
-            </div>
-            <button
-              onClick={handleCopyLink}
-              className="shrink-0 flex items-center gap-1.5 bg-[#0095b6] text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-[#007a94] transition-colors"
-            >
-              {copied ? (
-                <>
-                  <Check className="size-4" />
-                  Copiado
-                </>
-              ) : (
-                <>
-                  <Copy className="size-4" />
-                  Copiar
-                </>
-              )}
-            </button>
-          </div>
-
-          <p className="text-xs text-gray-400 mt-2">
-            El post quedó en estado <strong>pendiente de aprobación</strong>.
-            Una vez que tu cliente responda, verás el resultado acá mismo o en el calendario.
-          </p>
         </DialogContent>
       </Dialog>
     </div>

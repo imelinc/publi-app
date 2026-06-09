@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
 import { PostForm } from '@/components/dashboard/PostForm'
+import { ApprovalLinkDialog } from '@/components/dashboard/ApprovalLinkDialog'
 import { createClient } from '@/lib/supabase/client'
 import type { Post } from '@/types'
 
@@ -28,6 +29,9 @@ export default function EditarBorradorPage({ params }: PageProps) {
   )
   const [loading, setLoading] = useState(!post)
   const [error, setError] = useState<string | null>(null)
+  // El link de aprobación vive acá (no en PostForm) porque pedir aprobación
+  // cambia el status → remonta el PostForm (key por status). Acá sobrevive.
+  const [approvalUrl, setApprovalUrl] = useState<string | null>(null)
 
   const loadPostFromApi = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -142,5 +146,16 @@ export default function EditarBorradorPage({ params }: PageProps) {
   // Key fuerza remount del PostForm cuando cambia el status del post.
   // Sin esto, al re-fetch obtener un nuevo estado (ej: pending → approved),
   // los estados internos del form quedarían desactualizados.
-  return <PostForm key={`${post.id}-${post.status}`} mode="edit" initialPost={post} />
+  // El ApprovalLinkDialog va FUERA del PostForm keyed para sobrevivir al remount.
+  return (
+    <>
+      <PostForm
+        key={`${post.id}-${post.status}`}
+        mode="edit"
+        initialPost={post}
+        onApprovalGenerated={setApprovalUrl}
+      />
+      <ApprovalLinkDialog url={approvalUrl} onClose={() => setApprovalUrl(null)} />
+    </>
+  )
 }
