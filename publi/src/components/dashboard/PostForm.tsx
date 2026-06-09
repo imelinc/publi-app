@@ -126,6 +126,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const [copied, setCopied] = useState(false)
   const [savedPost, setSavedPost] = useState<Post | null>(initialPost ?? null)
   const [saving, setSaving] = useState(false)
+  // Publicación inmediata en curso (Instagram tarda unos segundos): mantiene el
+  // diálogo/botón en estado "Publicando…" hasta confirmar el resultado real.
+  const [publishing, setPublishing] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   // Dialog unificado: pide título + confirma según la acción
@@ -332,18 +335,25 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     }
     const action = dialogAction
     if (!action) return
-    setDialogAction(null)
+    // Nota: NO cerramos el diálogo al inicio. Lo dejamos abierto durante el
+    // guardado/publicación para que el botón muestre el estado de carga, y lo
+    // cerramos recién al terminar (antes del toast/redirect).
 
     try {
       if (action === 'draft') {
         await saveOrUpdate('draft', finalTitle)
+        setDialogAction(null)
         toast({ title: savedPost ? 'Borrador actualizado' : 'Borrador guardado' })
         router.push('/calendario')
       } else if (action === 'publish') {
-        // Guardamos como 'draft' primero; publishPostNow se encarga de actualizar
-        // el status a 'published' o 'failed' según el resultado real de Instagram.
-        const post = await saveOrUpdate('draft', finalTitle)
+        // Guardamos con status 'published' y fecha = ahora (buildScheduledAt),
+        // así el post tiene una fecha y aparece en el calendario. El diálogo
+        // queda en "Publicando…" mientras se confirma la publicación real
+        // (Instagram tarda unos segundos; las simuladas son instantáneas).
+        setPublishing(true)
+        const post = await saveOrUpdate('published', finalTitle)
         const result = await publishPostNow(post.id)
+        setDialogAction(null)
         if (result.status === 'failed') {
           const igErr = result.results.find((r) => r.status === 'failed')?.error
           toast({
@@ -361,10 +371,12 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         router.push('/calendario')
       } else if (action === 'schedule') {
         await saveOrUpdate('scheduled', finalTitle)
+        setDialogAction(null)
         toast({ title: '¡Publicación programada!' })
         router.push('/calendario')
       } else if (action === 'approval') {
         const post = await saveOrUpdate('draft', finalTitle)
+        setDialogAction(null)
         setApprovalLoading(true)
         try {
           const { approvalUrl: url } = await requestApproval(post.id)
@@ -379,6 +391,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         title: 'Hubo un error',
         description: err instanceof Error ? err.message : undefined,
       })
+    } finally {
+      setPublishing(false)
     }
   }
 
@@ -627,7 +641,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                 variant="outline"
                 className="w-full text-sm"
                 onClick={() => openDialog('draft')}
-                disabled={saving}
+                disabled={saving || publishing}
               >
                 {draftButtonLabel}
               </Button>
@@ -637,7 +651,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                   variant="outline"
                   className="w-full text-sm border-[#0095b6] text-[#0095b6] hover:bg-[#cceef5]"
                   onClick={() => openDialog('approval')}
-                  disabled={approvalLoading || !description.trim() || saving}
+                  disabled={approvalLoading || !description.trim() || saving || publishing}
                 >
                   {approvalLoading ? (
                     'Generando link…'
@@ -652,10 +666,10 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
 
               <button
                 onClick={() => openDialog(publishNow ? 'publish' : 'schedule')}
-                disabled={saving}
+                disabled={saving || publishing}
                 className="w-full bg-[#0095b6] text-white font-medium rounded-lg py-2 text-sm hover:bg-[#007a94] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {publishNow ? 'Publicar' : 'Programar'}
+                {publishing ? 'Publicando…' : publishNow ? 'Publicar' : 'Programar'}
               </button>
             </div>
 
@@ -666,7 +680,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
-                      disabled={deleting || saving}
+                      disabled={deleting || saving || publishing}
                       className="w-full text-sm text-red-500 hover:bg-red-50 hover:text-red-600"
                     >
                       <Trash2 className="size-3.5 mr-1.5" />
@@ -756,7 +770,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                     una vez en la red, publi no puede borrar la publicación.
                   </>
                 ),
-                confirmLabel: saving ? 'Publicando…' : 'Sí, publicar ahora',
+                confirmLabel: saving || publishing ? 'Publicando…' : 'Sí, publicar ahora',
                 confirmClass: 'bg-[#0095b6] hover:bg-[#007a94] text-white',
               },
               schedule: {
@@ -810,7 +824,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                     value={titleDraftInput}
                     onChange={(e) => setTitleDraftInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && titleDraftInput.trim() && !saving) {
+                      if (e.key === 'Enter' && titleDraftInput.trim() && !saving && !publishing) {
                         handleConfirmDialog()
                       }
                     }}
@@ -826,13 +840,13 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                   <Button
                     variant="outline"
                     onClick={() => setDialogAction(null)}
-                    disabled={saving}
+                    disabled={saving || publishing}
                   >
                     Cancelar
                   </Button>
                   <Button
                     onClick={handleConfirmDialog}
-                    disabled={!titleDraftInput.trim() || saving}
+                    disabled={!titleDraftInput.trim() || saving || publishing}
                     className={c.confirmClass}
                   >
                     {c.confirmLabel}
