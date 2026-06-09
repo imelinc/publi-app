@@ -152,6 +152,45 @@ export interface PublishToInstagramArgs {
 }
 
 /**
+ * Espera a que Instagram procese un container antes de publicarlo.
+ * Hace polling cada `intervalMs` ms hasta `maxAttempts` intentos.
+ * Tira si el container entra en estado ERROR o si se agota el tiempo.
+ *
+ * Docs: https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/content-publishing
+ */
+async function pollContainerStatus(
+  containerId: string,
+  accessToken: string,
+  maxAttempts = 10,
+  intervalMs = 3000
+): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const params = new URLSearchParams({
+      fields: 'status_code',
+      access_token: accessToken,
+    })
+    const res = await fetch(`${GRAPH_BASE}/${containerId}?${params.toString()}`)
+    const json = await res.json()
+
+    if (!res.ok) {
+      throw new Error(`pollContainerStatus falló: ${JSON.stringify(json)}`)
+    }
+
+    const statusCode = json?.status_code as string | undefined
+
+    if (statusCode === 'FINISHED') return
+    if (statusCode === 'ERROR') {
+      throw new Error(`Instagram rechazó el container ${containerId}: ${JSON.stringify(json)}`)
+    }
+    // IN_PROGRESS u otro estado transitorio → esperar y reintentar
+    await new Promise((r) => setTimeout(r, intervalMs))
+  }
+  throw new Error(
+    `Timeout: Instagram no terminó de procesar el container ${containerId} tras ${maxAttempts} intentos`
+  )
+}
+
+/**
  * Publica en Instagram (foto simple o carrusel) y devuelve el media id publicado
  * (= external_post_id). Flujo de la Instagram API with Instagram Login:
  *  - foto simple: crear container con image_url+caption → media_publish.
@@ -179,6 +218,7 @@ export async function publishToInstagram({
       caption,
       access_token: accessToken,
     })
+    await pollContainerStatus(containerId, accessToken)
     return igPost(`${igUserId}/media_publish`, {
       creation_id: containerId,
       access_token: accessToken,
@@ -202,6 +242,7 @@ export async function publishToInstagram({
     caption,
     access_token: accessToken,
   })
+  await pollContainerStatus(carouselId, accessToken)
   return igPost(`${igUserId}/media_publish`, {
     creation_id: carouselId,
     access_token: accessToken,
