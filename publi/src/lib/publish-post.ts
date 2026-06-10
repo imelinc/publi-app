@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { publishToInstagram, refreshLongLived } from '@/lib/instagram'
+import { publishToFacebook } from '@/lib/facebook'
 import { simulateEngagement } from '@/lib/simulation'
 
 /**
@@ -126,6 +127,9 @@ export async function publishPostPublications(
     const isRealInstagram =
       pub.network === 'instagram' && account && !account.is_simulated && account.access_token
 
+    const isRealFacebook =
+      pub.network === 'facebook' && account && !account.is_simulated && account.access_token
+
     if (isRealInstagram) {
       // Publicación REAL en Instagram.
       try {
@@ -149,6 +153,34 @@ export async function publishPostPublications(
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error desconocido'
         console.error(`[publish] Instagram falló (pub ${pub.id}):`, message)
+        await supabase
+          .from('post_publications')
+          .update({ status: 'failed', error_message: message.slice(0, 500), published_at: null })
+          .eq('id', pub.id)
+        results.push({ network: pub.network, status: 'failed', error: message })
+      }
+    } else if (isRealFacebook) {
+      // nuevo bloque Facebook real
+      try {
+        const mediaId = await publishToFacebook({
+          pageId: account!.external_user_id ?? '',
+          pageAccessToken: account!.access_token!,
+          caption,
+          imageUrls: mediaUrls,
+        })
+        await supabase
+          .from('post_publications')
+          .update({
+            status: 'published',
+            external_post_id: mediaId,
+            published_at: now,
+            error_message: null,
+          })
+          .eq('id', pub.id)
+        results.push({ network: pub.network, status: 'published' })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido'
+        console.error(`[publish] Facebook falló (pub ${pub.id}):`, message)
         await supabase
           .from('post_publications')
           .update({ status: 'failed', error_message: message.slice(0, 500), published_at: null })
