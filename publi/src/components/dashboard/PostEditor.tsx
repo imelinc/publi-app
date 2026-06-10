@@ -43,7 +43,8 @@ export function PostEditor({
   async function handleFileSelected(file: File) {
     setUploading(true)
     try {
-      const url = await uploadMedia(file)
+      const optimizedFile = await compressImage(file)
+      const url = await uploadMedia(optimizedFile)
       onImageChange(url)
     } catch (err) {
       toast({
@@ -284,4 +285,69 @@ export function PostEditor({
       </div>
     </div>
   )
+}
+
+async function compressImage(file: File): Promise<File> {
+  // Si no es una imagen, no hacer nada
+  if (!file.type.startsWith('image/')) return file
+
+  // Si la imagen ya es chica (< 1MB) y es JPEG o PNG, no hace falta comprimir
+  if (file.size < 1 * 1024 * 1024 && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+    return file
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const maxDim = 1440 // Límite de Instagram para no re-escalar agresivamente
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(file)
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file)
+              return
+            }
+            // Renombrar la extensión a .jpg ya que exportamos como image/jpeg
+            const name = file.name.replace(/\.[^/.]+$/, '') + '.jpg'
+            const compressedFile = new File([blob], name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            })
+            resolve(compressedFile)
+          },
+          'image/jpeg',
+          0.85 // Calidad
+        )
+      }
+      img.onerror = () => resolve(file)
+      img.src = event.target?.result as string
+    }
+    reader.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
 }
