@@ -958,7 +958,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
 
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-gray-900">Estamos publicando...</h3>
-              <p className="text-sm text-gray-500 font-medium animate-pulse min-h-[40px] px-2 transition-all duration-300 flex items-center justify-center">
+              <p className="text-sm text-gray-500 font-medium min-h-[40px] px-2 transition-all duration-300 flex items-center justify-center">
                 {FUNNY_MESSAGES[funnyMsgIndex]}
               </p>
             </div>
