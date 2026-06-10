@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyQStashSignature } from '@/lib/qstash'
 import { publishPostPublications } from '@/lib/publish-post'
 
+export const maxDuration = 60;
+
 interface RouteParams {
   params: Promise<{ postId: string }>
 }

@@ -4,6 +4,8 @@ import { NextRequest } from 'next/server'
 import { publishPostPublications } from '@/lib/publish-post'
 import { cancelPostPublish } from '@/lib/qstash'
 
+export const maxDuration = 60;
+
 interface RouteParams {
   params: Promise<{ postId: string }>
 }

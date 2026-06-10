@@ -161,7 +161,7 @@ export interface PublishToInstagramArgs {
 async function pollContainerStatus(
   containerId: string,
   accessToken: string,
-  maxAttempts = 10,
+  maxAttempts = 15,
   intervalMs = 3000
 ): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
