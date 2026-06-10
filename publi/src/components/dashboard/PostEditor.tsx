@@ -276,7 +276,7 @@ export function PostEditor({
                   Arrastrá una imagen o hacé click para seleccionar
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  JPG, PNG, WEBP o GIF · hasta 10 MB
+                  JPG, PNG, WEBP o GIF · máximo 8 MB
                 </p>
               </>
             )}

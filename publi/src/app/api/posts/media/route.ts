@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest } from 'next/server'
 
-const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
+const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 /**
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   if (file.size > MAX_BYTES) {
     return Response.json(
-      { error: 'La imagen es demasiado pesada (máximo 10 MB).' },
+      { error: 'La imagen es demasiado pesada (máximo 8 MB).' },
       { status: 400 }
     )
   }
