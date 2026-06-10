@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Heart,
   MessageCircle,
@@ -16,22 +17,107 @@ import {
   Globe,
   MoreHorizontal,
   Music,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import type { Network, Client } from '@/types'
 import { NETWORK_META } from '@/lib/networks'
 
 interface PostPreviewProps {
   description: string
-  imageUrl: string | null
+  mediaUrls: string[]
   client: Client | null
   networks: Network[]
   activeNetwork: Network | null
   onNetworkSelect: (network: Network) => void
 }
 
+interface PreviewImageSliderProps {
+  mediaUrls: string[]
+  className?: string
+  fallbackSrc?: string
+}
+
+function PreviewImageSlider({
+  mediaUrls,
+  className,
+  fallbackSrc = '/images/restaurant.jpg',
+}: PreviewImageSliderProps) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  useEffect(() => {
+    setCurrentIndex(0)
+  }, [mediaUrls])
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCurrentIndex((prev) => (prev === 0 ? mediaUrls.length - 1 : prev - 1))
+  }
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCurrentIndex((prev) => (prev === mediaUrls.length - 1 ? 0 : prev + 1))
+  }
+
+  if (mediaUrls.length === 0) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={fallbackSrc}
+        alt="Post preview"
+        className={className}
+      />
+    )
+  }
+
+  return (
+    <div className="relative w-full h-full overflow-hidden group/slider">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={mediaUrls[currentIndex]}
+        alt={`Post preview ${currentIndex + 1}`}
+        className={className}
+      />
+      {mediaUrls.length > 1 && (
+        <>
+          {/* Navigation Arrows */}
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-1 rounded-full transition-opacity opacity-0 group-hover/slider:opacity-100 z-10"
+            aria-label="Imagen anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-1 rounded-full transition-opacity opacity-0 group-hover/slider:opacity-100 z-10"
+            aria-label="Siguiente imagen"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Dot Indicators */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/35 px-2 py-1 rounded-full backdrop-blur-xs">
+            {mediaUrls.map((_, idx) => (
+              <div
+                key={idx}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  idx === currentIndex ? 'bg-[#0095b6]' : 'bg-white/60'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export function PostPreview({
   description,
-  imageUrl,
+  mediaUrls,
   client,
   networks,
   activeNetwork,
@@ -90,12 +176,11 @@ export function PostPreview({
             </div>
             <MoreHorizontal className="ml-auto text-gray-400 size-4 cursor-pointer" />
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl || '/images/restaurant.jpg'}
-            alt="Post preview"
-            className="w-full h-64 object-cover bg-gray-50"
-          />
+          
+          <div className="w-full h-64 bg-gray-50">
+            <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover" />
+          </div>
+
           <div className="flex gap-4 p-3 text-gray-700">
             <Heart className="size-5 hover:text-red-500 cursor-pointer transition" />
             <MessageCircle className="size-5 hover:text-gray-900 cursor-pointer transition" />
@@ -122,7 +207,7 @@ export function PostPreview({
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900 hover:underline cursor-pointer">{clientName}</p>
-              <div className="flex items-center gap-1 text-[10px] text-gray-500 mt-0.5">
+              <div className="flex items-center gap-1 text-[10px] text-gray-550 mt-0.5">
                 <span>Ahora</span>
                 <span>·</span>
                 <Globe className="size-3" />
@@ -137,12 +222,9 @@ export function PostPreview({
             </p>
           </div>
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl || '/images/restaurant.jpg'}
-            alt="Post preview"
-            className="w-full h-48 object-cover bg-gray-50"
-          />
+          <div className="w-full h-48 bg-gray-50">
+            <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover" />
+          </div>
 
           <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
             <span>👍 15</span>
@@ -174,16 +256,13 @@ export function PostPreview({
       {activeNetwork === 'tiktok' && networks.includes('tiktok') && (
         <div className="w-64 mx-auto border-4 border-gray-900 rounded-[2.5rem] overflow-hidden bg-black text-white relative aspect-[9/16] shadow-md">
           {/* Media background */}
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl}
-              alt="Post preview"
-              className="absolute inset-0 w-full h-full object-cover opacity-80"
-            />
+          {mediaUrls.length > 0 ? (
+            <div className="absolute inset-0 w-full h-full">
+              <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover opacity-80" />
+            </div>
           ) : (
             <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-950 flex flex-col items-center justify-center text-center p-4">
-              <span className="text-[10px] text-gray-550 uppercase tracking-widest font-semibold mb-2">Vista previa</span>
+              <span className="text-[10px] text-gray-555 uppercase tracking-widest font-semibold mb-2">Vista previa</span>
               <p className="text-xs text-gray-400 px-8 max-w-[180px] mx-auto">Sube una imagen para ver el fondo de tu TikTok</p>
             </div>
           )}
@@ -268,7 +347,7 @@ export function PostPreview({
                   <span className="text-xs font-bold text-gray-900 hover:underline cursor-pointer truncate">
                     {clientName}
                   </span>
-                  <span className="text-[10px] text-gray-500 truncate">@{clientUsername}</span>
+                  <span className="text-[10px] text-gray-550 truncate">@{clientUsername}</span>
                   <span className="text-[10px] text-gray-400">· 1m</span>
                 </div>
                 <MoreHorizontal className="text-gray-400 size-4 flex-shrink-0 cursor-pointer" />
@@ -278,18 +357,13 @@ export function PostPreview({
                 {description || 'Escribí el copy de tu publicación...'}
               </p>
 
-              {imageUrl && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-gray-150">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl}
-                    alt="Post preview"
-                    className="w-full h-44 object-cover bg-gray-50"
-                  />
+              {mediaUrls.length > 0 && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-gray-150 h-44 bg-gray-50">
+                  <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover" />
                 </div>
               )}
 
-              <div className="flex justify-between items-center text-gray-500 mt-3 pt-1 max-w-[240px]">
+              <div className="flex justify-between items-center text-gray-550 mt-3 pt-1 max-w-[240px]">
                 <button className="flex items-center gap-1 hover:text-sky-500 transition group cursor-pointer">
                   <MessageCircle className="size-4 group-hover:bg-sky-50 p-0.5 rounded-full" />
                   <span className="text-[10px]">0</span>
@@ -343,12 +417,9 @@ export function PostPreview({
             </p>
           </div>
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl || '/images/restaurant.jpg'}
-            alt="Post preview"
-            className="w-full h-48 object-cover bg-gray-50"
-          />
+          <div className="w-full h-48 bg-gray-50">
+            <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover" />
+          </div>
 
           <div className="px-3 py-1.5 border-b border-gray-100 flex items-center justify-between text-[10px] text-gray-500">
             <span>👍 8 · 0 comentarios</span>
@@ -364,7 +435,7 @@ export function PostPreview({
             <button className="flex items-center justify-center p-2 hover:bg-gray-100 hover:text-gray-700 rounded-full cursor-pointer transition flex-1 text-gray-500" title="Compartir">
               <Share2 className="size-4" />
             </button>
-            <button className="flex items-center justify-center p-2 hover:bg-gray-100 hover:text-gray-700 rounded-full cursor-pointer transition flex-1 text-gray-500" title="Enviar">
+            <button className="flex items-center justify-center p-2 hover:bg-gray-100 hover:text-gray-700 rounded-full cursor-pointer transition flex-1 text-gray-555" title="Enviar">
               <Send className="size-4" />
             </button>
           </div>
@@ -376,16 +447,13 @@ export function PostPreview({
         <div className="w-80 mx-auto border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm text-left">
           {/* Video Container with Play button overlay */}
           <div className="relative w-full h-44 bg-black flex items-center justify-center group overflow-hidden">
-            {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt="Post preview"
-                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-300"
-              />
+            {mediaUrls.length > 0 ? (
+              <div className="w-full h-full">
+                <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-300" />
+              </div>
             ) : (
               <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-                <span className="text-[10px] text-gray-500">Thumbnail del video</span>
+                <span className="text-[10px] text-gray-555">Thumbnail del video</span>
               </div>
             )}
             <div className="absolute size-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:bg-red-600 transition cursor-pointer">
@@ -409,7 +477,7 @@ export function PostPreview({
                 <h4 className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight">
                   {description.slice(0, 80) || 'Título de tu video...'}
                 </h4>
-                <div className="text-[10px] text-gray-500 mt-1 leading-relaxed">
+                <div className="text-[10px] text-gray-550 mt-1 leading-relaxed">
                   <p>{clientName}</p>
                   <p>1 visualización · hace un momento</p>
                 </div>
