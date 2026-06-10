@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { publishToInstagram, refreshLongLived } from '@/lib/instagram'
 import { publishToFacebook } from '@/lib/facebook'
 import { simulateEngagement } from '@/lib/simulation'
+import { createPublishNotification } from '@/lib/notifications'
 
 /**
  * Servicio compartido de publicación de un post en sus redes.
@@ -70,7 +71,9 @@ export async function publishPostPublications(
   supabase: SupabaseClient,
   postId: string,
   preloadedPost?: {
+    user_id: string
     client_id: string
+    title: string | null
     description: string | null
     hashtags: string[] | null
     media_urls: string[] | null
@@ -79,7 +82,7 @@ export async function publishPostPublications(
   const post = preloadedPost ?? await (async () => {
     const { data } = await supabase
       .from('posts')
-      .select('id, client_id, description, hashtags, media_urls')
+      .select('id, user_id, client_id, title, description, hashtags, media_urls')
       .eq('id', postId)
       .single()
     return data
@@ -212,6 +215,16 @@ export async function publishPostPublications(
     .from('posts')
     .update({ status: finalStatus, qstash_message_id: null, updated_at: now })
     .eq('id', postId)
+
+  // Crear notificación informando el resultado de la publicación.
+  await createPublishNotification(supabase, {
+    userId: post.user_id as string,
+    postId,
+    clientId: post.client_id as string,
+    postTitle: (post.title as string | null) ?? '',
+    status: finalStatus,
+    results,
+  })
 
   return { status: finalStatus, results }
 }

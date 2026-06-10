@@ -1,8 +1,8 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Bell } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
+import { NotificationsDropdown } from '@/components/dashboard/NotificationsDropdown'
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Inicio',
@@ -42,9 +42,7 @@ export function TopBar() {
             {name}
           </span>
 
-          <button className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
+          <NotificationsDropdown />
 
           {userProfile?.avatarUrl ? (
             <img

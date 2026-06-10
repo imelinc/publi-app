@@ -116,8 +116,6 @@ export type NotificationType =
   | 'post_published'
   | 'post_failed'
   | 'post_scheduled'
-  | 'post_approved'
-  | 'post_rejected'
 
 export interface Notification {
   id: string
@@ -125,11 +123,9 @@ export interface Notification {
   title: string
   body: string
   read: boolean
+  postId: string | null
+  clientId: string | null
   createdAt: string
-  metadata: {
-    postId: string | null
-    clientId: string | null
-  }
 }
 
 export interface AiSuggestion {
