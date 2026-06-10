@@ -3,7 +3,7 @@
 > **Stack:** Next.js 14 (TypeScript) · Supabase (DB + Auth + Storage) · Upstash QStash (scheduling) · Groq API (IA)
 > **Convención de rutas:** Next.js API Routes en `app/api/...`
 > **Autenticación:** Supabase Auth — el cliente JS maneja la sesión automáticamente. Los endpoints del servidor validan con `supabase.auth.getUser()`.
-> **Fecha de relevamiento:** Junio 2026 — actualizado con inspección del repositorio
+> **Fecha de relevamiento:** Junio 2026 — incluye integración Facebook Pages
 
 > **Estado de implementación:** verificado contra `publi/src/app/api/**/route.ts`.
 >
@@ -23,12 +23,13 @@
 6. [Aprobación de posts](#6-aprobación-de-posts)
 7. [Calendario (Eventos)](#7-calendario-eventos)
 8. [Métricas](#8-métricas)
-9. [IA — Asistente (Groq)](#9-ia--asistente-groq)
-10. [Waitlist](#10-waitlist)
-11. [Instagram — OAuth & Publicación](#11-instagram--oauth--publicación)
-12. [Jobs internos (QStash)](#12-jobs-internos-qstash)
-13. [Cron de Vercel](#13-cron-de-vercel)
-14. [Configuración](#14-configuración)
+9. [Facebook Pages — OAuth & Publicación](#9-facebook-pages--oauth--publicación)
+10. [IA — Asistente (Groq)](#10-ia--asistente-groq)
+11. [Waitlist](#11-waitlist)
+12. [Instagram — OAuth & Publicación](#12-instagram--oauth--publicación)
+13. [Jobs internos (QStash)](#13-jobs-internos-qstash)
+14. [Cron de Vercel](#14-cron-de-vercel)
+15. [Configuración](#15-configuración)
 
 ---
 
@@ -739,7 +740,44 @@ Estadísticas agregadas para la página de Métricas y el resumen del dashboard.
 
 ---
 
-## 9. IA — Asistente (Groq)
+---
+
+## 9. Facebook Pages — OAuth & Publicación
+
+> Facebook Graph API v21. El flujo OAuth usa Facebook Login para obtener un
+> **page access token** de la Página que administra el CM. Los page access tokens
+> no expiran, por lo que no hay refresh automático para Facebook.
+
+### `GET /api/facebook/connect`
+Genera la URL de autorización de Facebook y redirige al usuario.
+
+**Auth:** Sesión Supabase activa  
+**Query Params:** `clientId` (uuid)  
+**Response:** Redirect `302` a la URL de OAuth de Facebook  
+**Errores:** `?fb_error=not_configured` si faltan las env vars · `?fb_error=token` si el clientId es inválido
+
+---
+
+### `GET /api/facebook/callback`
+Callback de Facebook OAuth. Canjea el code, obtiene el page access token y lo guarda en Supabase.
+
+**Query Params:** `code` (string), `state` (string — formato `clientId:nonce`)  
+**Lógica interna:**
+1. Valida CSRF: el nonce del `state` debe coincidir con la cookie `fb_oauth_state`
+2. Valida sesión del CM y ownership del cliente
+3. Canjea `code` por user short-lived token
+4. Convierte a user long-lived token
+5. Obtiene lista de Páginas con `GET /me/accounts`
+6. Si no hay páginas → redirect a `/clientes?fb_no_pages=1`
+7. Toma `pages[0]`, extrae el page access token
+8. Upsert en `social_accounts` con `network='facebook'`, `is_simulated=false`, `token_expires_at=null`
+
+**Response:** Redirect `302` a `/clientes?fb_connected=1`  
+**Errores:** `?fb_error=denied` (usuario rechazó) · `?fb_error=token` · `?fb_no_pages=1`
+
+---
+
+## 10. IA — Asistente (Groq)
 
 > Todos los endpoints llaman a la **Groq API** con un system prompt fijo definido por el equipo. El "pre-entrenamiento" se logra mediante **prompt engineering** en el system prompt: se incluye el contexto del CM, el cliente activo (nombre, descripción, redes conectadas), instrucciones de tono y comportamiento esperado. No hay entrenamiento real del modelo.
 >
@@ -879,7 +917,7 @@ Genera una imagen a partir de un prompt usando Cloudflare Workers AI con el mode
 
 ---
 
-## 10. Waitlist
+## 11. Waitlist
 
 ### ✅ `POST /api/waitlist`
 Registra a alguien en la lista de espera (beta cerrada).
@@ -905,9 +943,10 @@ Registra a alguien en la lista de espera (beta cerrada).
 
 ---
 
-## 11. Instagram — OAuth & Publicación
+## 12. Instagram — OAuth & Publicación
 
-> Solo Instagram Graph API. El flujo OAuth usa Facebook Login (Instagram usa la plataforma de Meta).
+> Instagram Graph API. El flujo OAuth usa la 'Instagram API with Instagram Login'
+> (flujo directo, sin Página de Facebook). Ver sección 9 para Facebook Pages.
 
 ### ✅ `GET /api/instagram/connect`
 Genera la URL de autorización de Meta OAuth y redirige al usuario.
@@ -953,7 +992,7 @@ Cron diario (Vercel Cron) que mantiene vivos los tokens long-lived de Instagram.
 
 ---
 
-## 12. Jobs internos (QStash)
+## 13. Jobs internos (QStash)
 
 > Estos endpoints son llamados automáticamente por **Upstash QStash** en el momento programado. No son accesibles desde el frontend. Validan la firma con el header `upstash-signature`.
 
@@ -974,7 +1013,7 @@ Job principal de publicación. QStash llama este endpoint cuando llega el horari
 
 ---
 
-## 13. Cron de Vercel
+## 14. Cron de Vercel
 
 > Endpoints para tareas programadas (barridos) llamados de manera recurrente por Vercel Cron. Protegidos por firma de Cron (header `x-vercel-cron` o `Bearer CRON_SECRET`).
 
@@ -985,7 +1024,7 @@ Cron que "barre" y encola en QStash las publicaciones programadas que entran en 
 
 ---
 
-## 14. Configuración
+## 15. Configuración
 
 > Endpoints pendientes de implementación. Solo existen carpetas con `.gitkeep` de placeholder.
 
@@ -1017,6 +1056,8 @@ Actualizar preferencias de notificaciones. (No implementado)
 | Clientes — eliminar | ✅ | `DELETE /api/clients/:id` |
 | Clientes — cuentas sociales | ✅ | `GET /api/clients/:id/social-accounts` · `POST /api/clients/:id/social-accounts` · `DELETE /api/clients/:id/social-accounts/:accountId` |
 | Clientes — conectar Instagram (OAuth) | ✅ | `GET /api/instagram/connect` → `GET /api/instagram/callback` · `GET /api/instagram/refresh-token` |
+| Clientes — conectar Facebook | ✅ | `GET /api/facebook/connect` → `GET /api/facebook/callback` |
+| Clientes — sin páginas de Facebook | ✅ | `GET /api/facebook/callback` → redirect `?fb_no_pages=1` |
 | Calendario | ✅ | `GET /api/posts` · `POST /api/posts` · `GET/POST /api/calendar/events` · `GET/PATCH/DELETE /api/calendar/events/:eventId` |
 | Métricas | ⬜ | `GET /api/metrics` |
 | Nueva publicación — crear | ✅ | `POST /api/posts` · `POST /api/posts/media` |
@@ -1056,3 +1097,4 @@ Actualizar preferencias de notificaciones. (No implementado)
 - **Jobs QStash:** validados con HMAC signature. Si falla, QStash reintenta automáticamente hasta 3 veces con backoff exponencial.
 - **Redes simuladas:** En el MVP, las cuentas sociales se conectan de forma simulada (no hay OAuth real salvo Instagram que está pendiente). El flag `is_simulated` en `social_accounts` indica si es una conexión real o de demo.
 - **Aprobación de posts:** Los posts pasan por un flujo de estados: `draft` → `pending_approval` → `approved` / `draft` (rechazado). El CM solicita aprobación con `POST /api/posts/:postId/request-approval` y el cliente usa `/api/approve/:token` (público).
+- **Tokens de Facebook:** page access tokens permanentes (no expiran). No hay cron de refresh. El user token intermedio (60 días) no se persiste.
