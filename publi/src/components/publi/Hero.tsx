@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   BarChart3,
@@ -234,7 +235,7 @@ export function Hero({ isLoggedIn = false }: HeroProps) {
                               className="group flex items-center gap-2.5 rounded-2xl border border-border/50 p-2 transition-all duration-200 hover:border-primary/30 hover:shadow-sm"
                             >
                               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl">
-                                <img
+                                <Image
                                   src={post.image}
                                   alt={post.title}
                                   width={40}

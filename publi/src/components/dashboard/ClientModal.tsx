@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { NetworksManager } from './NetworksManager'
 
@@ -31,12 +32,13 @@ interface ClientModalProps {
    * Guarda el cliente (crear o actualizar) y devuelve el cliente resultante,
    * que se usa para conocer su `id` y avanzar al paso 3 (conexión de redes).
    */
-  onSave: (data: { name: string; color: string; plan: Plan }) => Promise<Client>
+  onSave: (data: { name: string; description?: string; color: string; plan: Plan }) => Promise<Client>
 }
 
 export function ClientModal({ open, onClose, client, onSave }: ClientModalProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [color, setColor] = useState<string>(COLORS[0])
   const [plan, setPlan] = useState<Plan>('free')
   const [savedClientId, setSavedClientId] = useState<string | null>(null)
@@ -47,6 +49,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
   useEffect(() => {
     if (client) {
       setName(client.name)
+      setDescription(client.description ?? '')
       setColor(client.color)
       setPlan(client.plan)
       setSavedClientId(client.id) // ya existe, podemos saltar a paso 3 si quisiéramos
@@ -57,6 +60,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
   useEffect(() => {
     if (!open) {
       setName('')
+      setDescription('')
       setColor(COLORS[0])
       setPlan('free')
       setStep(1)
@@ -70,6 +74,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
     try {
       const result = await onSave({
         name: name.trim(),
+        description: description.trim() || undefined,
         color,
         plan,
       })
@@ -111,6 +116,19 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ej: Café Bruna"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-700">
+                Descripción
+                <span className="text-gray-400 font-normal"> — opcional</span>
+              </label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ej: Cafetería de especialidad en Palermo con foco en café de origen y experiencia de brunch los domingos."
+                rows={3}
               />
             </div>
 

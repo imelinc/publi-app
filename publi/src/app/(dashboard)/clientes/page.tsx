@@ -88,7 +88,8 @@ export default function ClientesPage() {
     }
     // Limpiar los query params de la URL.
     router.replace('/clientes')
-  }, [router, toast, fetchClients])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleEdit(client: Client) {
     setEditingClient(client)
@@ -126,7 +127,7 @@ export default function ClientesPage() {
     }
   }
 
-  async function handleSave(data: { name: string; color: string; plan: Plan }): Promise<Client> {
+  async function handleSave(data: { name: string; description?: string; color: string; plan: Plan }): Promise<Client> {
     try {
       if (editingClient) {
         await updateClient(editingClient.id, data)

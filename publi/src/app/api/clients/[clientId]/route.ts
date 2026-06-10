@@ -52,6 +52,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   const result = {
     id: client.id,
     name: client.name,
+    description: client.descriptions ?? '',
     color: client.color,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
@@ -64,6 +65,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 interface UpdateClientBody {
   name?: string
+  description?: string
   color?: string
 }
 
@@ -90,8 +92,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const body: UpdateClientBody = await request.json()
 
-  const updates: Record<string, string> = {}
+  const updates: Record<string, string | null> = {}
   if (body.name !== undefined) updates.name = body.name.trim()
+  if (body.description !== undefined) updates.descriptions = body.description || null
   if (body.color !== undefined) updates.color = body.color
 
   if (Object.keys(updates).length === 0) {
@@ -113,6 +116,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const result = {
     id: client.id,
     name: client.name,
+    description: client.descriptions ?? '',
     color: client.color,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),

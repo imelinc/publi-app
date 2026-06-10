@@ -75,9 +75,10 @@ export async function GET() {
       else if (typed.status === 'published') entry.published++
     }
 
-    const result = clients.map((c: { id: string; name: string; color: string; plan: Plan; created_at: string }) => ({
+    const result = clients.map((c: { id: string; name: string; descriptions: string | null; color: string; plan: Plan; created_at: string }) => ({
       id: c.id,
       name: c.name,
+      description: c.descriptions ?? '',
       color: c.color,
       plan: c.plan,
       createdAt: c.created_at,
@@ -96,6 +97,7 @@ export async function GET() {
 
 interface CreateClientBody {
   name: string
+  description?: string
   color: string
   networks?: Network[]
   plan?: Plan
@@ -115,16 +117,17 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 })
   }
 
-  const { data: client, error: insertError } = await supabase
-    .from('clients')
-    .insert({
-      user_id: user.id,
-      name: body.name.trim(),
-      color: body.color,
-      plan: body.plan ?? 'free',
-    })
-    .select()
-    .single()
+const { data: client, error: insertError } = await supabase
+      .from('clients')
+      .insert({
+        user_id: user.id,
+        name: body.name.trim(),
+        descriptions: body.description ?? null,
+        color: body.color,
+        plan: body.plan ?? 'free',
+      })
+      .select()
+      .single()
 
   if (insertError) {
     return Response.json({ error: insertError.message }, { status: 500 })
@@ -133,6 +136,7 @@ export async function POST(request: NextRequest) {
   const result = {
     id: client.id,
     name: client.name,
+    description: client.descriptions ?? '',
     color: client.color,
     plan: client.plan,
     createdAt: client.created_at,

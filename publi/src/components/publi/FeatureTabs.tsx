@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import { DemoCursor } from "@/components/publi/DemoCursor";
@@ -316,7 +317,7 @@ function MonthlyCalendarPreview() {
               {hasPost && post ? (
                 <>
                   <div className="mt-2 overflow-hidden rounded-xl">
-                    <img
+                    <Image
                       src={post.imageSrc}
                       alt={post.caption}
                       width={120}
@@ -368,7 +369,7 @@ function PostPreviewPopover({
         </button>
 
         <div className="overflow-hidden rounded-t-[24px]">
-          <img
+          <Image
             src={post.imageSrc}
             alt={post.caption}
             width={280}
@@ -591,9 +592,11 @@ function AIAssistantPreview() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <img
+          <Image
             src="/images/copi.png"
             alt="Copi"
+            width={36}
+            height={36}
             className="h-9 w-9 object-contain"
           />
           <div>
@@ -611,9 +614,11 @@ function AIAssistantPreview() {
 
       <div className="grid gap-4 lg:grid-cols-[160px_1fr]">
         <div className="flex flex-col items-center gap-3 rounded-[24px] border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
-          <img
+          <Image
             src="/images/copi_notebook.png"
             alt="Copi trabajando"
+            width={112}
+            height={112}
             className="h-28 w-28 object-contain drop-shadow-lg"
           />
           <div className="w-full rounded-xl bg-primary/10 px-3 py-2 text-center">
@@ -662,9 +667,11 @@ function AIAssistantPreview() {
 
           <div className="rounded-[24px] border border-border/50 bg-white p-3">
             <div className="flex items-center gap-2">
-              <img
+              <Image
                 src="/images/copi.png"
                 alt="Copi"
+                width={20}
+                height={20}
                 className="h-5 w-5 object-contain"
               />
               <p className="text-xs font-semibold text-foreground">Resultado de Copi</p>

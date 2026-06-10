@@ -29,6 +29,7 @@ export type Plan = 'free' | 'pro'
 export interface Client {
   id: string
   name: string
+  description: string
   color: string
   initials: string
   plan: Plan
@@ -107,6 +108,8 @@ export interface UserProfile {
   workspaceName?: string
   notifPostPublished?: boolean
   createdAt?: string
+  loginCount?: number
+  timeSpentCreating?: number
 }
 
 export type NotificationType =

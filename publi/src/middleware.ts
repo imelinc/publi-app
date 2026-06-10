@@ -44,8 +44,16 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Siempre refrescar la sesión (recomendado por Supabase)
-  const { data: { user } } = await supabase.auth.getUser()
+  // Verificar si hay cookies de Supabase
+  const hasAuthCookie = request.cookies.getAll().some((c) => c.name.includes('-auth-token'))
+
+  let user = null
+
+  if (hasAuthCookie) {
+    // Solo si existe la cookie llamamos a Supabase para verificar/refrescar la sesión
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+    user = supabaseUser
+  }
 
   // Sin sesión en ruta protegida → /login
   if (!user && isProtected(pathname)) {

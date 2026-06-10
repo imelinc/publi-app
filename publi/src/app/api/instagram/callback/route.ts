@@ -20,8 +20,14 @@ import {
 export async function GET(request: NextRequest) {
   const baseUrl = resolveBaseUrl(request)
   const clientesUrl = `${baseUrl}/clientes`
-  const fail = (reason: string) =>
-    Response.redirect(`${clientesUrl}?ig_error=${reason}`, 302)
+  const fail = (reason: string) => {
+    const res = new Response(null, {
+      status: 302,
+      headers: { Location: `${clientesUrl}?ig_error=${reason}` },
+    })
+    res.headers.append('Set-Cookie', 'ig_oauth_state=; Path=/; HttpOnly; Max-Age=0')
+    return res
+  }
 
   const params = request.nextUrl.searchParams
 

@@ -86,12 +86,11 @@ export async function exchangeCodeForToken(
   if (!res.ok) {
     throw new Error(`exchangeCodeForToken falló: ${JSON.stringify(json)}`)
   }
-  // Formato: { data: [{ access_token, user_id, permissions }] }
-  const entry = Array.isArray(json?.data) ? json.data[0] : json
-  if (!entry?.access_token || !entry?.user_id) {
+  // Instagram API with Instagram Login devuelve { access_token, token_type } directamente
+  if (!json?.access_token) {
     throw new Error(`exchangeCodeForToken: respuesta inesperada ${JSON.stringify(json)}`)
   }
-  return { accessToken: entry.access_token, userId: String(entry.user_id) }
+  return { accessToken: json.access_token, userId: String(json.user_id ?? '') }
 }
 
 /** Convierte un token short-lived en uno LONG-LIVED (≈60 días). */
@@ -153,6 +152,45 @@ export interface PublishToInstagramArgs {
 }
 
 /**
+ * Espera a que Instagram procese un container antes de publicarlo.
+ * Hace polling cada `intervalMs` ms hasta `maxAttempts` intentos.
+ * Tira si el container entra en estado ERROR o si se agota el tiempo.
+ *
+ * Docs: https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/content-publishing
+ */
+async function pollContainerStatus(
+  containerId: string,
+  accessToken: string,
+  maxAttempts = 10,
+  intervalMs = 3000
+): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const params = new URLSearchParams({
+      fields: 'status_code',
+      access_token: accessToken,
+    })
+    const res = await fetch(`${GRAPH_BASE}/${containerId}?${params.toString()}`)
+    const json = await res.json()
+
+    if (!res.ok) {
+      throw new Error(`pollContainerStatus falló: ${JSON.stringify(json)}`)
+    }
+
+    const statusCode = json?.status_code as string | undefined
+
+    if (statusCode === 'FINISHED') return
+    if (statusCode === 'ERROR') {
+      throw new Error(`Instagram rechazó el container ${containerId}: ${JSON.stringify(json)}`)
+    }
+    // IN_PROGRESS u otro estado transitorio → esperar y reintentar
+    await new Promise((r) => setTimeout(r, intervalMs))
+  }
+  throw new Error(
+    `Timeout: Instagram no terminó de procesar el container ${containerId} tras ${maxAttempts} intentos`
+  )
+}
+
+/**
  * Publica en Instagram (foto simple o carrusel) y devuelve el media id publicado
  * (= external_post_id). Flujo de la Instagram API with Instagram Login:
  *  - foto simple: crear container con image_url+caption → media_publish.
@@ -180,6 +218,7 @@ export async function publishToInstagram({
       caption,
       access_token: accessToken,
     })
+    await pollContainerStatus(containerId, accessToken)
     return igPost(`${igUserId}/media_publish`, {
       creation_id: containerId,
       access_token: accessToken,
@@ -203,6 +242,7 @@ export async function publishToInstagram({
     caption,
     access_token: accessToken,
   })
+  await pollContainerStatus(carouselId, accessToken)
   return igPost(`${igUserId}/media_publish`, {
     creation_id: carouselId,
     access_token: accessToken,
@@ -212,7 +252,7 @@ export async function publishToInstagram({
 /** Trae los datos básicos del perfil para validar y mostrar la cuenta. */
 export async function fetchInstagramProfile(token: string): Promise<InstagramProfile> {
   const params = new URLSearchParams({
-    fields: 'user_id,username,account_type,profile_picture_url',
+    fields: 'id,username,account_type,profile_picture_url',
     access_token: token,
   })
   const res = await fetch(`${GRAPH_BASE}/me?${params.toString()}`)
@@ -221,7 +261,7 @@ export async function fetchInstagramProfile(token: string): Promise<InstagramPro
     throw new Error(`fetchInstagramProfile falló: ${JSON.stringify(json)}`)
   }
   return {
-    userId: String(json.user_id ?? json.id ?? ''),
+    userId: String(json.id ?? ''),
     username: json.username,
     accountType: json.account_type ?? '',
     profilePictureUrl: json.profile_picture_url ?? null,

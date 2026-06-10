@@ -29,8 +29,8 @@ interface AppState {
   clients: Client[]
   clientsLoading: boolean
   fetchClients: () => Promise<void>
-  addClient: (data: { name: string; color: string; plan: Plan }) => Promise<Client>
-  updateClient: (id: string, data: { name?: string; color?: string; plan?: Plan }) => Promise<void>
+  addClient: (data: { name: string; description?: string; color: string; plan: Plan }) => Promise<Client>
+  updateClient: (id: string, data: { name?: string; description?: string; color?: string; plan?: Plan }) => Promise<void>
   deleteClient: (id: string) => Promise<void>
 
   // ─── Social accounts (cuentas de redes sociales por cliente) ────────────────
@@ -96,7 +96,7 @@ interface AppState {
     endAt?: string | null
     isAllDay?: boolean
   }) => Promise<void>
-  deleteEvent: (id: string) => void
+  deleteEvent: (id: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -388,8 +388,14 @@ export const useAppStore = create<AppState>((set) => ({
     }
   },
 
-  deleteEvent: (id) =>
-    set((state) => ({ events: state.events.filter((e) => e.id !== id) })),
+  deleteEvent: async (id) => {
+    const res = await fetch(`/api/calendar/events/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      throw new Error(json.error || 'Error al eliminar evento')
+    }
+    set((state) => ({ events: state.events.filter((e) => e.id !== id) }))
+  },
 }))
 
 // ─── Utility functions ────────────────────────────────────────────────────────
