@@ -19,11 +19,12 @@
 8. [Storage de archivos — Supabase Storage](#8-storage-de-archivos--supabase-storage)
 9. [Scheduling — Upstash QStash](#9-scheduling--upstash-qstash)
 10. [Integración con Instagram](#10-integración-con-instagram)
-11. [Asistente IA — Groq](#11-asistente-ia--groq)
-12. [Deploy e infraestructura](#12-deploy-e-infraestructura)
-13. [Variables de entorno](#13-variables-de-entorno)
-14. [Decisiones de diseño](#14-decisiones-de-diseño)
-15. [Limitaciones conocidas del MVP](#15-limitaciones-conocidas-del-mvp)
+11. [Integración con Facebook Pages](#11-integración-con-facebook-pages)
+12. [Asistente IA — Groq](#12-asistente-ia--groq)
+13. [Deploy e infraestructura](#13-deploy-e-infraestructura)
+14. [Variables de entorno](#14-variables-de-entorno)
+15. [Decisiones de diseño](#15-decisiones-de-diseño)
+16. [Limitaciones conocidas del MVP](#16-limitaciones-conocidas-del-mvp)
 
 ---
 
@@ -34,7 +35,7 @@
 ### Alcance del MVP
 
 - ✅ Gestión de clientes (workspaces aislados por cliente)
-- ⚠️ Publicación y programación de posts en **Instagram** (única red social en MVP)
+- ⚠️ Publicación y programación de posts en **Instagram** y **Facebook Pages** (redes sociales reales en MVP)
 - ⚠️ Calendario de contenido mensual y semanal
 - ⬜ Métricas de publicaciones (datos reales desde Instagram Graph API)
 - ⚠️ Asistente IA para copy, hashtags y horario óptimo (Groq)
@@ -65,7 +66,7 @@
 
 ### Fuera del alcance del MVP
 
-- Otras redes sociales (Facebook, TikTok, LinkedIn, X, YouTube, Threads)
+- Otras redes sociales (TikTok, LinkedIn, X, YouTube, Threads)
 - Notificaciones por email
 - Colaboración en equipo / aprobaciones
 - Planes de pago / billing real
@@ -89,6 +90,7 @@
 | IA | Groq API | — | Gratis |
 | Modelo IA | llama-3.3-70b-versatile | — | Gratis |
 | Red social | Instagram Graph API | v21 | Gratis |
+| Red social | Facebook Graph API | v21 | Gratis |
 | Deploy | Vercel | — | Gratis (Hobby) |
 | Control de versiones | GitHub | — | Gratis |
 
@@ -115,7 +117,8 @@
 │   │  • Calendario           │  │  • Métricas                  │  │
 │   │  • Métricas             │  │  • IA (Groq)                 │  │
 │   │  • Nueva publicación    │  │  • Instagram OAuth           │  │
-│   │  • Configuración        │  │  • Jobs receiver (QStash)    │  │
+│   │  • Configuración        │  │  • Facebook OAuth            │  │
+│   │                         │  │  • Jobs receiver (QStash)    │  │
 │   └─────────────────────────┘  └──────────────┬───────────────┘  │
 └─────────────────────────────────────────────────┼───────────────┘
                                                   │
@@ -158,8 +161,8 @@ en /nueva-publicacion    →     hasta la fecha      →     /api/jobs/publish
         │                                                        │
         ▼                                                        ▼
 POST /api/posts               [espera...]              GET post desde Supabase
-  • Guarda en Supabase                                 GET token Instagram
-  • Encola job en QStash                               POST imagen a Instagram
+  • Guarda en Supabase                                 GET token de red social
+  • Encola job en QStash                               POST contenido a Instagram / Facebook Pages
   • status = "scheduled"                               PATCH post → "published"
                                                        Crea notificación in-app
 ```
@@ -662,7 +665,118 @@ Los long-lived tokens de Instagram duran **60 días** y se pueden refrescar ante
 
 ---
 
-## 11. Módulo de Inteligencia Artificial (Groq y Cloudflare)
+## 11. Integración con Facebook Pages
+
+### Requisitos previos
+
+- La misma app de Meta usada para Instagram (developers.facebook.com)
+- Agregar el producto **Facebook Login** (o Facebook Login for Business) a la app
+- Permisos requeridos: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`
+- La cuenta de Facebook del CM debe administrar al menos una Página (no funciona con perfiles personales)
+- En modo Development: solo cuentas agregadas como testers pueden conectarse (suficiente para la demo)
+
+### Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `FACEBOOK_APP_ID` | App ID de Meta (puede ser el mismo que `INSTAGRAM_APP_ID`) |
+| `FACEBOOK_APP_SECRET` | App Secret de Meta (solo servidor) |
+| `FACEBOOK_REDIRECT_URI` | Opcional — fija el redirect URI. Si no se setea, se deriva del dominio |
+
+### Flujo OAuth de Facebook
+
+A diferencia de Instagram, Facebook usa un **user access token** como paso intermedio
+para luego obtener un **page access token** (que es el que se usa para publicar).
+Los page access tokens no expiran, por lo que no requieren refresh automático.
+
+```
+GET /api/facebook/connect?clientId=xxx
+        │
+        ▼
+Genera URL de autorización de Facebook:
+https://www.facebook.com/v21.0/dialog/oauth?
+  client_id={FACEBOOK_APP_ID}
+  &redirect_uri={FACEBOOK_REDIRECT_URI}
+  &scope=pages_show_list,pages_read_engagement,pages_manage_posts
+  &state={clientId:nonce}
+        │
+        ▼
+Usuario autoriza en Facebook → redirige a:
+GET /api/facebook/callback?code=xxx&state={clientId:nonce}
+        │
+        ▼
+Intercambia code → user short-lived token (1 hora)
+        │
+        ▼
+Convierte a user long-lived token (60 días, no se guarda)
+        │
+        ▼
+GET /me/accounts → lista de Páginas que administra el usuario
+        │
+        ▼
+Toma pages[0] y extrae el page access token (no expira)
+        │
+        ▼
+Guarda en social_accounts:
+  network='facebook', external_user_id=pageId,
+  username=pageName, access_token=pageAccessToken,
+  token_expires_at=null, is_simulated=false
+        │
+        ▼
+Redirect a /clientes?fb_connected=1
+```
+
+### Flujo de publicación en Facebook
+
+La API de Facebook Pages es más simple que Instagram: un solo paso, sin container.
+
+**Post con imagen:**
+```
+POST https://graph.facebook.com/v21.0/{pageId}/photos
+  url={URL pública de imagen}
+  caption={descripción + hashtags}
+  published=true
+  access_token={page access token}
+→ Devuelve: { id }  ← photo/post id
+```
+
+**Post sin imagen (solo texto):**
+```
+POST https://graph.facebook.com/v21.0/{pageId}/feed
+  message={descripción + hashtags}
+  access_token={page access token}
+→ Devuelve: { id }
+```
+
+**Post con múltiples imágenes (carrusel):**
+
+Paso 1 — Por cada imagen:
+```
+POST /{pageId}/photos
+  url={imagen}
+  published=false
+→ Devuelve: { id }  ← se acumulan los ids
+```
+
+Paso 2 — Publicar carrusel:
+```
+POST /{pageId}/feed
+  message={caption}
+  attached_media=[{"media_fbid": id1}, {"media_fbid": id2}, ...]
+→ Devuelve: { id }
+```
+
+### Gestión de tokens
+
+Los page access tokens de Facebook no expiran (a diferencia de los tokens de Instagram que duran 60 días). Por esto `token_expires_at` se guarda como null en `social_accounts` y no hay cron de refresh para Facebook.
+
+### Limitación conocida: selección de página
+
+Para el MVP se conecta automáticamente la primera página que devuelve `/me/accounts`. Si el CM administra múltiples páginas, puede desconectar y reconectar para cambiar de página. Un selector de páginas en el flujo OAuth es la mejora natural para la siguiente iteración.
+
+---
+
+## 12. Módulo de Inteligencia Artificial (Groq y Cloudflare)
 
 ### Modelo de Texto
 
@@ -765,7 +879,7 @@ const sendMessage = async (message: string) => {
 
 ---
 
-## 12. Deploy e infraestructura
+## 13. Deploy e infraestructura
 
 ### Vercel
 
@@ -800,7 +914,7 @@ Cada push a `main` dispara un deploy automático. Los PRs generan preview deploy
 
 ---
 
-## 13. Variables de entorno
+## 14. Variables de entorno
 
 | Variable | Descripción | Requerida en |
 |---|---|---|
@@ -811,6 +925,9 @@ Cada push a `main` dispara un deploy automático. Los PRs generan preview deploy
 | `META_APP_ID` | App ID de Meta Developers | Solo servidor |
 | `META_APP_SECRET` | App Secret de Meta | Solo servidor |
 | `META_REDIRECT_URI` | URL de callback OAuth de Meta | Solo servidor |
+| `FACEBOOK_APP_ID` | App ID de Meta para Facebook Login | Solo servidor |
+| `FACEBOOK_APP_SECRET` | App Secret de Meta (mismo que Instagram si es la misma app) | Solo servidor |
+| `FACEBOOK_REDIRECT_URI` | URL de callback OAuth de Facebook (opcional) | Solo servidor |
 | `QSTASH_TOKEN` | Token de Upstash QStash | Solo servidor |
 | `QSTASH_CURRENT_SIGNING_KEY` | Clave de firma QStash (actual) | Solo servidor |
 | `QSTASH_NEXT_SIGNING_KEY` | Clave de firma QStash (siguiente) | Solo servidor |
@@ -822,7 +939,7 @@ Las variables con prefijo `NEXT_PUBLIC_` son accesibles desde el browser. El res
 
 ---
 
-## 14. Decisiones de diseño
+## 15. Decisiones de diseño
 
 ### ¿Por qué un único proyecto Next.js y no frontend + backend separados?
 
@@ -832,9 +949,15 @@ Next.js 14 con App Router permite colocar el backend (API Routes) dentro del mis
 
 Supabase Auth provee email/contraseña out of the box, se integra automáticamente con la base de datos (tabla `auth.users`), y el helper `@supabase/ssr` maneja las cookies de sesión en Next.js sin configuración adicional. Implementar JWT manual representaría semanas de trabajo innecesario para el timeline del proyecto.
 
-### ¿Por qué solo Instagram en el MVP?
+### ¿Por qué Instagram y Facebook Pages en el MVP?
 
-De las encuestas realizadas, Instagram es la red social más usada por el target (>90% de los encuestados). Integrar la Instagram Graph API ya representa una complejidad significativa (OAuth de Meta, two-step publishing, token management). Las demás redes se agregan en iteraciones posteriores una vez validado el core del producto.
+De las encuestas realizadas, Instagram es la red social más usada por el target
+(>90% de los encuestados). Facebook Pages se agregó como segunda red real porque
+comparte infraestructura de autenticación con Instagram (misma app de Meta, mismo
+OAuth flow) y su API de publicación es más simple (un solo paso vs. el two-step
+container de Instagram). Esto permitió agregar una segunda red real con mínimo
+delta de complejidad. Ambas cubren al target principal: CMs freelance que gestionan
+PyMEs argentinas con presencia en redes de Meta.
 
 ### ¿Por qué Groq y no OpenAI?
 
@@ -850,11 +973,12 @@ Next.js en Vercel no tiene un servidor corriendo 24/7, por lo que no se puede us
 
 ---
 
-## 15. Limitaciones conocidas del MVP
+## 16. Limitaciones conocidas del MVP
 
 | Limitación | Impacto | Resolución futura |
 |---|---|---|
-| Solo Instagram | No soporta otras redes sociales | Agregar Facebook, TikTok, LinkedIn según demanda |
+| Solo Instagram y Facebook | No soporta TikTok, LinkedIn, X ni YouTube | Agregar según demanda y validación |
+| Facebook: primera página automática | Si el CM administra múltiples páginas, se conecta solo la primera | Agregar selector de páginas en el flujo OAuth |
 | Timeout de 10s en Vercel Free | El upload de imágenes pesadas puede fallar | Upgrade a Vercel Pro o dividir el proceso en dos steps |
 | Tokens de Instagram expiran en 60 días | Requiere refresh manual o job recurrente | Implementar job de refresh automático con QStash |
 | Chat IA sin persistencia | El historial se pierde al recargar | Guardar conversaciones en tabla `ai_conversations` |
