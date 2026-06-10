@@ -101,8 +101,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const [clientId, setClientId] = useState(initialPost?.clientId ?? activeWorkspaceId)
   const [description, setDescription] = useState(initialPost?.description ?? '')
   const [networks, setNetworks] = useState<Network[]>(initialPost?.networks ?? [])
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    initialPost?.mediaUrls?.[0] ?? null
+  const [mediaUrls, setMediaUrls] = useState<string[]>(
+    initialPost?.mediaUrls ?? []
   )
   const [activePreviewNetwork, setActivePreviewNetwork] = useState<Network | null>(
     initialPost?.networks?.[0] ?? null
@@ -142,7 +142,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     title: initialPost?.title ?? '',
     description: initialPost?.description ?? '',
     networks: initialPost?.networks ?? [],
-    imageUrl: initialPost?.mediaUrls?.[0] ?? null,
+    mediaUrls: initialPost?.mediaUrls ?? [],
     clientId: initialPost?.clientId ?? '',
     scheduleDate: initialPost?.scheduledAt ? toDateInput(new Date(initialPost.scheduledAt)) : '',
     scheduleTime: initialPost?.scheduledAt ? toTimeInput(initialPost.scheduledAt) : '',
@@ -155,12 +155,12 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       title !== s.title ||
       description !== s.description ||
       JSON.stringify(networks) !== JSON.stringify(s.networks) ||
-      imageUrl !== s.imageUrl ||
+      JSON.stringify(mediaUrls) !== JSON.stringify(s.mediaUrls) ||
       clientId !== s.clientId ||
       scheduleDate !== s.scheduleDate ||
       scheduleTime !== s.scheduleTime
     setHasUnsavedChanges(dirty)
-  }, [title, description, networks, imageUrl, clientId, scheduleDate, scheduleTime, setHasUnsavedChanges])
+  }, [title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, setHasUnsavedChanges])
 
   // Al desmontar el form, asegurarse de limpiar el flag global
   useEffect(() => {
@@ -186,7 +186,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       title: post?.title ?? title,
       description: post?.description ?? description,
       networks: post?.networks ?? networks,
-      imageUrl: post?.mediaUrls?.[0] ?? imageUrl,
+      mediaUrls: post?.mediaUrls ?? mediaUrls,
       clientId: post?.clientId ?? clientId,
       scheduleDate,
       scheduleTime,
@@ -228,7 +228,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const handleNetworkSelect = useCallback((network: Network) => {
     setActivePreviewNetwork(network)
   }, [])
-  const handleImageChange = useCallback((url: string | null) => setImageUrl(url), [])
+  const handleMediaUrlsChange = useCallback((urls: string[]) => setMediaUrls(urls), [])
   const handleDescriptionChange = useCallback((text: string) => setDescription(text), [])
 
   function buildScheduledAt(): string | null {
@@ -269,7 +269,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           title: effectiveTitle,
           description,
           networks,
-          mediaUrls: imageUrl ? [imageUrl] : [],
+          mediaUrls,
           hashtags: [],
           status: status === 'draft' ? 'draft' : status === 'scheduled' ? 'scheduled' : 'published',
           scheduledAt: status === 'draft' ? null : buildScheduledAt(),
@@ -284,7 +284,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           networks,
           status,
           scheduledAt: status === 'draft' ? null : buildScheduledAt(),
-          mediaUrls: imageUrl ? [imageUrl] : [],
+          mediaUrls,
           hashtags: [],
         })
         setSavedPost(result)
@@ -515,18 +515,18 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             clientId={clientId}
             description={description}
             networks={networks}
-            imageUrl={imageUrl}
+            mediaUrls={mediaUrls}
             onClientChange={handleClientChange}
             onDescriptionChange={handleDescriptionChange}
             onNetworksChange={handleNetworksChange}
-            onImageChange={handleImageChange}
+            onMediaUrlsChange={handleMediaUrlsChange}
           />
         </div>
 
         <div className="w-96 flex flex-col gap-4">
           <PostPreview
             description={description}
-            imageUrl={imageUrl}
+            mediaUrls={mediaUrls}
             client={client}
             networks={networks}
             activeNetwork={activePreviewNetwork}

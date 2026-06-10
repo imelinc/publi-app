@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Wand2, Hash, Clock, ImagePlus, X, Loader2 } from 'lucide-react'
+import { Wand2, Hash, Clock, ImagePlus, X, Loader2, Crop, Trash2 } from 'lucide-react'
 import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -9,30 +9,33 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { NETWORK_META } from '@/lib/networks'
 import { AiPanel } from './AiPanel'
+import { CropDialog } from './CropDialog'
 
 interface PostEditorProps {
   clientId: string
   description: string
   networks: Network[]
-  imageUrl: string | null
+  mediaUrls: string[]
   onClientChange: (id: string) => void
   onDescriptionChange: (text: string) => void
   onNetworksChange: (networks: Network[]) => void
-  onImageChange: (url: string | null) => void
+  onMediaUrlsChange: (urls: string[]) => void
 }
 
 export function PostEditor({
   clientId,
   description,
   networks,
-  imageUrl,
+  mediaUrls,
   onClientChange,
   onDescriptionChange,
   onNetworksChange,
-  onImageChange,
+  onMediaUrlsChange,
 }: PostEditorProps) {
   const [aiPanelType, setAiPanelType] = useState<'rewrite' | 'hashtags' | 'schedule' | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null)
+  const [cropImageIndex, setCropImageIndex] = useState<number>(-1)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
@@ -40,19 +43,74 @@ export function PostEditor({
   const uploadMedia = useAppStore((s) => s.uploadMedia)
   const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
 
-  async function handleFileSelected(file: File) {
+  async function handleFilesSelected(files: FileList) {
+    const remainingSlots = 10 - mediaUrls.length
+    if (remainingSlots <= 0) {
+      toast({
+        title: 'Límite de imágenes alcanzado',
+        description: 'Sólo podés subir hasta 10 imágenes para el carrusel.',
+      })
+      return
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots)
+    if (files.length > remainingSlots) {
+      toast({
+        title: 'Límite de imágenes excedido',
+        description: `Sólo se subirán las primeras ${remainingSlots} imágenes seleccionadas.`,
+      })
+    }
+
     setUploading(true)
+    const newUrls: string[] = []
+
+    for (const file of filesToUpload) {
+      try {
+        const optimizedFile = await compressImage(file)
+        const url = await uploadMedia(optimizedFile)
+        newUrls.push(url)
+      } catch (err) {
+        toast({
+          title: `No se pudo subir ${file.name}`,
+          description: err instanceof Error ? err.message : undefined,
+        })
+      }
+    }
+
+    if (newUrls.length > 0) {
+      onMediaUrlsChange([...mediaUrls, ...newUrls])
+    }
+    setUploading(false)
+  }
+
+  function removeImage(index: number) {
+    onMediaUrlsChange(mediaUrls.filter((_, idx) => idx !== index))
+  }
+
+  async function handleCropComplete(blob: Blob) {
+    if (cropImageIndex === -1) return
+    setUploading(true)
+    setCropImageUrl(null)
+
     try {
-      const optimizedFile = await compressImage(file)
-      const url = await uploadMedia(optimizedFile)
-      onImageChange(url)
+      const croppedFile = new File([blob], `cropped-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+      })
+      const newUrl = await uploadMedia(croppedFile)
+      
+      const updated = [...mediaUrls]
+      updated[cropImageIndex] = newUrl
+      onMediaUrlsChange(updated)
+
+      toast({ title: 'Imagen encuadrada con éxito' })
     } catch (err) {
       toast({
-        title: 'No se pudo subir la imagen',
+        title: 'Error al subir la imagen recortada',
         description: err instanceof Error ? err.message : undefined,
       })
     } finally {
       setUploading(false)
+      setCropImageIndex(-1)
     }
   }
 
@@ -215,34 +273,89 @@ export function PostEditor({
       </div>
 
       <div>
-        <Label className="text-sm font-medium text-gray-700 mb-2 block">Multimedia</Label>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-sm font-medium text-gray-700">Multimedia ({mediaUrls.length}/10)</Label>
+          {mediaUrls.length > 1 && (
+            <span className="text-[10px] bg-[#cceef5] text-[#0095b6] px-2 py-0.5 rounded-full font-semibold">
+              Formato Carrusel
+            </span>
+          )}
+        </div>
+        
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) handleFileSelected(f)
-            // Reset para permitir re-elegir el mismo archivo
+            const files = e.target.files
+            if (files && files.length > 0) handleFilesSelected(files)
             e.target.value = ''
           }}
         />
-        {imageUrl ? (
-          <div className="relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt="Preview"
-              className="w-full h-48 object-cover rounded-xl"
-            />
-            <button
-              onClick={() => onImageChange(null)}
-              className="absolute top-2 right-2 bg-black/50 rounded-full p-1 text-white hover:bg-black/70 transition-colors"
-              aria-label="Quitar imagen"
-            >
-              <X className="size-4" />
-            </button>
+
+        {mediaUrls.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {mediaUrls.map((url, index) => (
+              <div
+                key={url + '-' + index}
+                className="relative group h-28 w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+
+                {/* Index badge */}
+                <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-xs">
+                  {index + 1}
+                </span>
+
+                {/* Hover overlay with action buttons */}
+                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCropImageUrl(url)
+                      setCropImageIndex(index)
+                    }}
+                    className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-lg hover:scale-105 transition-all"
+                    title="Encuadrar imagen"
+                  >
+                    <Crop className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="bg-red-500/90 hover:bg-red-500 text-white p-2 rounded-lg hover:scale-105 transition-all"
+                    title="Eliminar imagen"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {mediaUrls.length < 10 && (
+              <button
+                type="button"
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex h-28 flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl hover:border-[#0095b6] hover:bg-[#cceef5]/10 transition-colors disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 className="size-5 text-[#0095b6] animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus className="size-6 text-gray-400" />
+                    <span className="text-[10px] text-gray-500 mt-1 font-medium">Agregar más</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         ) : (
           <div
@@ -255,8 +368,8 @@ export function PostEditor({
               e.preventDefault()
               e.stopPropagation()
               if (uploading) return
-              const f = e.dataTransfer.files?.[0]
-              if (f) handleFileSelected(f)
+              const files = e.dataTransfer.files
+              if (files && files.length > 0) handleFilesSelected(files)
             }}
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
               uploading
@@ -267,31 +380,42 @@ export function PostEditor({
             {uploading ? (
               <>
                 <Loader2 className="size-8 mx-auto text-[#0095b6] animate-spin" />
-                <p className="text-sm text-gray-500 mt-2">Subiendo imagen…</p>
+                <p className="text-sm text-gray-500 mt-2">Subiendo imágenes…</p>
               </>
             ) : (
               <>
                 <ImagePlus className="size-8 mx-auto text-gray-300" />
                 <p className="text-sm text-gray-400 mt-2">
-                  Arrastrá una imagen o hacé click para seleccionar
+                  Arrastrá imágenes o hacé click para seleccionar
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  JPG, PNG, WEBP o GIF · máximo 8 MB
+                  Subí hasta 10 fotos · JPG, PNG, WEBP o GIF · máx 8 MB
                 </p>
               </>
             )}
           </div>
         )}
       </div>
+
+      {/* Crop Dialog */}
+      {cropImageUrl && (
+        <CropDialog
+          isOpen={true}
+          imageUrl={cropImageUrl}
+          onClose={() => {
+            setCropImageUrl(null)
+            setCropImageIndex(-1)
+          }}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   )
 }
 
 async function compressImage(file: File): Promise<File> {
-  // Si no es una imagen, no hacer nada
   if (!file.type.startsWith('image/')) return file
 
-  // Si la imagen ya es chica (< 1MB) y es JPEG o PNG, no hace falta comprimir
   if (file.size < 1 * 1024 * 1024 && (file.type === 'image/jpeg' || file.type === 'image/png')) {
     return file
   }
@@ -304,7 +428,7 @@ async function compressImage(file: File): Promise<File> {
         const canvas = document.createElement('canvas')
         let width = img.width
         let height = img.height
-        const maxDim = 1440 // Límite de Instagram para no re-escalar agresivamente
+        const maxDim = 1440
 
         if (width > maxDim || height > maxDim) {
           if (width > height) {
@@ -332,7 +456,6 @@ async function compressImage(file: File): Promise<File> {
               resolve(file)
               return
             }
-            // Renombrar la extensión a .jpg ya que exportamos como image/jpeg
             const name = file.name.replace(/\.[^/.]+$/, '') + '.jpg'
             const compressedFile = new File([blob], name, {
               type: 'image/jpeg',
@@ -341,7 +464,7 @@ async function compressImage(file: File): Promise<File> {
             resolve(compressedFile)
           },
           'image/jpeg',
-          0.85 // Calidad
+          0.85
         )
       }
       img.onerror = () => resolve(file)
