@@ -43,7 +43,7 @@ export async function createPublishNotification(
   }
 
   try {
-    await supabase.from('notifications').insert({
+    const { error } = await supabase.from('notifications').insert({
       user_id: userId,
       type,
       title,
@@ -51,9 +51,12 @@ export async function createPublishNotification(
       post_id: postId,
       client_id: clientId,
     })
+    if (error) {
+      console.error('[notifications] Error al crear notificación en base de datos:', error)
+    }
   } catch (err) {
     // No propagamos el error para no afectar el flujo de publicación.
-    console.error('[notifications] Error al crear notificación:', err)
+    console.error('[notifications] Error al crear notificación (ex):', err)
   }
 }
 

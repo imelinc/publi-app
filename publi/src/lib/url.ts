@@ -12,8 +12,8 @@ import { NextRequest } from 'next/server'
  * como para indicarle a QStash a qué URL debe hacer el callback al publicar.
  */
 export function resolveBaseUrl(request: NextRequest): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
-
+  // 1. Cabeceras de la request (origin o host) - esto asegura que si se accede
+  //    desde un Vercel preview branch o localhost, use la URL correspondiente.
   const origin = request.headers.get('origin')
   if (origin) return origin
 
@@ -24,6 +24,10 @@ export function resolveBaseUrl(request: NextRequest): string {
     return `${proto}://${host}`
   }
 
+  // 2. NEXT_PUBLIC_APP_URL - como fallback si no hay cabeceras.
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
+
+  // 3. VERCEL_URL - fallback serverless sin headers
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
 
   return 'http://localhost:3000'
