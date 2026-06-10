@@ -80,6 +80,32 @@ function toTimeInput(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+const FUNNY_MESSAGES = [
+  "Iniciando motores de propulsión de posts...",
+  "Estableciendo conexión segura con Meta...",
+  "Llamando a las oficinas de Meta en Menlo Park...",
+  "Consultando con Mark Zuckerberg (dice que le gusta tu post)...",
+  "Verificando que no estés publicando fotos de gatitos sin autorización...",
+  "Alineando píxeles en el feed...",
+  "Subiendo imágenes a la nube intergaláctica...",
+  "Sobornando a los algoritmos de Instagram para darte más alcance...",
+  "Configurando el contenedor de carrusel (esto requiere café)...",
+  "Casi listo, puliendo los últimos detalles..."
+]
+
+const FUN_FACTS = [
+  "¿Sabías que la primera foto en Instagram se subió el 16 de julio de 2010 y era un perro?",
+  "¿Sabías que el hashtag nació en Twitter en 2007 gracias a Chris Messina?",
+  "¿Sabías que Instagram tiene más de 2.000 millones de usuarios activos al mes?",
+  "¿Sabías que el mejor horario general para publicar suele ser entre las 6 PM y 9 PM?",
+  "¿Sabías que las publicaciones con al menos un hashtag reciben un 12.6% más de interacción?",
+  "¿Sabías que el primer correo electrónico de la historia se envió en 1971 por Ray Tomlinson?",
+  "¿Sabías que la pizza es la comida más fotografiada en Instagram a nivel mundial?",
+  "¿Sabías que las publicaciones en carrusel tienen el mayor ratio de engagement promedio en Instagram?",
+  "¿Sabías que el 80% de los usuarios de Instagram siguen al menos a una cuenta de empresa?",
+  "¿Sabías que la fuente tipográfica de Instagram se llama Billabong?"
+]
+
 interface PostFormProps {
   mode: 'create' | 'edit'
   initialPost?: Post | null
@@ -127,6 +153,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const [savedPost, setSavedPost] = useState<Post | null>(initialPost ?? null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [funnyMsgIndex, setFunnyMsgIndex] = useState(0)
+  const [factIndex, setFactIndex] = useState(0)
 
   // Dialog unificado: pide título + confirma según la acción
   type DialogAction = 'draft' | 'publish' | 'schedule' | 'approval'
@@ -148,6 +177,27 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     scheduleTime: initialPost?.scheduledAt ? toTimeInput(initialPost.scheduledAt) : '',
   })
 
+  // Al iniciar la publicación, inicializamos los índices de forma aleatoria y rotamos mensajes
+  useEffect(() => {
+    if (publishing) {
+      setFunnyMsgIndex(Math.floor(Math.random() * FUNNY_MESSAGES.length))
+      setFactIndex(Math.floor(Math.random() * FUN_FACTS.length))
+
+      const msgInterval = setInterval(() => {
+        setFunnyMsgIndex((prev) => (prev + 1) % FUNNY_MESSAGES.length)
+      }, 4000)
+
+      const factInterval = setInterval(() => {
+        setFactIndex((prev) => (prev + 1) % FUN_FACTS.length)
+      }, 7000)
+
+      return () => {
+        clearInterval(msgInterval)
+        clearInterval(factInterval)
+      }
+    }
+  }, [publishing])
+
   // Detecta cambios y los reporta al store (para que el Sidebar consulte)
   useEffect(() => {
     const s = cleanSnapshotRef.current
@@ -167,18 +217,18 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     return () => setHasUnsavedChanges(false)
   }, [setHasUnsavedChanges])
 
-  // beforeunload: prevenir cierre/refresh con cambios sin guardar
+  // beforeunload: prevenir cierre/refresh con cambios sin guardar o publicando
   useEffect(() => {
     function handler(e: BeforeUnloadEvent) {
       // Re-leemos el store en cada call para no quedar con stale value
-      if (useAppStore.getState().hasUnsavedChanges) {
+      if (useAppStore.getState().hasUnsavedChanges || publishing) {
         e.preventDefault()
         e.returnValue = '' // Chrome requiere setear returnValue
       }
     }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [])
+  }, [publishing])
 
   /** Refresca el snapshot "limpio" después de un save exitoso */
   function markClean(post?: Post) {
@@ -343,22 +393,27 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         // Guardamos como 'draft' primero; publishPostNow se encarga de actualizar
         // el status a 'published' o 'failed' según el resultado real de Instagram.
         const post = await saveOrUpdate('draft', finalTitle)
-        const result = await publishPostNow(post.id)
-        if (result.status === 'failed') {
-          const igErr = result.results.find((r) => r.status === 'failed')?.error
-          toast({
-            title: 'No se pudo publicar',
-            description: igErr ?? 'Revisá la cuenta conectada o la imagen.',
-          })
-        } else {
-          const partial = result.results.some((r) => r.status === 'failed')
-          toast({
-            title: partial
-              ? 'Publicado, pero alguna red falló'
-              : '¡Publicación publicada!',
-          })
+        setPublishing(true)
+        try {
+          const result = await publishPostNow(post.id)
+          if (result.status === 'failed') {
+            const igErr = result.results.find((r) => r.status === 'failed')?.error
+            toast({
+              title: 'No se pudo publicar',
+              description: igErr ?? 'Revisá la cuenta conectada o la imagen.',
+            })
+          } else {
+            const partial = result.results.some((r) => r.status === 'failed')
+            toast({
+              title: partial
+                ? 'Publicado, pero alguna red falló'
+                : '¡Publicación publicada!',
+            })
+          }
+          router.push('/calendario')
+        } finally {
+          setPublishing(false)
         }
-        router.push('/calendario')
       } else if (action === 'schedule') {
         await saveOrUpdate('scheduled', finalTitle)
         toast({ title: '¡Publicación programada!' })
@@ -883,6 +938,44 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             El post quedó en estado <strong>pendiente de aprobación</strong>.
             Una vez que tu cliente responda, verás el resultado acá mismo o en el calendario.
           </p>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de carga al publicar */}
+      <Dialog open={publishing} onOpenChange={() => {}}>
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-md bg-white border border-gray-100 p-6 rounded-2xl shadow-xl overflow-hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <div className="flex flex-col items-center text-center py-4 space-y-6">
+            {/* Spinner animado y pulido */}
+            <div className="relative flex items-center justify-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-100 border-t-[#0095b6]"></div>
+              <Sparkles className="absolute size-6 text-[#0095b6] animate-pulse" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900">Estamos publicando...</h3>
+              <p className="text-sm text-gray-500 font-medium animate-pulse min-h-[40px] px-2 transition-all duration-300 flex items-center justify-center">
+                {FUNNY_MESSAGES[funnyMsgIndex]}
+              </p>
+            </div>
+
+            {/* Separador sutil */}
+            <div className="w-full border-t border-gray-100 my-2"></div>
+
+            {/* Tarjeta de dato curioso */}
+            <div className="w-full bg-[#f5f0e8]/50 rounded-xl p-4 border border-[#cceef5]/40 text-left space-y-1.5 transition-all duration-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#0095b6] flex items-center gap-1">
+                💡 Dato curioso
+              </span>
+              <p className="text-xs text-gray-600 leading-relaxed italic min-h-[36px]">
+                {FUN_FACTS[factIndex]}
+              </p>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
