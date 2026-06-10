@@ -9,6 +9,7 @@ import type {
   EventType,
   SocialAccount,
   UserProfile,
+  Notification,
 } from '@/types'
 
 export type { UserProfile }
@@ -97,6 +98,14 @@ interface AppState {
     isAllDay?: boolean
   }) => Promise<void>
   deleteEvent: (id: string) => Promise<void>
+
+  // ─── Notifications ──────────────────────────────────────────────────────────
+  notifications: Notification[]
+  notificationsLoading: boolean
+  unreadCount: number
+  fetchNotifications: () => Promise<void>
+  markAllRead: () => Promise<void>
+  deleteNotification: (id: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -395,6 +404,49 @@ export const useAppStore = create<AppState>((set) => ({
       throw new Error(json.error || 'Error al eliminar evento')
     }
     set((state) => ({ events: state.events.filter((e) => e.id !== id) }))
+  },
+
+  // ─── Notifications ──────────────────────────────────────────────────────────
+
+  notifications: [],
+  notificationsLoading: false,
+  unreadCount: 0,
+
+  fetchNotifications: async () => {
+    set({ notificationsLoading: true })
+    try {
+      const res = await fetch('/api/notifications')
+      if (!res.ok) return
+      const json = await res.json()
+      const notifs = (json.data ?? []) as Notification[]
+      set({
+        notifications: notifs,
+        unreadCount: notifs.filter((n) => !n.read).length,
+      })
+    } finally {
+      set({ notificationsLoading: false })
+    }
+  },
+
+  markAllRead: async () => {
+    // Optimistic update.
+    set((state) => ({
+      notifications: state.notifications.map((n) => ({ ...n, read: true })),
+      unreadCount: 0,
+    }))
+    await fetch('/api/notifications', { method: 'PATCH' }).catch(() => {})
+  },
+
+  deleteNotification: async (id) => {
+    // Optimistic update.
+    set((state) => {
+      const updated = state.notifications.filter((n) => n.id !== id)
+      return {
+        notifications: updated,
+        unreadCount: updated.filter((n) => !n.read).length,
+      }
+    })
+    await fetch(`/api/notifications/${id}`, { method: 'DELETE' }).catch(() => {})
   },
 }))
 
