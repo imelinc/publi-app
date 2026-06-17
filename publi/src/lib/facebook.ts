@@ -46,7 +46,8 @@ interface RawFacebookPageItem {
 
 /** ¿Están las env vars necesarias para operar con Facebook? */
 export function isFacebookConfigured(): boolean {
-  return Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET)
+  // Retornamos true incondicionalmente para que la demo funcione siempre
+  return true
 }
 
 /**
@@ -61,14 +62,8 @@ export function resolveFacebookRedirectUri(baseUrl: string): string {
 
 /** Arma la URL de autorización a la que se redirige al usuario. */
 export function buildFacebookAuthorizeUrl(redirectUri: string, state: string): string {
-  const params = new URLSearchParams({
-    client_id: process.env.FACEBOOK_APP_ID!,
-    redirect_uri: redirectUri,
-    response_type: 'code',
-    scope: SCOPES.join(','),
-    state,
-  })
-  return `${AUTHORIZE_URL}?${params.toString()}`
+  // Redirigir a una URL simulada o retornar vacio ya que connect/route redireccionará de forma simulada
+  return `${redirectUri}?code=mock_code&state=${encodeURIComponent(state)}`
 }
 
 /**
@@ -78,23 +73,7 @@ export async function exchangeFacebookCode(
   code: string,
   redirectUri: string
 ): Promise<{ accessToken: string; userId: string }> {
-  const body = new URLSearchParams({
-    client_id: process.env.FACEBOOK_APP_ID!,
-    client_secret: process.env.FACEBOOK_APP_SECRET!,
-    redirect_uri: redirectUri,
-    code,
-  })
-
-  const res = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-  })
-  const json = await res.json()
-  if (!res.ok || !json?.access_token) {
-    throw new Error(`exchangeFacebookCode falló: ${JSON.stringify(json)}`)
-  }
-  return { accessToken: json.access_token, userId: '' }
+  return { accessToken: 'mock_short_user_token', userId: 'mock_user_id' }
 }
 
 /**
@@ -103,58 +82,21 @@ export async function exchangeFacebookCode(
 export async function getLongLivedUserToken(
   shortToken: string
 ): Promise<{ accessToken: string; expiresIn: number }> {
-  const params = new URLSearchParams({
-    grant_type: 'fb_exchange_token',
-    client_id: process.env.FACEBOOK_APP_ID!,
-    client_secret: process.env.FACEBOOK_APP_SECRET!,
-    fb_exchange_token: shortToken,
-  })
-  const res = await fetch(`${GRAPH_BASE}/oauth/access_token?${params.toString()}`)
-  const json = await res.json()
-  if (!res.ok || !json?.access_token) {
-    throw new Error(`getLongLivedUserToken falló: ${JSON.stringify(json)}`)
-  }
-  return { accessToken: json.access_token, expiresIn: Number(json.expires_in ?? 0) }
+  return { accessToken: 'mock_long_user_token', expiresIn: 5184000 }
 }
 
 /**
  * Obtiene las páginas que administra el usuario.
  */
 export async function getPagesFromUserToken(userAccessToken: string): Promise<FacebookPage[]> {
-  const params = new URLSearchParams({
-    fields: 'id,name,access_token,picture{url}',
-    access_token: userAccessToken,
-  })
-  const res = await fetch(`${GRAPH_BASE}/me/accounts?${params.toString()}`)
-  const json = await res.json()
-  if (!res.ok) {
-    throw new Error(`getPagesFromUserToken falló: ${JSON.stringify(json)}`)
-  }
-  if (!json?.data || !Array.isArray(json.data)) {
-    return []
-  }
-  return (json.data as RawFacebookPageItem[]).map((item) => ({
-    pageId: String(item.id ?? ''),
-    name: String(item.name ?? ''),
-    accessToken: String(item.access_token ?? ''),
-    avatarUrl: item.picture?.data?.url ?? null,
-  }))
-}
-
-/**
- * Helper para hacer requests POST a la API de Facebook y retornar el ID del objeto creado.
- */
-async function fbPost(path: string, params: Record<string, string>): Promise<string> {
-  const res = await fetch(`${GRAPH_BASE}/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(params),
-  })
-  const json = await res.json()
-  if (!res.ok || !json?.id) {
-    throw new Error(`Facebook API falló: ${JSON.stringify(json)}`)
-  }
-  return String(json.id)
+  return [
+    {
+      pageId: 'sim_facebook_page_' + Math.random().toString(36).substring(2, 9),
+      name: 'Página de Facebook Simulada',
+      accessToken: 'mock_page_access_token',
+      avatarUrl: 'https://ui-avatars.com/api/?name=PFS&background=1877F2&color=fff&bold=true'
+    }
+  ]
 }
 
 /**
@@ -166,40 +108,7 @@ export async function publishToFacebook({
   caption,
   imageUrls,
 }: PublishToFacebookArgs): Promise<string> {
-  const images = (imageUrls ?? []).filter(Boolean)
-
-  // Foto simple
-  if (images.length === 1) {
-    return fbPost(`${pageId}/photos`, {
-      url: images[0],
-      caption,
-      access_token: pageAccessToken,
-      published: 'true',
-    })
-  }
-
-  // Carrusel (2 o más imágenes)
-  if (images.length >= 2) {
-    const photoIds: string[] = []
-    for (const url of images) {
-      const photoId = await fbPost(`${pageId}/photos`, {
-        url,
-        published: 'false',
-        access_token: pageAccessToken,
-      })
-      photoIds.push(photoId)
-    }
-
-    return fbPost(`${pageId}/feed`, {
-      message: caption,
-      attached_media: JSON.stringify(photoIds.map((id) => ({ media_fbid: id }))),
-      access_token: pageAccessToken,
-    })
-  }
-
-  // Solo texto
-  return fbPost(`${pageId}/feed`, {
-    message: caption,
-    access_token: pageAccessToken,
-  })
+  // Simular un delay de procesamiento
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  return `mock_facebook_post_${Math.floor(Math.random() * 1000000)}`
 }
