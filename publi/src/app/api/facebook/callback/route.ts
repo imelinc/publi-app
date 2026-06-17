@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         external_user_id: pageToConnect.pageId,
         username: pageToConnect.name,
         avatar_url: pageToConnect.avatarUrl,
-        is_simulated: false,
+        is_simulated: true,                       // Conexión simulada
         access_token: pageToConnect.accessToken,  // PAGE access token
         token_expires_at: null,                   // los page tokens no expiran
       },
