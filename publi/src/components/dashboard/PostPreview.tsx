@@ -23,12 +23,25 @@ import {
 import type { Network, Client } from '@/types'
 import { NETWORK_META } from '@/lib/networks'
 
+function isVideoUrl(url: string): boolean {
+  if (!url) return false
+  const path = url.split('?')[0].toLowerCase()
+  return (
+    path.endsWith('.mp4') ||
+    path.endsWith('.mov') ||
+    path.endsWith('.avi') ||
+    path.endsWith('.webm') ||
+    path.endsWith('.m4v')
+  )
+}
+
 interface PostPreviewProps {
   description: string
   mediaUrls: string[]
   client: Client | null
   networks: Network[]
   activeNetwork: Network | null
+  contentFormat?: 'feed' | 'story'
   onNetworkSelect: (network: Network) => void
 }
 
@@ -70,14 +83,28 @@ function PreviewImageSlider({
     )
   }
 
+  const currentUrl = mediaUrls[currentIndex]
+  const isVideo = isVideoUrl(currentUrl)
+
   return (
     <div className="relative w-full h-full overflow-hidden group/slider">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={mediaUrls[currentIndex]}
-        alt={`Post preview ${currentIndex + 1}`}
-        className={className}
-      />
+      {isVideo ? (
+        <video
+          src={currentUrl}
+          className={className}
+          muted
+          playsInline
+          autoPlay
+          loop
+        />
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={currentUrl}
+          alt={`Post preview ${currentIndex + 1}`}
+          className={className}
+        />
+      )}
       {mediaUrls.length > 1 && (
         <>
           {/* Navigation Arrows */}
@@ -121,6 +148,7 @@ export function PostPreview({
   client,
   networks,
   activeNetwork,
+  contentFormat = 'feed',
   onNetworkSelect,
 }: PostPreviewProps) {
   const clientName = client?.name ?? 'Tu cuenta'
@@ -162,37 +190,116 @@ export function PostPreview({
 
       {/* ────────────────── INSTAGRAM PREVIEW ────────────────── */}
       {activeNetwork === 'instagram' && networks.includes('instagram') && (
-        <div className="w-72 mx-auto border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-          <div className="flex items-center gap-2 p-3 border-b border-gray-50">
-            <div
-              className="size-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-              style={{ backgroundColor: clientColor }}
-            >
-              {clientInitials}
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-900">{clientName}</p>
-              <p className="text-[10px] text-gray-400">· Ahora</p>
-            </div>
-            <MoreHorizontal className="ml-auto text-gray-400 size-4 cursor-pointer" />
-          </div>
-          
-          <div className="w-full h-64 bg-gray-50">
-            <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover" />
-          </div>
+        contentFormat === 'story' ? (
+          /* INSTAGRAM STORY PREVIEW */
+          <div className="w-64 mx-auto border-2 border-gray-100 rounded-[1.5rem] overflow-hidden bg-black text-white relative aspect-[9/16] shadow-md">
+            {/* Media background */}
+            {mediaUrls.length > 0 ? (
+              <div className="absolute inset-0 w-full h-full">
+                {(() => {
+                  const url = mediaUrls[0]
+                  const isVideo = isVideoUrl(url)
+                  return isVideo ? (
+                    <video
+                      src={url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      autoPlay
+                      loop
+                    />
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={url}
+                      alt="Story preview"
+                      className="w-full h-full object-cover"
+                    />
+                  )
+                })()}
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                <span className="text-[10px] text-white/50 uppercase tracking-widest font-semibold mb-2">Vista previa</span>
+                <p className="text-xs text-white/80 px-8 max-w-[180px] mx-auto">Sube una imagen o video para ver tu Story</p>
+              </div>
+            )}
 
-          <div className="flex gap-4 p-3 text-gray-700">
-            <Heart className="size-5 hover:text-red-500 cursor-pointer transition" />
-            <MessageCircle className="size-5 hover:text-gray-900 cursor-pointer transition" />
-            <Send className="size-5 hover:text-gray-900 cursor-pointer transition" />
+            {/* Top Overlay UI (Progress bar and Avatar) */}
+            <div className="absolute top-3 inset-x-3 z-10 flex flex-col gap-2">
+              {/* Story Progress Indicator */}
+              <div className="w-full h-0.5 bg-white/30 rounded-full overflow-hidden flex gap-1">
+                <div className="h-full bg-white/95 w-full rounded-full" />
+              </div>
+              
+              {/* Profile Details */}
+              <div className="flex items-center gap-2">
+                <div
+                  className="size-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white ring-1 ring-white/50 flex-shrink-0"
+                  style={{ backgroundColor: clientColor }}
+                >
+                  {clientInitials}
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-semibold text-white drop-shadow-xs leading-none">{clientName}</p>
+                  <p className="text-[8px] text-white/70 drop-shadow-xs mt-0.5">Ahora</p>
+                </div>
+                <MoreHorizontal className="ml-auto text-white size-3.5 cursor-pointer drop-shadow-xs" />
+              </div>
+            </div>
+
+            {/* Story Text Sticker Overlay (If user added a description, show it styled as an IG text sticker!) */}
+            {description && (
+              <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 z-10 text-center bg-black/60 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/10 max-h-[40%] overflow-y-auto">
+                <p className="text-xs text-white font-medium leading-relaxed break-words whitespace-pre-wrap">
+                  {description}
+                </p>
+              </div>
+            )}
+
+            {/* Bottom Input Area */}
+            <div className="absolute bottom-4 inset-x-3 z-10 flex items-center gap-2.5 bg-transparent">
+              <div className="flex-1 border border-white/40 rounded-full py-1.5 px-3 bg-black/20 backdrop-blur-xs flex items-center text-left">
+                <span className="text-[10px] text-white/70">Enviar mensaje...</span>
+              </div>
+              <Heart className="size-4.5 text-white hover:text-red-500 cursor-pointer drop-shadow-xs transition shrink-0" />
+              <Send className="size-4.5 text-white hover:text-sky-400 cursor-pointer drop-shadow-xs transition shrink-0" />
+            </div>
           </div>
-          <div className="px-3 pb-3">
-            <p className="text-xs text-gray-900 leading-relaxed break-words whitespace-pre-wrap">
-              <span className="font-semibold mr-1.5">{clientUsername}</span>
-              {description || 'Escribí el copy de tu publicación...'}
-            </p>
+        ) : (
+          /* STANDARD INSTAGRAM FEED POST PREVIEW */
+          <div className="w-72 mx-auto border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+            <div className="flex items-center gap-2 p-3 border-b border-gray-50">
+              <div
+                className="size-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                style={{ backgroundColor: clientColor }}
+              >
+                {clientInitials}
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-900">{clientName}</p>
+                <p className="text-[10px] text-gray-400">· Ahora</p>
+              </div>
+              <MoreHorizontal className="ml-auto text-gray-400 size-4 cursor-pointer" />
+            </div>
+            
+            <div className="w-full h-64 bg-gray-50">
+              <PreviewImageSlider mediaUrls={mediaUrls} className="w-full h-full object-cover" />
+            </div>
+
+            <div className="flex gap-4 p-3 text-gray-700">
+              <Heart className="size-5 hover:text-red-500 cursor-pointer transition" />
+              <MessageCircle className="size-5 hover:text-gray-900 cursor-pointer transition" />
+              <Send className="size-5 hover:text-gray-900 cursor-pointer transition" />
+            </div>
+            <div className="px-3 pb-3">
+              <p className="text-xs text-gray-900 leading-relaxed break-words whitespace-pre-wrap">
+                <span className="font-semibold mr-1.5">{clientUsername}</span>
+                {description || 'Escribí el copy de tu publicación...'}
+              </p>
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {/* ────────────────── FACEBOOK PREVIEW ────────────────── */}
