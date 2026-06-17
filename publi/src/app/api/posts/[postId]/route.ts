@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import type { Network, PostStatus } from '@/types'
 import { resolveBaseUrl } from '@/lib/url'
 import { syncQStashForUpdate, cancelPostPublish } from '@/lib/qstash'
+import { getDailyUsage } from '@/lib/instagram-rate-limit'
 
 interface RouteParams {
   params: Promise<{ postId: string }>
@@ -23,6 +24,7 @@ function mapPost(
     title: (p.title as string) ?? '',
     description: (p.description as string) ?? '',
     networks: (p.networks as Network[]) ?? [],
+    contentFormat: (p.content_format as 'feed' | 'story') ?? 'feed',
     status: (p.status as PostStatus) ?? 'draft',
     scheduledAt: (p.scheduled_at as string) ?? null,
     publishedAt: (p.published_at as string) ?? null,
@@ -87,6 +89,7 @@ interface UpdatePostBody {
   networks?: Network[]
   status?: 'draft' | 'scheduled' | 'published'
   scheduledAt?: string | null
+  contentFormat?: 'feed' | 'story'
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -163,9 +166,57 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (body.networks !== undefined) updates.networks = body.networks
   if (body.status !== undefined) updates.status = body.status
   if (body.scheduledAt !== undefined) updates.scheduled_at = body.scheduledAt
+  if (body.contentFormat !== undefined) updates.content_format = body.contentFormat
   // Si pasa a 'published' y no se pasó scheduled_at, marcar como publicado ahora
   if (body.status === 'published' && body.scheduledAt === undefined && !post.scheduled_at) {
     updates.scheduled_at = new Date().toISOString()
+  }
+
+  // Validar restricciones de Stories (máximo 1 multimedia)
+  const finalContentFormat = body.contentFormat ?? post.content_format ?? 'feed'
+  const finalMediaUrls = body.mediaUrls ?? post.media_urls ?? []
+  if (finalContentFormat === 'story' && finalMediaUrls.length > 1) {
+    return Response.json(
+      { error: 'Las Stories de Instagram solo permiten una imagen o un video.' },
+      { status: 400 }
+    )
+  }
+
+  // Validación de límite diario de Instagram (25 por 24hs por cliente)
+  const oldStatus = post.status
+  const newStatus = body.status ?? post.status
+  const oldScheduledAt = post.scheduled_at
+  const newScheduledAt = body.scheduledAt !== undefined ? body.scheduledAt : post.scheduled_at
+  const targetsInstagram = (body.networks ?? post.networks ?? []).includes('instagram')
+
+  const isTransitioningToQuota =
+    (newStatus === 'scheduled' || newStatus === 'published') &&
+    oldStatus !== 'scheduled' &&
+    oldStatus !== 'published'
+
+  const isRescheduling =
+    (newStatus === 'scheduled' || newStatus === 'published') &&
+    newScheduledAt !== oldScheduledAt
+
+  if (targetsInstagram && (isTransitioningToQuota || isRescheduling)) {
+    try {
+      const usage = await getDailyUsage(post.client_id, supabase)
+      if (usage.remaining <= 0) {
+        return Response.json(
+          {
+            error: `Límite diario de publicaciones de Instagram alcanzado (25 cada 24hs). Próximo cupo disponible: ${usage.nextSlotAvailableAt}`,
+            nextSlotAvailableAt: usage.nextSlotAvailableAt,
+          },
+          { status: 403 }
+        )
+      }
+    } catch (err) {
+      console.error('[PATCH /api/posts/:postId] Error al verificar límite diario:', err)
+      return Response.json(
+        { error: 'No se pudo verificar el límite diario de publicaciones' },
+        { status: 500 }
+      )
+    }
   }
 
   // ─── Sincronizar la cola de QStash según la transición ──────────────────────
@@ -174,11 +225,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   // encolan dos jobs → posible publicación duplicada. Futuro: SELECT FOR UPDATE
   // o optimistic lock comparando updated_at antes de aplicar el sync de QStash.
   // Estado/fecha resultantes tras aplicar el body.
-  const newStatus = (body.status ?? post.status) as string
-  const newScheduledAt =
-    body.scheduledAt !== undefined
-      ? body.scheduledAt
-      : (post.scheduled_at as string | null)
   try {
     const messageId = await syncQStashForUpdate(
       postId,

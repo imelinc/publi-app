@@ -9,6 +9,7 @@ import type {
 import { simulateEngagement } from '@/lib/simulation'
 import { resolveBaseUrl } from '@/lib/url'
 import { shouldEnqueueNow, enqueuePostPublish } from '@/lib/qstash'
+import { getDailyUsage } from '@/lib/instagram-rate-limit'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -126,6 +127,7 @@ export async function GET() {
       networks: (p.networks as Network[]) ?? [],
       hashtags: (p.hashtags as string[]) ?? [],
       mediaUrls: (p.media_urls as string[]) ?? [],
+      contentFormat: (p.content_format as 'feed' | 'story') ?? 'feed',
       status: (p.status as PostStatus) ?? 'draft',
       scheduledAt: (p.scheduled_at as string) ?? null,
       approvalToken: (p.approval_token as string) ?? null,
@@ -151,6 +153,7 @@ interface CreatePostBody {
   scheduledAt: string | null
   mediaUrls: string[]
   hashtags: string[]
+  contentFormat?: 'feed' | 'story'
 }
 
 export async function POST(request: NextRequest) {
@@ -175,6 +178,40 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
   }
 
+  // Validar restricciones de Stories (máximo 1 multimedia)
+  if (body.contentFormat === 'story' && body.mediaUrls && body.mediaUrls.length > 1) {
+    return Response.json(
+      { error: 'Las Stories de Instagram solo permiten una imagen o un video.' },
+      { status: 400 }
+    )
+  }
+
+  // Validación de límite diario de Instagram (25 por 24hs por cliente)
+  if (
+    body.networks &&
+    body.networks.includes('instagram') &&
+    (body.status === 'scheduled' || body.status === 'published')
+  ) {
+    try {
+      const usage = await getDailyUsage(body.clientId, supabase)
+      if (usage.remaining <= 0) {
+        return Response.json(
+          {
+            error: `Límite diario de publicaciones de Instagram alcanzado (25 cada 24hs). Próximo cupo disponible: ${usage.nextSlotAvailableAt}`,
+            nextSlotAvailableAt: usage.nextSlotAvailableAt,
+          },
+          { status: 403 }
+        )
+      }
+    } catch (err) {
+      console.error('[POST /api/posts] Error al validar límites de rate limit:', err)
+      return Response.json(
+        { error: 'No se pudo verificar el límite diario de publicaciones' },
+        { status: 500 }
+      )
+    }
+  }
+
   // Insertar el post base
   const { data: post, error: insertErr } = await supabase
     .from('posts')
@@ -188,6 +225,7 @@ export async function POST(request: NextRequest) {
       scheduled_at: body.scheduledAt,
       media_urls: body.mediaUrls,
       hashtags: body.hashtags,
+      content_format: body.contentFormat || 'feed',
     })
     .select()
     .single()
@@ -281,6 +319,7 @@ export async function POST(request: NextRequest) {
     networks: post.networks ?? [],
     hashtags: post.hashtags ?? [],
     mediaUrls: post.media_urls ?? [],
+    contentFormat: post.content_format ?? 'feed',
     status: post.status ?? 'draft',
     scheduledAt: post.scheduled_at ?? null,
     approvalToken: post.approval_token ?? null,
