@@ -86,6 +86,7 @@ export interface Post {
   networks: Network[]
   hashtags: string[]
   mediaUrls: string[]
+  contentFormat: 'feed' | 'story'
   status: PostStatus
   scheduledAt: string | null
   // Aprobación
