@@ -146,9 +146,10 @@ export interface PublishToInstagramArgs {
   /** IG user id (lo guardamos como external_user_id al conectar). */
   igUserId: string
   accessToken: string
-  /** URLs públicas de las imágenes (Supabase Storage). 1 = foto simple, >1 = carrusel. */
+  /** URLs públicas de las imágenes o videos (Supabase Storage). 1 = foto/video simple, >1 = carrusel. */
   imageUrls: string[]
   caption: string
+  contentFormat?: 'feed' | 'story'
 }
 
 /**
@@ -191,9 +192,10 @@ async function pollContainerStatus(
 }
 
 /**
- * Publica en Instagram (foto simple o carrusel) y devuelve el media id publicado
+ * Publica en Instagram (foto, video o carrusel; feed o story) y devuelve el media id publicado
  * (= external_post_id). Flujo de la Instagram API with Instagram Login:
- *  - foto simple: crear container con image_url+caption → media_publish.
+ *  - story (contentFormat = 'story'): crear container con media_type=STORIES, image_url o video_url → media_publish.
+ *  - foto/video simple (feed): crear container con image_url o video_url (media_type=REELS para videos) → media_publish.
  *  - carrusel: crear N item containers (is_carousel_item=true) → container
  *    CAROUSEL con children → media_publish. Máx. 10 ítems.
  *
@@ -205,19 +207,65 @@ export async function publishToInstagram({
   accessToken,
   imageUrls,
   caption,
+  contentFormat = 'feed',
 }: PublishToInstagramArgs): Promise<string> {
   const images = (imageUrls ?? []).filter(Boolean)
   if (images.length === 0) {
     throw new Error('Instagram requiere al menos una imagen para publicar')
   }
 
-  // Foto simple
-  if (images.length === 1) {
-    const containerId = await igPost(`${igUserId}/media`, {
-      image_url: images[0],
-      caption,
+  // Detectar si una URL es de tipo video por su extensión
+  const isVideoUrl = (url: string) => {
+    const cleanUrl = url.split('?')[0].toLowerCase()
+    return (
+      cleanUrl.endsWith('.mp4') ||
+      cleanUrl.endsWith('.mov') ||
+      cleanUrl.endsWith('.avi') ||
+      cleanUrl.endsWith('.webm') ||
+      cleanUrl.endsWith('.m4v')
+    )
+  }
+
+  // Stories (contentFormat === 'story')
+  if (contentFormat === 'story') {
+    const url = images[0]
+    const isVideo = isVideoUrl(url)
+    const containerParams: Record<string, string> = {
+      media_type: 'STORIES',
+      access_token: accessToken,
+    }
+
+    if (isVideo) {
+      containerParams.video_url = url
+    } else {
+      containerParams.image_url = url
+    }
+
+    const containerId = await igPost(`${igUserId}/media`, containerParams)
+    await pollContainerStatus(containerId, accessToken)
+    return igPost(`${igUserId}/media_publish`, {
+      creation_id: containerId,
       access_token: accessToken,
     })
+  }
+
+  // Foto o video simple en Feed
+  if (images.length === 1) {
+    const url = images[0]
+    const isVideo = isVideoUrl(url)
+    const containerParams: Record<string, string> = {
+      caption,
+      access_token: accessToken,
+    }
+
+    if (isVideo) {
+      containerParams.video_url = url
+      containerParams.media_type = 'REELS' // Reels es el formato estándar para video en feed
+    } else {
+      containerParams.image_url = url
+    }
+
+    const containerId = await igPost(`${igUserId}/media`, containerParams)
     await pollContainerStatus(containerId, accessToken)
     return igPost(`${igUserId}/media_publish`, {
       creation_id: containerId,
@@ -229,11 +277,20 @@ export async function publishToInstagram({
   const slice = images.slice(0, 10)
   const childIds: string[] = []
   for (const url of slice) {
-    const childId = await igPost(`${igUserId}/media`, {
-      image_url: url,
+    const isVideo = isVideoUrl(url)
+    const containerParams: Record<string, string> = {
       is_carousel_item: 'true',
       access_token: accessToken,
-    })
+    }
+
+    if (isVideo) {
+      containerParams.video_url = url
+      containerParams.media_type = 'VIDEO' // Los ítems de carrusel tipo video usan 'VIDEO'
+    } else {
+      containerParams.image_url = url
+    }
+
+    const childId = await igPost(`${igUserId}/media`, containerParams)
     childIds.push(childId)
   }
   const carouselId = await igPost(`${igUserId}/media`, {

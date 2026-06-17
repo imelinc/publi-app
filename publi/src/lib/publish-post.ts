@@ -77,12 +77,13 @@ export async function publishPostPublications(
     description: string | null
     hashtags: string[] | null
     media_urls: string[] | null
+    content_format?: string | null
   }
 ): Promise<PublishResult> {
   const post = preloadedPost ?? await (async () => {
     const { data } = await supabase
       .from('posts')
-      .select('id, user_id, client_id, title, description, hashtags, media_urls')
+      .select('id, user_id, client_id, title, description, hashtags, media_urls, content_format')
       .eq('id', postId)
       .single()
     return data
@@ -142,6 +143,7 @@ export async function publishPostPublications(
           accessToken: token,
           imageUrls: mediaUrls,
           caption,
+          contentFormat: post.content_format as 'feed' | 'story',
         })
         await supabase
           .from('post_publications')
