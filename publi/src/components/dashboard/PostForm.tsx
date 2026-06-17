@@ -133,6 +133,37 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const [activePreviewNetwork, setActivePreviewNetwork] = useState<Network | null>(
     initialPost?.networks?.[0] ?? null
   )
+  const [contentFormat, setContentFormat] = useState<'feed' | 'story'>(
+    initialPost?.contentFormat ?? 'feed'
+  )
+
+  const [dailyLimit, setDailyLimit] = useState<{ used: number; limit: number; remaining: number; nextSlotAvailableAt: string | null } | null>(null)
+  const [loadingDailyLimit, setLoadingDailyLimit] = useState(false)
+
+  const fetchDailyLimit = useCallback(async (cId: string) => {
+    if (!cId) return
+    setLoadingDailyLimit(true)
+    try {
+      const res = await fetch(`/api/instagram/daily-limit?clientId=${cId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setDailyLimit(data)
+      } else {
+        setDailyLimit(null)
+      }
+    } catch (err) {
+      console.error('Error fetching daily limit:', err)
+      setDailyLimit(null)
+    } finally {
+      setLoadingDailyLimit(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (clientId) {
+      fetchDailyLimit(clientId)
+    }
+  }, [clientId, fetchDailyLimit])
 
   const initialPublishNow = initialPost
     ? initialPost.status !== 'scheduled' // si estaba programado, arranco en "Programar"
@@ -175,6 +206,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     clientId: initialPost?.clientId ?? '',
     scheduleDate: initialPost?.scheduledAt ? toDateInput(new Date(initialPost.scheduledAt)) : '',
     scheduleTime: initialPost?.scheduledAt ? toTimeInput(initialPost.scheduledAt) : '',
+    contentFormat: initialPost?.contentFormat ?? 'feed',
   })
 
   // Al iniciar la publicación, inicializamos los índices de forma aleatoria y rotamos mensajes
@@ -208,9 +240,10 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       JSON.stringify(mediaUrls) !== JSON.stringify(s.mediaUrls) ||
       clientId !== s.clientId ||
       scheduleDate !== s.scheduleDate ||
-      scheduleTime !== s.scheduleTime
+      scheduleTime !== s.scheduleTime ||
+      contentFormat !== s.contentFormat
     setHasUnsavedChanges(dirty)
-  }, [title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, setHasUnsavedChanges])
+  }, [title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, contentFormat, setHasUnsavedChanges])
 
   // Al desmontar el form, asegurarse de limpiar el flag global
   useEffect(() => {
@@ -240,6 +273,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       clientId: post?.clientId ?? clientId,
       scheduleDate,
       scheduleTime,
+      contentFormat: post?.contentFormat ?? contentFormat,
     }
     setHasUnsavedChanges(false)
   }
@@ -323,6 +357,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           hashtags: [],
           status: status === 'draft' ? 'draft' : status === 'scheduled' ? 'scheduled' : 'published',
           scheduledAt: status === 'draft' ? null : buildScheduledAt(),
+          contentFormat,
         })
         setSavedPost(result)
         setTitle(effectiveTitle)
@@ -336,10 +371,12 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           scheduledAt: status === 'draft' ? null : buildScheduledAt(),
           mediaUrls,
           hashtags: [],
+          contentFormat,
         })
         setSavedPost(result)
         setTitle(effectiveTitle)
       }
+      fetchDailyLimit(clientId)
       markClean(result)
       return result
     } finally {
@@ -571,10 +608,12 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             description={description}
             networks={networks}
             mediaUrls={mediaUrls}
+            contentFormat={contentFormat}
             onClientChange={handleClientChange}
             onDescriptionChange={handleDescriptionChange}
             onNetworksChange={handleNetworksChange}
             onMediaUrlsChange={handleMediaUrlsChange}
+            onContentFormatChange={setContentFormat}
           />
         </div>
 
@@ -585,11 +624,41 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             client={client}
             networks={networks}
             activeNetwork={activePreviewNetwork}
+            contentFormat={contentFormat}
             onNetworkSelect={handleNetworkSelect}
           />
 
           <div className="bg-white rounded-xl border border-gray-100 p-5">
             <h2 className="font-semibold text-gray-900 mb-4">Publicación</h2>
+
+            {networks.includes('instagram') && dailyLimit && (
+              <div className={`text-xs px-3 py-2.5 mb-4 rounded-lg border flex flex-col gap-1 ${
+                dailyLimit.remaining <= 0
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : dailyLimit.remaining <= 3
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-green-50 text-green-700 border-green-200'
+              }`}>
+                <div className="flex items-center justify-between font-medium">
+                  <span>Límite de Instagram:</span>
+                  <span>{dailyLimit.used} de {dailyLimit.limit} usados</span>
+                </div>
+                {dailyLimit.remaining <= 0 ? (
+                  <p className="text-[10px] leading-snug mt-1 opacity-90 font-medium">
+                    ⚠️ Límite alcanzado. Próximo cupo disponible: {new Date(dailyLimit.nextSlotAvailableAt!).toLocaleString('es-AR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                ) : (
+                  <p className="text-[10px] leading-snug mt-0.5 opacity-80">
+                    Ventana móvil de 24 horas.
+                  </p>
+                )}
+              </div>
+            )}
 
             {approvalState && (
               <div
@@ -707,7 +776,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
 
               <button
                 onClick={() => openDialog(publishNow ? 'publish' : 'schedule')}
-                disabled={saving}
+                disabled={saving || (networks.includes('instagram') && dailyLimit !== null && dailyLimit.remaining <= 0)}
                 className="w-full bg-[#0095b6] text-white font-medium rounded-lg py-2 text-sm hover:bg-[#007a94] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {publishNow ? 'Publicar' : 'Programar'}

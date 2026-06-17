@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Wand2, Hash, Clock, ImagePlus, X, Loader2, Crop, Trash2 } from 'lucide-react'
+import { Wand2, Hash, Clock, ImagePlus, X, Loader2, Crop, Trash2, AlertCircle } from 'lucide-react'
 import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -16,10 +16,12 @@ interface PostEditorProps {
   description: string
   networks: Network[]
   mediaUrls: string[]
+  contentFormat: 'feed' | 'story'
   onClientChange: (id: string) => void
   onDescriptionChange: (text: string) => void
   onNetworksChange: (networks: Network[]) => void
   onMediaUrlsChange: (urls: string[]) => void
+  onContentFormatChange: (format: 'feed' | 'story') => void
 }
 
 export function PostEditor({
@@ -27,10 +29,12 @@ export function PostEditor({
   description,
   networks,
   mediaUrls,
+  contentFormat,
   onClientChange,
   onDescriptionChange,
   onNetworksChange,
   onMediaUrlsChange,
+  onContentFormatChange,
 }: PostEditorProps) {
   const [aiPanelType, setAiPanelType] = useState<'rewrite' | 'hashtags' | 'schedule' | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -44,11 +48,13 @@ export function PostEditor({
   const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
 
   async function handleFilesSelected(files: FileList) {
-    const remainingSlots = 10 - mediaUrls.length
+    const remainingSlots = contentFormat === 'story' ? 1 - mediaUrls.length : 10 - mediaUrls.length
     if (remainingSlots <= 0) {
       toast({
-        title: 'Límite de imágenes alcanzado',
-        description: 'Sólo podés subir hasta 10 imágenes para el carrusel.',
+        title: contentFormat === 'story' ? 'Límite de archivos para Story' : 'Límite de imágenes alcanzado',
+        description: contentFormat === 'story'
+          ? 'Las Stories sólo permiten un único archivo (imagen o video).'
+          : 'Sólo podés subir hasta 10 imágenes para el carrusel.',
       })
       return
     }
@@ -56,8 +62,10 @@ export function PostEditor({
     const filesToUpload = Array.from(files).slice(0, remainingSlots)
     if (files.length > remainingSlots) {
       toast({
-        title: 'Límite de imágenes excedido',
-        description: `Sólo se subirán las primeras ${remainingSlots} imágenes seleccionadas.`,
+        title: contentFormat === 'story' ? 'Límite de archivos excedido' : 'Límite de imágenes excedido',
+        description: contentFormat === 'story'
+          ? 'Solo se subirá el primer archivo seleccionado.'
+          : `Sólo se subirán las primeras ${remainingSlots} imágenes seleccionadas.`,
       })
     }
 
@@ -127,6 +135,13 @@ export function PostEditor({
   const availableNetworks: Network[] = selectedClient?.connectedNetworks ?? []
 
   function toggleNetwork(network: Network) {
+    if (contentFormat === 'story') {
+      if (network !== 'instagram') {
+        toast({ title: 'Las Stories sólo están disponibles para Instagram' })
+        return
+      }
+      return
+    }
     if (networks.includes(network)) {
       if (networks.length > 1) {
         onNetworksChange(networks.filter((n) => n !== network))
@@ -182,6 +197,9 @@ export function PostEditor({
           {availableNetworks.length > 0 ? (
             availableNetworks.map((network) => {
               const selected = networks.includes(network)
+              const isStory = contentFormat === 'story'
+              const isDisabled = isStory && network !== 'instagram'
+              if (isDisabled) return null // Ocultar otras redes en formato Story
               return (
                 <button
                   key={network}
@@ -212,6 +230,44 @@ export function PostEditor({
       </div>
 
       <div>
+        <Label className="text-sm font-medium text-gray-700 mb-2 block">Formato de publicación</Label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onContentFormatChange('feed')}
+            className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border transition-colors ${
+              contentFormat === 'feed'
+                ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
+                : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Feed / Post estándar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onContentFormatChange('story')
+              onNetworksChange(['instagram'])
+              if (mediaUrls.length > 1) {
+                onMediaUrlsChange([mediaUrls[0]])
+                toast({
+                  title: 'Formato cambiado a Story',
+                  description: 'Se conservó solo la primera imagen/video (máximo permitido).',
+                })
+              }
+            }}
+            className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border transition-colors ${
+              contentFormat === 'story'
+                ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
+                : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Instagram Story
+          </button>
+        </div>
+      </div>
+
+      <div>
         <div className="flex items-center justify-between mb-2">
           <Label className="text-sm font-medium text-gray-700">Descripción</Label>
           <span className={`text-xs ${charCountColor}`}>
@@ -225,6 +281,14 @@ export function PostEditor({
           placeholder="Escribí el copy de tu publicación..."
           className="resize-none"
         />
+        {contentFormat === 'story' && (
+          <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
+            <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
+            <span>
+              <strong>Nota para Story:</strong> Instagram no muestra textos de pie de foto en las Stories. La descripción se guardará de forma interna pero no saldrá como caption público.
+            </span>
+          </p>
+        )}
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => setAiPanelType(aiPanelType === 'rewrite' ? null : 'rewrite')}
@@ -274,7 +338,9 @@ export function PostEditor({
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label className="text-sm font-medium text-gray-700">Multimedia ({mediaUrls.length}/10)</Label>
+          <Label className="text-sm font-medium text-gray-700">
+            {contentFormat === 'story' ? 'Multimedia de la Story' : `Multimedia (${mediaUrls.length}/10)`}
+          </Label>
           {mediaUrls.length > 1 && (
             <span className="text-[10px] bg-[#cceef5] text-[#0095b6] px-2 py-0.5 rounded-full font-semibold">
               Formato Carrusel
@@ -285,8 +351,8 @@ export function PostEditor({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          multiple
+          accept="image/*,video/*"
+          multiple={contentFormat !== 'story'}
           className="hidden"
           onChange={(e) => {
             const files = e.target.files
@@ -297,49 +363,69 @@ export function PostEditor({
 
         {mediaUrls.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {mediaUrls.map((url, index) => (
-              <div
-                key={url + '-' + index}
-                className="relative group h-28 w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+            {mediaUrls.map((url, index) => {
+              const isVideo =
+                url.split('?')[0].toLowerCase().endsWith('.mp4') ||
+                url.split('?')[0].toLowerCase().endsWith('.mov') ||
+                url.split('?')[0].toLowerCase().endsWith('.avi') ||
+                url.split('?')[0].toLowerCase().endsWith('.webm') ||
+                url.split('?')[0].toLowerCase().endsWith('.m4v')
 
-                {/* Index badge */}
-                <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-xs">
-                  {index + 1}
-                </span>
+              return (
+                <div
+                  key={url + '-' + index}
+                  className="relative group h-28 w-full rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
+                >
+                  {isVideo ? (
+                    <video
+                      src={url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      autoPlay
+                      loop
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
 
-                {/* Hover overlay with action buttons */}
-                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCropImageUrl(url)
-                      setCropImageIndex(index)
-                    }}
-                    className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-lg hover:scale-105 transition-all"
-                    title="Encuadrar imagen"
-                  >
-                    <Crop className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="bg-red-500/90 hover:bg-red-500 text-white p-2 rounded-lg hover:scale-105 transition-all"
-                    title="Eliminar imagen"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  {/* Index badge */}
+                  <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-xs">
+                    {index + 1}
+                  </span>
+
+                  {/* Hover overlay with action buttons */}
+                  <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCropImageUrl(url)
+                        setCropImageIndex(index)
+                      }}
+                      className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-lg hover:scale-105 transition-all"
+                      title="Encuadrar imagen"
+                    >
+                      <Crop className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="bg-red-500/90 hover:bg-red-500 text-white p-2 rounded-lg hover:scale-105 transition-all"
+                      title="Eliminar imagen"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
-            {mediaUrls.length < 10 && (
+            {mediaUrls.length < (contentFormat === 'story' ? 1 : 10) && (
               <button
                 type="button"
                 onClick={() => !uploading && fileInputRef.current?.click()}
@@ -380,16 +466,20 @@ export function PostEditor({
             {uploading ? (
               <>
                 <Loader2 className="size-8 mx-auto text-[#0095b6] animate-spin" />
-                <p className="text-sm text-gray-500 mt-2">Subiendo imágenes…</p>
+                <p className="text-sm text-gray-500 mt-2">Subiendo archivos…</p>
               </>
             ) : (
               <>
                 <ImagePlus className="size-8 mx-auto text-gray-300" />
                 <p className="text-sm text-gray-400 mt-2">
-                  Arrastrá imágenes o hacé click para seleccionar
+                  {contentFormat === 'story'
+                    ? 'Arrastrá una imagen o video o hacé click para seleccionar'
+                    : 'Arrastrá imágenes o hacé click para seleccionar'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Subí hasta 10 fotos · JPG, PNG, WEBP o GIF · máx 8 MB
+                  {contentFormat === 'story'
+                    ? 'Subí 1 archivo · JPG, PNG, WEBP, GIF, MP4, MOV · máx 8 MB'
+                    : 'Subí hasta 10 fotos · JPG, PNG, WEBP o GIF · máx 8 MB'}
                 </p>
               </>
             )}
