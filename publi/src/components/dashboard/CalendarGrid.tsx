@@ -169,6 +169,7 @@ export function CalendarGrid({
                 const color = post.clientColor
                 const firstNetwork = post.networks[0] as Network | undefined
                 const iconPath = firstNetwork ? NETWORK_META[firstNetwork].icon : ""
+                const isStory = post.contentFormat === 'story'
                 return (
                   <div
                     key={post.id}
@@ -176,7 +177,9 @@ export function CalendarGrid({
                       e.stopPropagation()
                       onPostClick(post)
                     }}
-                    className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 mb-0.5 cursor-pointer truncate"
+                    className={`flex items-center gap-1 text-[10px] rounded-r px-1.5 py-0.5 mb-0.5 cursor-pointer truncate border-l-2 ${
+                      isStory ? "border-l-[#ffb703]" : "border-l-[#0095b6]"
+                    }`}
                     style={{ backgroundColor: color + "33", color }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -187,6 +190,18 @@ export function CalendarGrid({
                       height={10}
                       className="shrink-0"
                     />
+                    {isStory && (
+                      <span
+                        className="text-[8px] font-extrabold px-1 rounded shrink-0 uppercase tracking-wider"
+                        style={{
+                          color: "#ffb703",
+                          backgroundColor: "#ffb70315",
+                          border: "1px solid #ffb70340",
+                        }}
+                      >
+                        Story
+                      </span>
+                    )}
                     <span className="truncate">{post.title}</span>
                   </div>
                 )
