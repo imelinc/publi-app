@@ -16,6 +16,7 @@ import {
   LogOut,
   Check,
   FileText,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
@@ -37,6 +38,7 @@ const navItems = [
   { label: 'Calendario', href: '/calendario', Icon: Calendar },
   { label: 'Métricas', href: '/metricas', Icon: BarChart2 },
   { label: 'Copi IA', href: '/ai', Icon: Sparkles },
+  { label: 'Editor', href: '/editor', Icon: Wand2 },
 ]
 
 export function Sidebar() {
