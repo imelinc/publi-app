@@ -11,13 +11,22 @@ interface ChatBody {
   message: string
   clientId: string | null
   history: ChatMessage[]
+  network?: string
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, clientId, history }: ChatBody = await req.json()
+    const { message, clientId, history, network }: ChatBody = await req.json()
 
     let clientContext = ''
+    let networkContext = ''
+
+    if (network && network !== 'general') {
+      networkContext = `
+
+TRABAJO ACTUAL EN RED SOCIAL: ${network.toUpperCase()}
+Asegurate de adaptar todo tu asesoramiento, copies, hashtags, formatos de posts (por ejemplo, hilos en X/Twitter, posts profesionales en LinkedIn, ganchos dinámicos en TikTok, etc.) y recomendaciones de horarios específicamente para el público, limitaciones técnicas y mejores prácticas de ${network.toUpperCase()}.`
+    }
 
     if (clientId) {
       const supabase = await createClient()
@@ -75,7 +84,7 @@ Tu rol es ayudar al CM con:
 
 Siempre respondés en español rioplatense, de forma concisa, directa y accionable.
 No usás relleno ni frases vacías. Sos creativo, profesional y levemente divertido.
-Nunca inventás métricas. Si no tenés datos, lo decís.${clientContext}`
+Nunca inventás métricas. Si no tenés datos, lo decís.${clientContext}${networkContext}`
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 

@@ -6,6 +6,7 @@ import { Send, Plus, Trash2, MessageSquare, AlertCircle, ImageIcon } from 'lucid
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
 import ImageGenerator from '@/components/dashboard/ai/ImageGenerator'
+import { ALL_NETWORKS, NETWORK_META } from '@/lib/networks'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -18,6 +19,7 @@ interface ChatSession {
   title: string
   messages: Message[]
   createdAt: number
+  network?: string
 }
 
 const SUGGESTIONS = [
@@ -43,6 +45,7 @@ export default function AiPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'images'>('chat')
+  const [selectedNetwork, setSelectedNetwork] = useState<string>('general')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -97,6 +100,14 @@ export default function AiPage() {
     }
   }, [input])
 
+  // Load selected network when active session changes
+  useEffect(() => {
+    const session = sessions.find((s) => s.id === activeSessionId)
+    if (session) {
+      setSelectedNetwork(session.network ?? 'general')
+    }
+  }, [activeSessionId, sessions])
+
   const createNewSession = useCallback(() => {
     const newSessionId = `session-${Date.now()}`
     const newSession: ChatSession = {
@@ -104,12 +115,27 @@ export default function AiPage() {
       title: 'Nueva conversación',
       messages: [],
       createdAt: Date.now(),
+      network: 'general',
     }
     const updated = [newSession, ...sessions]
     saveSessions(updated)
     setActiveSessionId(newSessionId)
     setInput('')
+    setSelectedNetwork('general')
   }, [sessions, saveSessions])
+
+  const handleNetworkChange = (net: string) => {
+    setSelectedNetwork(net)
+    if (activeSessionId) {
+      const updated = sessions.map((s) => {
+        if (s.id === activeSessionId) {
+          return { ...s, network: net }
+        }
+        return s
+      })
+      saveSessions(updated)
+    }
+  }
 
   const deleteSession = useCallback(
     (sessionId: string, e: React.MouseEvent) => {
@@ -171,6 +197,7 @@ export default function AiPage() {
             message: trimmed,
             clientId: activeWorkspaceId,
             history: messages.map(({ role, content }) => ({ role, content })),
+            network: selectedNetwork,
           }),
         })
 
@@ -213,7 +240,7 @@ export default function AiPage() {
         setIsLoading(false)
       }
     },
-    [isLoading, isLimitReached, activeSessionId, activeSession, messages, sessions, saveSessions, userMessagesCount, activeWorkspaceId],
+    [isLoading, isLimitReached, activeSessionId, activeSession, messages, sessions, saveSessions, userMessagesCount, activeWorkspaceId, selectedNetwork],
   )
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -336,7 +363,7 @@ export default function AiPage() {
 
       {/* Área del Chat */}
       <div className="flex-1 flex flex-col h-full bg-white relative">
-        <div className="px-6 py-4 border-b border-gray-100 shrink-0">
+        <div className="px-6 py-4 border-b border-gray-100 shrink-0 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Image
               src="/images/copi_notebook.png"
@@ -351,6 +378,39 @@ export default function AiPage() {
                 {userMessagesCount} / 10 mensajes usados en este chat
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-lg p-0.5 shrink-0">
+            <button
+              onClick={() => handleNetworkChange('general')}
+              className={cn(
+                'px-2.5 py-1 text-xs rounded-md transition-all font-semibold',
+                selectedNetwork === 'general'
+                  ? 'bg-white text-[#0095b6] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              General
+            </button>
+            {ALL_NETWORKS.map((net) => {
+              const meta = NETWORK_META[net]
+              const isSelected = selectedNetwork === net
+              return (
+                <button
+                  key={net}
+                  onClick={() => handleNetworkChange(net)}
+                  className={cn(
+                    'p-1.5 rounded-md transition-all flex items-center justify-center',
+                    isSelected
+                      ? 'bg-white shadow-sm ring-1 ring-black/5'
+                      : 'opacity-50 hover:opacity-85'
+                  )}
+                  title={`Trabajando en: ${meta.label}`}
+                >
+                  <img src={meta.iconColor} alt={meta.label} className="w-3.5 h-3.5" />
+                </button>
+              )
+            })}
           </div>
         </div>
 
