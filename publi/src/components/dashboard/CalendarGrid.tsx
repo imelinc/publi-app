@@ -40,12 +40,11 @@ function getDaysInGrid(month: Date): Date[] {
   return days
 }
 
-function getWeekDays(): Date[] {
-  const today = new Date()
-  const day = today.getDay()
+function getWeekDays(referenceDate: Date): Date[] {
+  const day = referenceDate.getDay()
   const mondayOffset = day === 0 ? -6 : 1 - day
-  const monday = new Date(today)
-  monday.setDate(today.getDate() + mondayOffset)
+  const monday = new Date(referenceDate)
+  monday.setDate(referenceDate.getDate() + mondayOffset)
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday)
     d.setDate(monday.getDate() + i)
@@ -110,7 +109,7 @@ export function CalendarGrid({
   const today = useMemo(() => new Date(), [])
 
   const monthDays = useMemo(() => getDaysInGrid(currentMonth), [currentMonth])
-  const weekDays = useMemo(() => getWeekDays(), [])
+  const weekDays = useMemo(() => getWeekDays(currentMonth), [currentMonth])
 
   const days = viewMode === "month" ? monthDays : weekDays
 

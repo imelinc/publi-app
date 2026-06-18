@@ -57,16 +57,28 @@ export default function CalendarioPage() {
     return events.filter((e) => e.clientId === clientFilter)
   }, [events, clientFilter])
 
-  function prevMonth() {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-    )
+  function handlePrev() {
+    if (viewMode === "week") {
+      setCurrentMonth(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 7)
+      )
+    } else {
+      setCurrentMonth(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+      )
+    }
   }
 
-  function nextMonth() {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-    )
+  function handleNext() {
+    if (viewMode === "week") {
+      setCurrentMonth(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 7)
+      )
+    } else {
+      setCurrentMonth(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+      )
+    }
   }
 
   function handleDayClick(date: Date) {
@@ -82,12 +94,37 @@ export default function CalendarioPage() {
     setSelectedEvent(event)
   }
 
-  const monthLabel = currentMonth.toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric",
-  })
-  const capitalizedMonthLabel =
-    monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+  const capitalizedMonthLabel = useMemo(() => {
+    if (viewMode === "month") {
+      const monthLabel = currentMonth.toLocaleDateString("es-AR", {
+        month: "long",
+        year: "numeric",
+      })
+      return monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+    } else {
+      const day = currentMonth.getDay()
+      const mondayOffset = day === 0 ? -6 : 1 - day
+      const monday = new Date(currentMonth)
+      monday.setDate(currentMonth.getDate() + mondayOffset)
+      
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      
+      const startDay = monday.getDate()
+      const endDay = sunday.getDate()
+      
+      if (monday.getMonth() === sunday.getMonth()) {
+        const monthStr = monday.toLocaleDateString("es-AR", { month: "long" })
+        const yearStr = monday.getFullYear()
+        return `Semana del ${startDay} al ${endDay} de ${monthStr} de ${yearStr}`
+      } else {
+        const startMonthStr = monday.toLocaleDateString("es-AR", { month: "short" })
+        const endMonthStr = sunday.toLocaleDateString("es-AR", { month: "long" })
+        const endYearStr = sunday.getFullYear()
+        return `Semana del ${startDay} de ${startMonthStr} al ${endDay} de ${endMonthStr} de ${endYearStr}`
+      }
+    }
+  }, [currentMonth, viewMode])
 
   const selectedEventClient = selectedEvent
     ? clients.find((c) => c.id === selectedEvent.clientId) ?? null
@@ -98,13 +135,13 @@ export default function CalendarioPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={prevMonth}>
+            <Button variant="ghost" size="icon" onClick={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-lg font-semibold text-gray-900 min-w-[180px] text-center">
               {capitalizedMonthLabel}
             </span>
-            <Button variant="ghost" size="icon" onClick={nextMonth}>
+            <Button variant="ghost" size="icon" onClick={handleNext}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
