@@ -300,6 +300,13 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     }
   }, [mode, clientId, client?.id])
 
+  // Reset contentFormat to 'feed' if the selected client doesn't have instagram connected
+  useEffect(() => {
+    if (client && !client.connectedNetworks.includes('instagram') && contentFormat === 'story') {
+      setContentFormat('feed')
+    }
+  }, [client, contentFormat])
+
   const handleClientChange = useCallback((id: string) => setClientId(id), [])
   const handleNetworksChange = useCallback((newNetworks: Network[]) => {
     setNetworks(newNetworks)

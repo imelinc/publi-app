@@ -229,43 +229,45 @@ export function PostEditor({
         </div>
       </div>
 
-      <div>
-        <Label className="text-sm font-medium text-gray-700 mb-2 block">Formato de publicación</Label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => onContentFormatChange('feed')}
-            className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border transition-colors ${
-              contentFormat === 'feed'
-                ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Feed / Post estándar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onContentFormatChange('story')
-              onNetworksChange(['instagram'])
-              if (mediaUrls.length > 1) {
-                onMediaUrlsChange([mediaUrls[0]])
-                toast({
-                  title: 'Formato cambiado a Story',
-                  description: 'Se conservó solo la primera imagen/video (máximo permitido).',
-                })
-              }
-            }}
-            className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border transition-colors ${
-              contentFormat === 'story'
-                ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Instagram Story
-          </button>
+      {availableNetworks.includes('instagram') && (
+        <div>
+          <Label className="text-sm font-medium text-gray-700 mb-2 block">Formato de publicación</Label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onContentFormatChange('feed')}
+              className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border transition-colors ${
+                contentFormat === 'feed'
+                  ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Feed / Post estándar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onContentFormatChange('story')
+                onNetworksChange(['instagram'])
+                if (mediaUrls.length > 1) {
+                  onMediaUrlsChange([mediaUrls[0]])
+                  toast({
+                    title: 'Formato cambiado a Story',
+                    description: 'Se conservó solo la primera imagen/video (máximo permitido).',
+                  })
+                }
+              }}
+              className={`flex-1 py-2 text-center text-xs font-medium rounded-lg border transition-colors ${
+                contentFormat === 'story'
+                  ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Instagram Story
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-2">
