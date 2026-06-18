@@ -73,7 +73,7 @@ export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPane
           const res = await fetch('/api/ai/rewrite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: content, clientId: activeWorkspaceId, tone: null }),
+            body: JSON.stringify({ text: content, clientId: activeWorkspaceId, tone: null, networks }),
             signal: controller.signal,
           })
           const data = await res.json()
@@ -85,7 +85,7 @@ export function AiPanel({ type, content, networks, onAccept, onDiscard }: AiPane
           const res = await fetch('/api/ai/hashtags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: content, clientId: activeWorkspaceId, count: 12 }),
+            body: JSON.stringify({ text: content, clientId: activeWorkspaceId, count: 12, networks }),
             signal: controller.signal,
           })
           const data = await res.json()

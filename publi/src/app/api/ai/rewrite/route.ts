@@ -6,6 +6,7 @@ interface RewriteBody {
   text: string
   clientId: string | null
   tone: string | null
+  networks?: string[]
 }
 
 interface RewriteSuggestion {
@@ -15,9 +16,14 @@ interface RewriteSuggestion {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, clientId, tone }: RewriteBody = await req.json()
+    const { text, clientId, tone, networks }: RewriteBody = await req.json()
 
     let clientExtra = ''
+    let targetNetworksDesc = ''
+
+    if (networks && networks.length > 0) {
+      targetNetworksDesc = networks.join(', ')
+    }
 
     if (clientId) {
       const supabase = await createClient()
@@ -37,11 +43,16 @@ export async function POST(req: NextRequest) {
             .select('network')
             .eq('client_id', clientId)
 
-          const networks =
+          const connectedNetworks =
             accounts && accounts.length > 0
               ? accounts.map((a: { network: string }) => a.network).join(', ')
               : 'ninguna'
-          clientExtra = ` Cliente activo: ${client.name}, redes: ${networks}.`
+          
+          if (!targetNetworksDesc) {
+            targetNetworksDesc = connectedNetworks
+          }
+
+          clientExtra = ` Cliente activo: ${client.name}.`
           if (client.descriptions) {
             clientExtra += ` Descripción del cliente: ${client.descriptions}`
           }
@@ -49,12 +60,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!targetNetworksDesc) {
+      targetNetworksDesc = 'redes sociales generales'
+    }
+
     let systemPrompt =
       'Sos Copi, asistente de publi para Community Managers. Respondés en español rioplatense, conciso y creativo.'
     systemPrompt += clientExtra
+    systemPrompt += ` El contenido a reescribir está destinado a las siguientes redes sociales: ${targetNetworksDesc}. Asegurate de adaptar el copy a los formatos, límites, estilos y público de estas plataformas (por ejemplo, Instagram requiere engagement y emojis; Twitter/X exige concisión y un estilo más directo; TikTok requiere ganchos dinámicos y lenguaje fresco; LinkedIn un tono corporativo pero empático; etc.).`
     systemPrompt += ' Cuando reescribís copy ofrecés 2 variantes. Nunca uses relleno.'
 
-    const userPrompt = `Reescribí este copy para redes sociales: "${text}".${tone ? ` Tono preferido: ${tone}.` : ''} Respondé SOLO con JSON válido sin backticks: {"suggestions": [{"text": "...", "label": "Más formal"}, {"text": "...", "label": "Más dinámico"}]}`
+    const userPrompt = `Reescribí este copy para ${targetNetworksDesc}: "${text}".${tone ? ` Tono preferido: ${tone}.` : ''} Respondé SOLO con JSON válido sin backticks: {"suggestions": [{"text": "...", "label": "Más formal"}, {"text": "...", "label": "Más dinámico"}]}`
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
