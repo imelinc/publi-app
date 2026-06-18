@@ -57,19 +57,45 @@ function PreviewImageSlider({
   fallbackSrc = '/images/restaurant.jpg',
 }: PreviewImageSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  const minSwipeDistance = 50
 
   useEffect(() => {
     setCurrentIndex(0)
   }, [mediaUrls])
 
-  const handlePrev = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handlePrev = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     setCurrentIndex((prev) => (prev === 0 ? mediaUrls.length - 1 : prev - 1))
   }
 
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleNext = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     setCurrentIndex((prev) => (prev === mediaUrls.length - 1 ? 0 : prev + 1))
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe) {
+      handleNext()
+    } else if (isRightSwipe) {
+      handlePrev()
+    }
   }
 
   if (mediaUrls.length === 0) {
@@ -87,7 +113,12 @@ function PreviewImageSlider({
   const isVideo = isVideoUrl(currentUrl)
 
   return (
-    <div className="relative w-full h-full overflow-hidden group/slider">
+    <div
+      className="relative w-full h-full overflow-hidden group/slider select-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {isVideo ? (
         <video
           src={currentUrl}
@@ -103,6 +134,7 @@ function PreviewImageSlider({
           src={currentUrl}
           alt={`Post preview ${currentIndex + 1}`}
           className={className}
+          draggable="false"
         />
       )}
       {mediaUrls.length > 1 && (
@@ -111,7 +143,7 @@ function PreviewImageSlider({
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-1 rounded-full transition-opacity opacity-0 group-hover/slider:opacity-100 z-10"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-full transition-opacity opacity-100 md:opacity-0 md:group-hover/slider:opacity-100 z-10 cursor-pointer"
             aria-label="Imagen anterior"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -119,12 +151,12 @@ function PreviewImageSlider({
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-1 rounded-full transition-opacity opacity-0 group-hover/slider:opacity-100 z-10"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-full transition-opacity opacity-100 md:opacity-0 md:group-hover/slider:opacity-100 z-10 cursor-pointer"
             aria-label="Siguiente imagen"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
-
+ 
           {/* Dot Indicators */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/35 px-2 py-1 rounded-full backdrop-blur-xs">
             {mediaUrls.map((_, idx) => (
