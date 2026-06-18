@@ -233,7 +233,13 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   // Detecta cambios y los reporta al store (para que el Sidebar consulte)
   useEffect(() => {
     const s = cleanSnapshotRef.current
-    const dirty =
+    const isCreateEmpty =
+      mode === 'create' &&
+      title.trim() === '' &&
+      description.trim() === '' &&
+      mediaUrls.length === 0
+
+    const dirty = !isCreateEmpty && (
       title !== s.title ||
       description !== s.description ||
       JSON.stringify(networks) !== JSON.stringify(s.networks) ||
@@ -242,8 +248,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       scheduleDate !== s.scheduleDate ||
       scheduleTime !== s.scheduleTime ||
       contentFormat !== s.contentFormat
+    )
     setHasUnsavedChanges(dirty)
-  }, [title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, contentFormat, setHasUnsavedChanges])
+  }, [mode, title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, contentFormat, setHasUnsavedChanges])
 
   // Al desmontar el form, asegurarse de limpiar el flag global
   useEffect(() => {
