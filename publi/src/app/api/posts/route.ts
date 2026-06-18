@@ -130,6 +130,7 @@ export async function GET() {
       contentFormat: (p.content_format as 'feed' | 'story') ?? 'feed',
       status: (p.status as PostStatus) ?? 'draft',
       scheduledAt: (p.scheduled_at as string) ?? null,
+      publishedAt: (p.published_at as string) ?? null,
       approvalToken: (p.approval_token as string) ?? null,
       approvedAt: (p.approved_at as string) ?? null,
       clientFeedback: (p.client_feedback as string) ?? null,

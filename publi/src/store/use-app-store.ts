@@ -468,7 +468,8 @@ export function getDraftPosts(posts: Post[]): Post[] {
 
 export function getPostsForDate(posts: Post[], date: Date): Post[] {
   const dateStr = date.toISOString().split('T')[0]
-  return posts.filter(
-    (p) => p.scheduledAt !== null && p.scheduledAt.startsWith(dateStr)
-  )
+  return posts.filter((p) => {
+    const postDate = p.scheduledAt ?? p.publishedAt
+    return postDate !== null && postDate.startsWith(dateStr)
+  })
 }

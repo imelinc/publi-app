@@ -78,12 +78,13 @@ export async function publishPostPublications(
     hashtags: string[] | null
     media_urls: string[] | null
     content_format?: string | null
+    scheduled_at?: string | null
   }
 ): Promise<PublishResult> {
   const post = preloadedPost ?? await (async () => {
     const { data } = await supabase
       .from('posts')
-      .select('id, user_id, client_id, title, description, hashtags, media_urls, content_format')
+      .select('id, user_id, client_id, title, description, hashtags, media_urls, content_format, scheduled_at')
       .eq('id', postId)
       .single()
     return data
@@ -213,9 +214,23 @@ export async function publishPostPublications(
   // Estado agregado: 'failed' sólo si TODAS fallaron; si no, 'published'.
   const allFailed = results.length > 0 && results.every((r) => r.status === 'failed')
   const finalStatus: 'published' | 'failed' = allFailed ? 'failed' : 'published'
+
+  const postUpdates: Record<string, any> = {
+    status: finalStatus,
+    qstash_message_id: null,
+    updated_at: now,
+  }
+
+  if (finalStatus === 'published') {
+    postUpdates.published_at = now
+    if (!post?.scheduled_at) {
+      postUpdates.scheduled_at = now
+    }
+  }
+
   await supabase
     .from('posts')
-    .update({ status: finalStatus, qstash_message_id: null, updated_at: now })
+    .update(postUpdates)
     .eq('id', postId)
 
   // Crear notificación informando el resultado de la publicación.
