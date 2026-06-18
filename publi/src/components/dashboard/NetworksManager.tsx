@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, Check, X, Plus } from 'lucide-react'
 import { ALL_NETWORKS, NETWORK_META } from '@/lib/networks'
 import { useAppStore } from '@/store/use-app-store'
@@ -23,51 +22,12 @@ interface NetworksManagerProps {
 export function NetworksManager({ clientId }: NetworksManagerProps) {
   const { toast } = useToast()
   const { fetchSocialAccounts, addSocialAccount, removeSocialAccount } = useAppStore()
-  const router = useRouter()
-  const searchParams = useSearchParams()
 
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<Network | null>(null)
   const [drafts, setDrafts] = useState<Partial<Record<Network, string>>>({})
   const [passwords, setPasswords] = useState<Partial<Record<Network, string>>>({})
-
-  // Resultado del OAuth de Facebook (el callback redirige a /clientes con query params)
-  useEffect(() => {
-    const connected = searchParams.get('fb_connected')
-    const error = searchParams.get('fb_error')
-    const noPages = searchParams.get('fb_no_pages')
-
-    if (!connected && !error && !noPages) return
-
-    if (connected === '1') {
-      toast({ title: 'Facebook conectado' })
-      fetchSocialAccounts(clientId).then(setAccounts).catch(() => {})
-    } else if (noPages === '1') {
-      toast({
-        title: 'No se pudo conectar Facebook',
-        description: 'No encontramos páginas de Facebook que administres.',
-      })
-    } else if (error) {
-      const messages: Record<string, string> = {
-        not_configured: 'La integración con Facebook no está configurada (falta la app de Meta).',
-        token: 'No pudimos conectar con Facebook. Probá de nuevo.',
-      }
-      toast({
-        title: 'No se pudo conectar Facebook',
-        description: messages[error] ?? messages.token,
-      })
-    }
-
-    // Limpiar los query params
-    const newParams = new URLSearchParams(window.location.search)
-    newParams.delete('fb_connected')
-    newParams.delete('fb_error')
-    newParams.delete('fb_no_pages')
-    const cleanSearch = newParams.toString()
-    const cleanUrl = window.location.pathname + (cleanSearch ? `?${cleanSearch}` : '')
-    router.replace(cleanUrl)
-  }, [searchParams, router, toast, clientId, fetchSocialAccounts])
 
   // Cargar cuentas al montar
   useEffect(() => {
@@ -154,10 +114,9 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
         const isBusy = busy === network
         const draft = drafts[network] ?? ''
         const password = passwords[network] ?? ''
-        // Instagram y Facebook usan OAuth real (no el form simulado de usuario+contraseña).
+        // Instagram usa OAuth real (no el form simulado de usuario+contraseña).
         const isInstagram = network === 'instagram'
-        const isFacebook = network === 'facebook'
-        const isOAuth = isInstagram || isFacebook
+        const isOAuth = isInstagram
 
         return (
           <div key={network} className="flex items-start gap-3 py-3">
@@ -191,9 +150,7 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                 </div>
               ) : isOAuth ? (
                 <p className="text-xs text-gray-400 mt-1 leading-snug">
-                  {isInstagram
-                    ? 'Requiere una cuenta Business o Creator. Vas a iniciar sesión en Instagram para autorizar.'
-                    : 'Requiere una página de Facebook. Vas a iniciar sesión en Facebook para autorizar.'}
+                  Requiere una cuenta Business o Creator. Vas a iniciar sesión en Instagram para autorizar.
                 </p>
               ) : (
                 <div className="mt-2 flex flex-col gap-1.5">
@@ -205,7 +162,7 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !isBusy) handleConnect(network)
                     }}
-                    placeholder="@usuario"
+                    placeholder={network === 'facebook' ? 'Nombre de usuario' : '@usuario'}
                     className="h-8 text-xs"
                     disabled={isBusy}
                     autoComplete="off"
@@ -251,13 +208,11 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                 <Button
                   size="sm"
                   onClick={() => {
-                    window.location.href = isInstagram
-                      ? `/api/instagram/connect?clientId=${clientId}`
-                      : `/api/facebook/connect?clientId=${clientId}`
+                    window.location.href = `/api/instagram/connect?clientId=${clientId}`
                   }}
                   className="bg-[#0095b6] hover:bg-[#007a96] text-white h-8"
                 >
-                  {isInstagram ? 'Conectar con Instagram' : 'Conectar con Facebook'}
+                  Conectar con Instagram
                 </Button>
               ) : (
                 <Button
