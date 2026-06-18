@@ -11,6 +11,7 @@ import {
   Calendar as CalendarIcon,
   Send,
   Image as ImageIcon,
+  Smartphone,
 } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
 import { Button } from '@/components/ui/button'
@@ -74,6 +75,7 @@ export default function PublicacionesPage() {
   const { posts, clients, fetchPosts } = useAppStore()
   const [clientFilter, setClientFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [formatFilter, setFormatFilter] = useState<'all' | 'feed' | 'story'>('all')
   const [refreshing, setRefreshing] = useState(false)
 
   async function handleRefresh() {
@@ -95,13 +97,14 @@ export default function PublicacionesPage() {
   const counts = useMemo(() => {
     const c = { all: 0, drafts: 0, scheduled: 0, published: 0 }
     for (const p of postsByClient) {
+      if (formatFilter !== 'all' && p.contentFormat !== formatFilter) continue
       c.all++
       if (p.status === 'draft' || p.status === 'pending_approval' || p.status === 'approved') c.drafts++
       else if (p.status === 'scheduled') c.scheduled++
       else if (p.status === 'published' || p.status === 'failed') c.published++
     }
     return c
-  }, [postsByClient])
+  }, [postsByClient, formatFilter])
 
   const filteredPosts = useMemo(() => {
     let result = postsByClient
@@ -114,13 +117,18 @@ export default function PublicacionesPage() {
     } else if (statusFilter === 'published') {
       result = result.filter((p) => p.status === 'published' || p.status === 'failed')
     }
+
+    if (formatFilter !== 'all') {
+      result = result.filter((p) => p.contentFormat === formatFilter)
+    }
+
     // Más reciente primero (por scheduledAt o por createdAt)
     return [...result].sort((a, b) => {
       const da = a.scheduledAt ?? a.createdAt
       const db = b.scheduledAt ?? b.createdAt
       return db.localeCompare(da)
     })
-  }, [postsByClient, statusFilter])
+  }, [postsByClient, statusFilter, formatFilter])
 
   function handleOpenPost(post: Post) {
     // Las publicadas/falladas no se pueden editar; el editor las bloquea pero
@@ -157,6 +165,16 @@ export default function PublicacionesPage() {
                 {c.name}
               </option>
             ))}
+          </select>
+
+          <select
+            value={formatFilter}
+            onChange={(e) => setFormatFilter(e.target.value as 'all' | 'feed' | 'story')}
+            className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none"
+          >
+            <option value="all">Todos los formatos</option>
+            <option value="feed">Feed (Publicaciones)</option>
+            <option value="story">Stories</option>
           </select>
 
           <Button
@@ -307,6 +325,21 @@ export default function PublicacionesPage() {
                   >
                     <ApprovalIcon className="size-3" />
                     {approvalBadge.label}
+                  </span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border',
+                      post.contentFormat === 'story'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    )}
+                  >
+                    {post.contentFormat === 'story' ? (
+                      <Smartphone className="size-3" />
+                    ) : (
+                      <ImageIcon className="size-3" />
+                    )}
+                    {post.contentFormat === 'story' ? 'Story' : 'Feed'}
                   </span>
                   <span className="ml-auto text-[10px] text-gray-400">
                     {formatRelevantDate(post)}
