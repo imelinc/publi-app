@@ -89,6 +89,7 @@ export interface Post {
   contentFormat: 'feed' | 'story'
   status: PostStatus
   scheduledAt: string | null
+  publishedAt: string | null
   // Aprobación
   approvalToken: string | null
   approvedAt: string | null

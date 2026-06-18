@@ -63,9 +63,10 @@ function formatDateKey(date: Date): string {
 
 function getPostsForDay(posts: Post[], date: Date): Post[] {
   const dateStr = formatDateKey(date)
-  return posts.filter(
-    (p) => p.scheduledAt !== null && p.scheduledAt.startsWith(dateStr)
-  )
+  return posts.filter((p) => {
+    const postDate = p.scheduledAt ?? p.publishedAt
+    return postDate !== null && postDate.startsWith(dateStr)
+  })
 }
 
 function getEventsForDay(events: CalendarEvent[], date: Date): CalendarEvent[] {

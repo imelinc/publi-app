@@ -240,10 +240,10 @@ export default function CalendarioPage() {
                   </span>
                 ))}
               </div>
-              {selectedPost.scheduledAt && (
+              {(selectedPost.scheduledAt || selectedPost.publishedAt) && (
                 <p className="text-xs text-gray-400">
                   {new Date(
-                    selectedPost.scheduledAt
+                    (selectedPost.scheduledAt || selectedPost.publishedAt) as string
                   ).toLocaleDateString("es-AR", {
                     day: "numeric",
                     month: "long",
