@@ -185,6 +185,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [scheduling, setScheduling] = useState(false)
   const [funnyMsgIndex, setFunnyMsgIndex] = useState(0)
   const [factIndex, setFactIndex] = useState(0)
 
@@ -209,9 +210,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     contentFormat: initialPost?.contentFormat ?? 'feed',
   })
 
-  // Al iniciar la publicación, inicializamos los índices de forma aleatoria y rotamos mensajes
+  // Al iniciar la publicación o programación, inicializamos los índices de forma aleatoria y rotamos mensajes
   useEffect(() => {
-    if (publishing) {
+    if (publishing || scheduling) {
       setFunnyMsgIndex(Math.floor(Math.random() * FUNNY_MESSAGES.length))
       setFactIndex(Math.floor(Math.random() * FUN_FACTS.length))
 
@@ -228,7 +229,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         clearInterval(factInterval)
       }
     }
-  }, [publishing])
+  }, [publishing, scheduling])
 
   // Detecta cambios y los reporta al store (para que el Sidebar consulte)
   useEffect(() => {
@@ -257,18 +258,18 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     return () => setHasUnsavedChanges(false)
   }, [setHasUnsavedChanges])
 
-  // beforeunload: prevenir cierre/refresh con cambios sin guardar o publicando
+  // beforeunload: prevenir cierre/refresh con cambios sin guardar o publicando/programando
   useEffect(() => {
     function handler(e: BeforeUnloadEvent) {
       // Re-leemos el store en cada call para no quedar con stale value
-      if (useAppStore.getState().hasUnsavedChanges || publishing) {
+      if (useAppStore.getState().hasUnsavedChanges || publishing || scheduling) {
         e.preventDefault()
         e.returnValue = '' // Chrome requiere setear returnValue
       }
     }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [publishing])
+  }, [publishing, scheduling])
 
   /** Refresca el snapshot "limpio" después de un save exitoso */
   function markClean(post?: Post) {
@@ -466,9 +467,14 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           setPublishing(false)
         }
       } else if (action === 'schedule') {
-        await saveOrUpdate('scheduled', finalTitle)
-        toast({ title: '¡Publicación programada!' })
-        router.push('/calendario')
+        setScheduling(true)
+        try {
+          await saveOrUpdate('scheduled', finalTitle)
+          toast({ title: '¡Publicación programada!' })
+          router.push('/calendario')
+        } finally {
+          setScheduling(false)
+        }
       } else if (action === 'approval') {
         const post = await saveOrUpdate('draft', finalTitle)
         setApprovalLoading(true)
@@ -1024,8 +1030,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de carga al publicar */}
-      <Dialog open={publishing} onOpenChange={() => {}}>
+      {/* Dialog de carga al publicar o programar */}
+      <Dialog open={publishing || scheduling} onOpenChange={() => {}}>
         <DialogContent
           showCloseButton={false}
           className="sm:max-w-md bg-white border border-gray-100 p-6 rounded-2xl shadow-xl overflow-hidden"
@@ -1040,7 +1046,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-gray-900">Estamos publicando...</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {publishing ? 'Estamos publicando...' : 'Estamos programando...'}
+              </h3>
               <p className="text-sm text-gray-500 font-medium min-h-[40px] px-2 transition-all duration-300 flex items-center justify-center">
                 {FUNNY_MESSAGES[funnyMsgIndex]}
               </p>
