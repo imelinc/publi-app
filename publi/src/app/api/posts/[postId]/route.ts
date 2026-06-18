@@ -4,6 +4,7 @@ import type { Network, PostStatus } from '@/types'
 import { resolveBaseUrl } from '@/lib/url'
 import { syncQStashForUpdate, cancelPostPublish } from '@/lib/qstash'
 import { getDailyUsage } from '@/lib/instagram-rate-limit'
+import { fetchInstagramMediaMetrics } from '@/lib/instagram'
 
 interface RouteParams {
   params: Promise<{ postId: string }>
@@ -16,6 +17,26 @@ function mapPost(
   clientName: string,
   clientColor: string
 ) {
+  const rawPubs = (p.post_publications as any[] | null) ?? []
+  const publications = rawPubs.map((row) => ({
+    id: row.id,
+    postId: row.post_id,
+    network: row.network as Network,
+    description: row.description,
+    hashtags: row.hashtags,
+    status: row.status,
+    externalPostId: row.external_post_id,
+    publishedAt: row.published_at,
+    errorMessage: row.error_message,
+    engagement: {
+      likes: row.likes ?? 0,
+      comments: row.comments ?? 0,
+      views: row.views ?? 0,
+      reach: row.reach ?? 0,
+    },
+    metricsUpdatedAt: row.metrics_updated_at,
+  }))
+
   return {
     id: p.id,
     clientId: p.client_id,
@@ -37,6 +58,7 @@ function mapPost(
       views: (p.views as number) ?? 0,
       reach: (p.reach as number) ?? 0,
     },
+    publications,
     createdAt: p.created_at,
     updatedAt: p.updated_at,
   }
@@ -56,7 +78,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
   const { data: post, error: pErr } = await supabase
     .from('posts')
-    .select('*')
+    .select('*, post_publications(*)')
     .eq('id', postId)
     .single()
 
@@ -74,6 +96,55 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
   if (cErr || !client) {
     return Response.json({ error: 'Post no encontrado' }, { status: 404 })
+  }
+
+  // Si el post está publicado, intentar refrescar las métricas de las publicaciones de Instagram reales en la DB (excluyendo Stories)
+  if (post.status === 'published' && post.content_format !== 'story' && Array.isArray(post.post_publications)) {
+    for (const pub of post.post_publications) {
+      if (pub.status === 'published' && pub.external_post_id && pub.network === 'instagram') {
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+        const needsUpdate = !pub.metrics_updated_at || pub.metrics_updated_at < fiveMinutesAgo
+
+        if (needsUpdate) {
+          const { data: acc } = await supabase
+            .from('social_accounts')
+            .select('access_token')
+            .eq('client_id', post.client_id)
+            .eq('network', 'instagram')
+            .eq('is_simulated', false)
+            .single()
+
+          if (acc?.access_token) {
+            try {
+              const metrics = await fetchInstagramMediaMetrics(
+                pub.external_post_id,
+                acc.access_token,
+                post.content_format as 'feed' | 'story'
+              )
+
+              await supabase
+                .from('post_publications')
+                .update({
+                  likes: metrics.likes,
+                  comments: metrics.comments,
+                  views: metrics.views,
+                  reach: metrics.reach,
+                  metrics_updated_at: new Date().toISOString(),
+                })
+                .eq('id', pub.id)
+
+              pub.likes = metrics.likes
+              pub.comments = metrics.comments
+              pub.views = metrics.views
+              pub.reach = metrics.reach
+              pub.metrics_updated_at = new Date().toISOString()
+            } catch (err) {
+              console.error(`Error actualizando métricas en GET /api/posts/${postId}:`, err)
+            }
+          }
+        }
+      }
+    }
   }
 
   return Response.json({ data: mapPost(post, client.name, client.color) })
@@ -252,7 +323,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     .from('posts')
     .update(updates)
     .eq('id', postId)
-    .select()
+    .select('*, post_publications(*)')
     .single()
 
   if (updateErr) {
