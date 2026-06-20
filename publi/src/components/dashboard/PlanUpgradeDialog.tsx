@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Sparkles, Crown, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ export function PlanUpgradeDialog({
   const [upgrading, setUpgrading] = useState(false)
   const updateClient = useAppStore((s) => s.updateClient)
   const { toast } = useToast()
+  const router = useRouter()
 
   async function handleUpgrade() {
     if (!activeClient) return
@@ -41,6 +43,7 @@ export function PlanUpgradeDialog({
         description: `El workspace de ${activeClient.name} ahora tiene acceso a todas las herramientas Pro.`,
       })
       onClose()
+      router.push(`/dashboard?upgrade_success=${encodeURIComponent(activeClient.name)}`)
     } catch (err) {
       toast({
         title: 'Error al actualizar',
