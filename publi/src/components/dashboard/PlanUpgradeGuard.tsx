@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Sparkles, Crown, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store/use-app-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -16,6 +17,7 @@ export function PlanUpgradeGuard({ featureName, activeClient }: PlanUpgradeGuard
   const [upgrading, setUpgrading] = useState(false)
   const updateClient = useAppStore((s) => s.updateClient)
   const { toast } = useToast()
+  const router = useRouter()
 
   async function handleUpgrade() {
     if (!activeClient) return
@@ -26,6 +28,7 @@ export function PlanUpgradeGuard({ featureName, activeClient }: PlanUpgradeGuard
         title: '¡Plan actualizado a Pro!',
         description: `El workspace de ${activeClient.name} ahora tiene acceso a todas las herramientas Pro.`,
       })
+      router.push(`/dashboard?upgrade_success=${encodeURIComponent(activeClient.name)}`)
     } catch (err) {
       toast({
         title: 'Error al actualizar',

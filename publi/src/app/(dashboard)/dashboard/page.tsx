@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAppStore, getScheduledPosts, getDraftPosts, getPostsByClient } from '@/store/use-app-store'
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar'
-import { CheckCircle2, FileText, TrendingUp, TrendingDown } from 'lucide-react'
+import { CheckCircle2, FileText, TrendingUp, TrendingDown, X, Sparkles, Crown } from 'lucide-react'
 import { NETWORK_META } from '@/lib/networks'
 
 function formatDateShort(dateStr: string): string {
@@ -43,6 +43,16 @@ function isInPrevious7Days(dateStr: string): boolean {
 export default function DashboardPage() {
   const router = useRouter()
   const { posts, events, activeWorkspaceId, clients, userProfile } = useAppStore()
+  const [upgradedClientName, setUpgradedClientName] = useState<string | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const upgraded = params.get('upgrade_success')
+    if (upgraded) {
+      setUpgradedClientName(upgraded)
+      router.replace('/dashboard')
+    }
+  }, [router])
 
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
   const postsForClient = getPostsByClient(posts, activeWorkspaceId)
@@ -300,6 +310,52 @@ export default function DashboardPage() {
           })
         )}
       </div>
+
+      {upgradedClientName && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-gray-100 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Top gradient line */}
+            <div className="h-1.5 bg-gradient-to-r from-[#0095b6] to-[#ffb703] absolute top-0 inset-x-0" />
+            
+            {/* Close button */}
+            <button
+              onClick={() => setUpgradedClientName(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-50 rounded-full transition-all cursor-pointer"
+              aria-label="Cerrar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-4 pt-2">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-[#cceef5]/60 flex items-center justify-center animate-bounce">
+                  <Crown className="w-9 h-9 text-[#0095b6]" />
+                </div>
+                <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-[#ffb703] animate-pulse" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-gray-900 leading-snug">
+                  ¡Felicitaciones! 🎉
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  El cliente <strong className="text-gray-900 font-semibold">{upgradedClientName}</strong> ahora es <strong className="text-[#0095b6] font-bold">Pro</strong>.
+                </p>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Ya tienen acceso a todas las funcionalidades premium de publi: Asistente de IA (Copi chat, sugerencia de copys y hashtags), Editor de fotos profesional, Generación de imágenes y sugerencias inteligentes de horarios óptimos.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setUpgradedClientName(null)}
+                className="w-full mt-4 py-3 rounded-xl bg-[#0095b6] hover:bg-[#007a96] text-white font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99] shadow-md cursor-pointer"
+              >
+                ¡Excelente, a trabajar!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
