@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { CalendarDays, AlertTriangle } from "lucide-react"
+import { CalendarDays, AlertTriangle, ChevronDown } from "lucide-react"
 
 interface EventModalProps {
   open: boolean
@@ -141,36 +141,40 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl border-gray-100 shadow-xl">
         <DialogHeader>
-          <DialogTitle>Agregar al calendario</DialogTitle>
+          <DialogTitle className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            Agregar al calendario
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
               Título <span className="text-red-400">*</span>
             </label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nombre del evento"
+              className="rounded-xl border-gray-200 focus-visible:ring-primary focus-visible:border-primary h-10 transition-all text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
               Fecha <span className="text-red-400">*</span>
             </label>
             <Input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              className="rounded-xl border-gray-200 focus-visible:ring-primary focus-visible:border-primary h-10 transition-all text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
               Descripción
             </label>
             <Textarea
@@ -178,41 +182,42 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descripción opcional..."
               rows={3}
+              className="rounded-xl border-gray-200 focus-visible:ring-primary focus-visible:border-primary transition-all text-sm resize-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
               Tipo
             </label>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setType("event")}
-                className={`flex-1 p-3 rounded-lg border-2 text-left transition ${
+                className={`flex-1 p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                   type === "event"
-                    ? "border-[#0095b6] bg-[#cceef5]/30"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-primary bg-primary/5 text-primary shadow-xs"
+                    : "border-gray-150 bg-white hover:border-gray-300 text-gray-600 hover:text-gray-900"
                 }`}
               >
                 <CalendarDays className="h-5 w-5 mb-1" />
-                <p className="text-sm font-medium">Evento</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide">Evento</p>
+                <p className="text-[10px] text-gray-400/90 mt-0.5">
                   Registrá un evento importante
                 </p>
               </button>
               <button
                 type="button"
                 onClick={() => setType("deadline")}
-                className={`flex-1 p-3 rounded-lg border-2 text-left transition ${
+                className={`flex-1 p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                   type === "deadline"
-                    ? "border-[#0095b6] bg-[#cceef5]/30"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-primary bg-primary/5 text-primary shadow-xs"
+                    : "border-gray-150 bg-white hover:border-gray-300 text-gray-600 hover:text-gray-900"
                 }`}
               >
                 <AlertTriangle className="h-5 w-5 mb-1" />
-                <p className="text-sm font-medium">Fecha límite</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide">Fecha límite</p>
+                <p className="text-[10px] text-gray-400/90 mt-0.5">
                   Marcá una entrega o deadline
                 </p>
               </button>
@@ -220,65 +225,72 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
               Color
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               {COLOR_OPTIONS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`w-5 h-5 rounded-full transition ${
-                    color === c ? "ring-2 ring-offset-1 ring-gray-400" : ""
+                  className={`w-6 h-6 rounded-full transition-all duration-200 hover:scale-110 relative ${
+                    color === c ? "ring-2 ring-offset-2 ring-primary scale-105" : ""
                   }`}
                   style={{ backgroundColor: c }}
-                />
+                >
+                  {color === c && (
+                    <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">✓</span>
+                  )}
+                </button>
               ))}
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
                 {type === "deadline" ? "Horario" : "Duración"}
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={isAllDay}
                   onChange={(e) => setIsAllDay(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-[#0095b6] focus:ring-[#0095b6]"
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
                 />
-                <span className="text-sm text-gray-700">Todo el día</span>
+                <span className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors font-semibold">Todo el día</span>
               </label>
             </div>
             {!isAllDay && type === "deadline" && (
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Hora límite</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Hora límite</label>
                 <Input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
+                  className="rounded-xl border-gray-200 focus-visible:ring-primary focus-visible:border-primary h-10 transition-all text-sm"
                 />
               </div>
             )}
             {!isAllDay && type === "event" && (
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Inicio</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Inicio</label>
                   <Input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
+                    className="rounded-xl border-gray-200 focus-visible:ring-primary focus-visible:border-primary h-10 transition-all text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Fin</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Fin</label>
                   <Input
                     type="time"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
+                    className="rounded-xl border-gray-200 focus-visible:ring-primary focus-visible:border-primary h-10 transition-all text-sm"
                   />
                 </div>
               </div>
@@ -286,31 +298,36 @@ export function EventModal({ open, onClose, selectedDate }: EventModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
               Cliente
             </label>
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="w-full h-8 rounded-lg border border-gray-200 bg-white px-2.5 text-sm text-gray-700 outline-none"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="w-full h-10 rounded-xl border border-gray-200 bg-white pl-3 pr-10 text-sm text-gray-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer appearance-none font-medium"
+              >
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                <ChevronDown className="h-4 w-4" />
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="mt-2 gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onClose} className="rounded-xl h-10 border-gray-200 hover:bg-gray-50 hover:text-gray-700">
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={!title.trim() || !date}
-            className="bg-[#0095b6] text-white hover:opacity-90"
+            className="bg-gradient-to-r from-[#0095b6] to-[#00b4d8] text-white hover:opacity-95 shadow-[0_4px_12px_rgba(0,149,182,0.2)] rounded-xl transition-all h-10 px-6 font-semibold"
           >
             Guardar
           </Button>

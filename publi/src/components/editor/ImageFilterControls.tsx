@@ -25,28 +25,33 @@ export function ImageFilterControls({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm space-y-4">
-      <div className="flex items-center gap-2 pb-1 border-b border-gray-50">
-        <SlidersHorizontal className="w-4 h-4 text-[#0095b6]" />
-        <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-          Ajustes de Imagen
-        </h4>
+    <div className="premium-card p-4 space-y-4 border border-slate-100/50">
+      <div className="flex items-center justify-between pb-1.5 border-b border-slate-100/50">
+        <div className="flex items-center gap-1.5">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-[#0095b6]" />
+          <h4 className="text-xs font-bold text-slate-850 uppercase tracking-wider">
+            Filtros
+          </h4>
+        </div>
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold tracking-wide uppercase">
+          Efectos
+        </span>
       </div>
 
       {/* Quick Filters */}
-      <div className="space-y-2">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-          <Palette className="w-3.5 h-3.5" />
+      <div className="space-y-2.5">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <Palette className="w-3.5 h-3.5 text-slate-400" />
           Filtros Rápidos
         </p>
         <div className="grid grid-cols-3 gap-2">
           {/* Grayscale */}
           <button
             onClick={() => onApplyFilter('grayscale', !filters.grayscale)}
-            className={`py-1.5 px-1.5 text-[10px] font-semibold rounded-lg border transition-all duration-200 ${
+            className={`py-2 px-1 text-[10px] font-bold rounded-xl border transition-all duration-200 shadow-xs cursor-pointer hover:scale-[1.04] active:scale-[0.96] ${
               filters.grayscale
-                ? 'bg-[#cceef5]/70 border-[#0095b6]/30 text-[#0095b6]'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary/10 border-primary/20 text-primary font-bold'
+                : 'bg-white border-slate-205 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
             }`}
           >
             B&N
@@ -55,10 +60,10 @@ export function ImageFilterControls({
           {/* Sepia */}
           <button
             onClick={() => onApplyFilter('sepia', !filters.sepia)}
-            className={`py-1.5 px-1.5 text-[10px] font-semibold rounded-lg border transition-all duration-200 ${
+            className={`py-2 px-1 text-[10px] font-bold rounded-xl border transition-all duration-200 shadow-xs cursor-pointer hover:scale-[1.04] active:scale-[0.96] ${
               filters.sepia
-                ? 'bg-[#cceef5]/70 border-[#0095b6]/30 text-[#0095b6]'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary/10 border-primary/20 text-primary font-bold'
+                : 'bg-white border-slate-205 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
             }`}
           >
             Sepia
@@ -67,10 +72,10 @@ export function ImageFilterControls({
           {/* Invert */}
           <button
             onClick={() => onApplyFilter('invert', !filters.invert)}
-            className={`py-1.5 px-1.5 text-[10px] font-semibold rounded-lg border transition-all duration-200 ${
+            className={`py-2 px-1 text-[10px] font-bold rounded-xl border transition-all duration-200 shadow-xs cursor-pointer hover:scale-[1.04] active:scale-[0.96] ${
               filters.invert
-                ? 'bg-[#cceef5]/70 border-[#0095b6]/30 text-[#0095b6]'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary/10 border-primary/20 text-primary font-bold'
+                : 'bg-white border-slate-205 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
             }`}
           >
             Invertir
@@ -78,18 +83,18 @@ export function ImageFilterControls({
         </div>
       </div>
 
-      <div className="w-full h-[1px] bg-slate-100 my-2" />
+      <div className="w-full h-[1px] bg-slate-100/80 my-2" />
 
       {/* Precision Sliders */}
-      <div className="space-y-3">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-          <Sun className="w-3.5 h-3.5" />
+      <div className="space-y-3.5">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <Sun className="w-3.5 h-3.5 text-slate-400" />
           Ajustes Precisos
         </p>
 
         {/* Brightness Slider */}
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] font-medium text-slate-600">
+          <div className="flex justify-between text-[11px] font-bold text-slate-600">
             <span>Brillo</span>
             <span className="text-[#0095b6] font-semibold">{Math.round(filters.brightness * 100)}%</span>
           </div>
@@ -100,13 +105,13 @@ export function ImageFilterControls({
             step="0.05"
             value={filters.brightness}
             onChange={(e) => onApplyFilter('brightness', parseFloat(e.target.value))}
-            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#0095b6]"
+            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#0095b6] hover:accent-[#00b4d8] transition-all"
           />
         </div>
 
         {/* Contrast Slider */}
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] font-medium text-slate-600">
+          <div className="flex justify-between text-[11px] font-bold text-slate-600">
             <span>Contraste</span>
             <span className="text-[#0095b6] font-semibold">{Math.round(filters.contrast * 100)}%</span>
           </div>
@@ -117,13 +122,13 @@ export function ImageFilterControls({
             step="0.05"
             value={filters.contrast}
             onChange={(e) => onApplyFilter('contrast', parseFloat(e.target.value))}
-            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#0095b6]"
+            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#0095b6] hover:accent-[#00b4d8] transition-all"
           />
         </div>
 
         {/* Blur Slider */}
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] font-medium text-slate-600">
+          <div className="flex justify-between text-[11px] font-bold text-slate-600">
             <span>Desenfoque (Blur)</span>
             <span className="text-[#0095b6] font-semibold">{Math.round(filters.blur * 10)}px</span>
           </div>
@@ -134,7 +139,7 @@ export function ImageFilterControls({
             step="0.05"
             value={filters.blur}
             onChange={(e) => onApplyFilter('blur', parseFloat(e.target.value))}
-            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#0095b6]"
+            className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#0095b6] hover:accent-[#00b4d8] transition-all"
           />
         </div>
       </div>

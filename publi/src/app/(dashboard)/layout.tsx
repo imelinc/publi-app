@@ -99,7 +99,7 @@ export default function DashboardLayout({
     <>
       <div className="flex">
         <Sidebar />
-        <div className="ml-[280px] flex flex-col min-h-screen w-full bg-[#f5f0e8]">
+        <div className="ml-[280px] flex flex-col min-h-screen w-full bg-[#f7f8fa]">
           <TopBar />
           <main className="flex-1 p-6">
             {children}

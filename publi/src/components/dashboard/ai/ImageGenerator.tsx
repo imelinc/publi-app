@@ -62,25 +62,25 @@ export default function ImageGenerator({ clientId }: ImageGeneratorProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full min-h-0 bg-white">
+    <div className="flex-grow flex flex-col md:flex-row h-full min-h-0 bg-white">
       {/* Columna Izquierda: Formulario (40%) */}
       <div className="w-full md:w-[40%] border-r border-gray-100 p-6 flex flex-col justify-between overflow-y-auto">
-        <form onSubmit={handleGenerate} className="space-y-5 flex-1 flex flex-col">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+        <form onSubmit={handleGenerate} className="space-y-5 flex-1 flex flex-col justify-between">
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-primary" />
               ¿Qué imagen querés crear?
             </label>
-            <p className="text-xs text-gray-500">
-              Describí con detalle la imagen que necesitás para tu publicación. Copi la creará para vos.
+            <p className="text-[11px] font-medium text-gray-400">
+              Describí con detalle la imagen que necesitás para tu publicación. Copi la creará para vos en segundos.
             </p>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Ej. Un mate sobre una mesa de madera con luz cálida de atardecer, estilo fotografía profesional, redes sociales..."
               disabled={isLoading}
-              rows={6}
-              className="w-full resize-none rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+              rows={8}
+              className="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-xs font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
             />
           </div>
 
@@ -88,15 +88,15 @@ export default function ImageGenerator({ clientId }: ImageGeneratorProps) {
             type="submit"
             disabled={isLoading || !prompt.trim()}
             className={cn(
-              'w-full flex items-center justify-center gap-2 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-sm',
+              'w-full h-11 flex items-center justify-center gap-2 text-white font-bold rounded-xl transition-all duration-200 text-xs uppercase tracking-wider',
               isLoading || !prompt.trim()
-                ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                : 'bg-primary hover:bg-primary/90 hover:shadow active:scale-[0.98]'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-primary to-[#00b4d8] hover:opacity-95 shadow-[0_4px_12px_rgba(0,149,182,0.25)] hover:scale-[1.01] active:scale-[0.99]'
             )}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Generando...
               </>
             ) : (
@@ -109,40 +109,40 @@ export default function ImageGenerator({ clientId }: ImageGeneratorProps) {
       </div>
 
       {/* Columna Derecha: Resultado (60%) */}
-      <div className="w-full md:w-[60%] p-6 flex flex-col items-center justify-center bg-gray-50/50 overflow-y-auto min-h-[300px]">
+      <div className="w-full md:w-[60%] p-6 flex flex-col items-center justify-center bg-slate-50/30 overflow-y-auto min-h-[300px]">
         {/* Placeholder inicial */}
         {!isLoading && !imageUrl && !error && (
-          <div className="flex flex-col items-center justify-center text-center max-w-md p-8 bg-[#f5f0e8] rounded-xl border border-gray-200/50 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-inner mb-4">
-              <ImageIcon className="w-8 h-8 text-primary" />
+          <div className="flex flex-col items-center justify-center text-center max-w-sm p-8 bg-slate-50 border border-gray-150/40 rounded-2xl shadow-xs">
+            <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-xs border border-gray-100 mb-4">
+              <ImageIcon className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-1">Generador de imágenes</h3>
-            <p className="text-sm text-gray-600">
-              Escribí un prompt en el panel izquierdo y hacé clic en "Generar". Tu imagen aparecerá aquí.
+            <h3 className="text-sm font-bold text-gray-850 mb-1.5">Generador de imágenes</h3>
+            <p className="text-xs text-gray-500 font-medium leading-relaxed">
+              Escribí un prompt en el panel izquierdo y hacé clic en "Generar". Tu imagen aparecerá aquí lista para descargar.
             </p>
           </div>
         )}
 
         {/* Cargando */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center text-center w-full max-w-md h-[400px] bg-white rounded-xl border border-gray-100 shadow-sm animate-pulse">
-            <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-            <p className="text-sm font-semibold text-gray-600">Creando tu imagen...</p>
-            <p className="text-xs text-gray-400 mt-1 px-4">Esto puede demorar unos segundos con flux-1-schnell</p>
+          <div className="flex flex-col items-center justify-center text-center w-full max-w-sm h-[360px] bg-white rounded-2xl border border-gray-100 shadow-xs animate-pulse">
+            <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+            <p className="text-xs font-bold text-gray-650 uppercase tracking-wider">Creando tu imagen...</p>
+            <p className="text-[10px] text-gray-400 mt-1 px-4">Esto puede demorar unos segundos con flux-1-schnell</p>
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="flex flex-col items-center justify-center text-center max-w-md p-8 bg-red-50 border border-red-100 rounded-xl shadow-sm">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-inner mb-4">
+          <div className="flex flex-col items-center justify-center text-center max-w-sm p-8 bg-red-50/50 border border-red-200/40 rounded-2xl shadow-xs">
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-xs mb-4">
               <AlertCircle className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-base font-bold text-red-800 mb-2">Error al generar imagen</h3>
-            <p className="text-sm text-red-600 mb-4">{error}</p>
+            <h3 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-2">Error al generar imagen</h3>
+            <p className="text-xs text-red-600 mb-4">{error}</p>
             <button
               onClick={() => setError(null)}
-              className="text-xs font-semibold text-primary hover:underline"
+              className="text-xs font-bold text-primary hover:underline"
             >
               Volver a intentar
             </button>
@@ -151,8 +151,8 @@ export default function ImageGenerator({ clientId }: ImageGeneratorProps) {
 
         {/* Resultado exitoso */}
         {imageUrl && !isLoading && (
-          <div className="flex flex-col items-center space-y-4 w-full max-w-md">
-            <div className="relative aspect-square w-full rounded-xl overflow-hidden shadow-md border border-gray-150 bg-white">
+          <div className="flex flex-col items-center space-y-4 w-full max-w-sm">
+            <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-md border border-gray-150/70 bg-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl}
@@ -162,7 +162,7 @@ export default function ImageGenerator({ clientId }: ImageGeneratorProps) {
             </div>
             <button
               onClick={handleDownload}
-              className="flex items-center justify-center gap-2 bg-primary-light hover:bg-[#b5e4ee] text-primary font-semibold text-sm py-2.5 px-6 rounded-lg transition-colors border border-primary/20 shadow-sm"
+              className="flex items-center justify-center gap-2 bg-primary-light/80 hover:bg-[#b5e4ee] text-primary font-bold text-xs py-2.5 px-6 rounded-xl transition-all duration-200 border border-primary/20 shadow-xs hover:scale-[1.02] active:scale-[0.98]"
             >
               <Download className="w-4 h-4" />
               Descargar imagen

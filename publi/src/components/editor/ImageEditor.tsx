@@ -100,37 +100,40 @@ export function ImageEditor({
       {/* Canvas area */}
       <div className="flex-1 flex flex-col gap-3 h-[640px]">
         {/* Canvas Top Bar Controls */}
-        <div className="relative z-10 flex justify-between items-center bg-white/80 backdrop-blur-md rounded-xl border border-slate-200/80 p-2 shadow-sm px-4 shrink-0">
+        <div className="relative z-10 flex justify-between items-center bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-150/40 p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.04)] px-4 shrink-0">
           {/* Format Resizer */}
           <div className="relative">
             <button
               onClick={() => setShowFormatDropdown((v) => !v)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200/85 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-350 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-xs"
             >
-              <Layout className="w-3.5 h-3.5 text-[#0095b6]" />
+              <Layout className="w-3.5 h-3.5 text-primary" strokeWidth={2} />
               <span>Formato: {currentFormat.name}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-450" />
             </button>
 
             {showFormatDropdown && (
-              <div className="absolute left-0 mt-1.5 w-[210px] bg-white rounded-xl border border-slate-100 shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                {FORMATS.map((f) => (
-                  <button
-                    key={f.name}
-                    onClick={() => {
-                      changeDimensions(f.width, f.height)
-                      setShowFormatDropdown(false)
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-slate-50 text-left ${
-                      contentWidth === f.width && contentHeight === f.height
-                        ? 'text-[#0095b6] font-semibold bg-[#cceef5]/20'
-                        : 'text-slate-600'
-                    }`}
-                  >
-                    <span>{f.name}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">{f.width}×{f.height}</span>
-                  </button>
-                ))}
+              <div className="absolute left-0 mt-2.5 w-[220px] bg-white/95 backdrop-blur-md rounded-2xl border border-slate-100 shadow-[0_12px_38px_rgba(0,0,0,0.08)] py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                {FORMATS.map((f) => {
+                  const isSelected = contentWidth === f.width && contentHeight === f.height
+                  return (
+                    <button
+                      key={f.name}
+                      onClick={() => {
+                        changeDimensions(f.width, f.height)
+                        setShowFormatDropdown(false)
+                      }}
+                      className={`w-[calc(100%-12px)] mx-1.5 flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all text-left cursor-pointer hover:bg-slate-50 ${
+                        isSelected
+                          ? 'text-primary font-bold bg-primary/10'
+                          : 'text-slate-650 hover:text-slate-800'
+                      }`}
+                    >
+                      <span>{f.name}</span>
+                      <span className="text-[9px] text-slate-400 font-bold font-mono">{f.width}×{f.height}</span>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -140,10 +143,10 @@ export function ImageEditor({
             {/* Safe Zones Toggle */}
             <button
               onClick={() => setShowSafeZones((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-xs ${
                 showSafeZones
-                  ? 'bg-[#cceef5]/70 border-[#0095b6]/30 text-[#0095b6]'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-primary/10 border-primary/20 text-primary shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-605 hover:bg-slate-50 hover:text-slate-850'
               }`}
             >
               {showSafeZones ? (
@@ -162,17 +165,17 @@ export function ImageEditor({
             {/* Help Button */}
             <button
               onClick={() => setShowHelpModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-850 hover:scale-[1.02] active:scale-[0.98] text-xs font-bold transition-all cursor-pointer shadow-xs"
               title="Atajos de teclado"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+              <HelpCircle className="w-3.5 h-3.5 text-slate-450" />
               <span>Ayuda</span>
             </button>
           </div>
         </div>
 
         {/* Centered Canvas Container */}
-        <div className="flex-1 flex items-center justify-center bg-[#f5f0e8] rounded-xl border border-slate-100 overflow-hidden relative">
+        <div className="flex-1 flex items-center justify-center bg-[#f6f5f2] bg-[radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px] rounded-2xl border border-slate-150/40 overflow-hidden relative shadow-inner">
           {/* Centered wrapper for visual page card (without border as requested) */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div
@@ -234,10 +237,15 @@ export function ImageEditor({
         )}
 
         {activeObjectInfo?.type === 'shape' && (
-          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Forma
-            </h4>
+          <div className="premium-card p-4 border border-slate-100/50 space-y-4">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100/50">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Forma
+              </h4>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold tracking-wide uppercase">
+                Objeto
+              </span>
+            </div>
             <ColorPicker
               label="Color de relleno"
               value={activeObjectInfo.fill}
@@ -254,10 +262,15 @@ export function ImageEditor({
         )}
 
         {!activeObjectInfo && (
-          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm space-y-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Lienzo
-            </h4>
+          <div className="premium-card p-4 border border-slate-100/50 space-y-4">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-100/50">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Lienzo
+              </h4>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold tracking-wide uppercase">
+                Ajustes
+              </span>
+            </div>
             <ColorPicker
               label="Color de fondo"
               value={currentBgColor}
@@ -267,67 +280,58 @@ export function ImageEditor({
         )}
 
         {/* Canvas info */}
-        <div className="bg-white/60 rounded-xl border border-gray-100 p-3">
-          <p className="text-[10px] text-gray-400 text-center">
-            Canvas: {contentWidth} × {contentHeight}px
+        <div className="bg-slate-50/50 rounded-xl border border-slate-150/40 p-2.5 shadow-xs">
+          <p className="text-[10px] text-slate-550 text-center font-bold tracking-wide">
+            Lienzo: <span className="font-mono text-slate-700">{contentWidth} × {contentHeight}px</span>
           </p>
         </div>
       </div>
 
       {/* Help Modal */}
       {showHelpModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-2xl max-w-sm w-full space-y-4 mx-4 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl border border-slate-105 p-6 shadow-[0_32px_64px_rgba(0,0,0,0.16)] max-w-sm w-full space-y-5 mx-4 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-[#0095b6]" />
-                Atajos de teclado
+                <HelpCircle className="w-4 h-4 text-primary" />
+                <span>Atajos de teclado</span>
               </h3>
               <button
                 onClick={() => setShowHelpModal(false)}
-                className="text-xs text-slate-400 hover:text-slate-600 font-semibold"
+                className="text-xs text-slate-400 hover:text-slate-750 font-bold px-2.5 py-1 rounded-lg hover:bg-slate-50 transition-all cursor-pointer"
               >
                 Cerrar
               </button>
             </div>
             
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Mover selección</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Flechas ↑ ↓ ← →</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Mover rápido (x10)</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Shift + Flechas</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Copiar elemento</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Ctrl/Cmd + C</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Pegar elemento</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Ctrl/Cmd + V</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Deshacer cambio</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Ctrl/Cmd + Z</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Rehacer cambio</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Ctrl/Cmd + Y</kbd>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Eliminar elemento</span>
-                <kbd className="px-2 py-1 bg-slate-100 border border-slate-200 rounded font-semibold text-[10px] text-slate-700">Supr / Backspace</kbd>
-              </div>
+            <div className="space-y-3 text-xs">
+              {[
+                { desc: 'Mover selección', keys: 'Flechas ↑ ↓ ← →' },
+                { desc: 'Mover rápido (x10)', keys: 'Shift + Flechas' },
+                { desc: 'Copiar elemento', keys: 'Ctrl/Cmd + C' },
+                { desc: 'Pegar elemento', keys: 'Ctrl/Cmd + V' },
+                { desc: 'Deshacer cambio', keys: 'Ctrl/Cmd + Z' },
+                { desc: 'Rehacer cambio', keys: 'Ctrl/Cmd + Y' },
+                { desc: 'Eliminar elemento', keys: 'Supr / Backspace' },
+              ].map((item) => (
+                <div key={item.desc} className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-500 font-semibold">{item.desc}</span>
+                  <kbd className="px-2 py-1 bg-slate-50 border border-slate-200/80 rounded-xl font-bold font-mono text-[9px] text-slate-650 shadow-2xs">
+                    {item.keys}
+                  </kbd>
+                </div>
+              ))}
             </div>
             
-            <p className="text-[10px] text-slate-400 text-center pt-2">
-              Hacé clic en el fondo beige para deseleccionar objetos.
-            </p>
+            <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 text-center">
+              <p className="text-[10px] text-slate-450 font-semibold leading-relaxed">
+                Hacé clic en el fondo gris para deseleccionar objetos y guardar cambios.
+              </p>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   )
 }

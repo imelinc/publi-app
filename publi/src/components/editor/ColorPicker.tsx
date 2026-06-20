@@ -18,35 +18,40 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {label && (
-        <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           {label}
         </span>
       )}
 
-      <div className="flex flex-wrap gap-1.5">
-        {PRESET_COLORS.map((color) => (
-          <button
-            key={color}
-            onClick={() => onChange(color)}
-            className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 shrink-0"
-            style={{
-              backgroundColor: color,
-              borderColor: value === color ? '#0095b6' : color === '#ffffff' ? '#e5e7eb' : 'transparent',
-              boxShadow: value === color ? '0 0 0 2px #0095b6' : 'none',
-            }}
-            title={color}
-          />
-        ))}
+      <div className="flex flex-wrap gap-2">
+        {PRESET_COLORS.map((color) => {
+          const isSelected = value.toLowerCase() === color.toLowerCase()
+          return (
+            <button
+              key={color}
+              onClick={() => onChange(color)}
+              className="w-7 h-7 rounded-full border border-black/5 transition-all duration-300 hover:scale-110 hover:shadow-sm shrink-0 cursor-pointer relative"
+              style={{
+                backgroundColor: color,
+                boxShadow: isSelected 
+                  ? `0 0 0 2px white, 0 0 0 4px #0095b6, 0 4px 6px -1px rgba(0, 0, 0, 0.1)` 
+                  : color === '#ffffff' ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : 'none',
+                zIndex: isSelected ? 10 : 1,
+              }}
+              title={color}
+            />
+          )
+        })}
 
         {/* Custom color picker */}
         <button
           onClick={() => inputRef.current?.click()}
-          className="w-6 h-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors shrink-0"
+          className="w-7 h-7 rounded-full border border-dashed border-slate-350 bg-slate-50/50 flex items-center justify-center text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 hover:scale-105 active:scale-95 transition-all shrink-0 cursor-pointer shadow-xs"
           title="Color personalizado"
         >
-          <span className="text-xs font-bold">+</span>
+          <span className="text-xs font-bold leading-none">+</span>
         </button>
         <input
           ref={inputRef}

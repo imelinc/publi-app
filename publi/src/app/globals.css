@@ -17,6 +17,56 @@
       transform: translate3d(-50%, 0, 0);
     }
   }
+
+  /* ── Premium design utilities ─────────────────────────── */
+
+  .gradient-text {
+    background: linear-gradient(135deg, #0095b6 0%, #00b4d8 50%, #0095b6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .premium-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 1rem;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .premium-card:hover {
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.06),
+      0 8px 32px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1px);
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 8px rgba(0, 149, 182, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(0, 149, 182, 0.4); }
+  }
+
+  .sidebar-glow-btn {
+    box-shadow: 0 0 16px rgba(0, 149, 182, 0.25);
+    transition: box-shadow 0.3s ease, transform 0.15s ease;
+  }
+
+  .sidebar-glow-btn:hover {
+    box-shadow: 0 0 24px rgba(0, 149, 182, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .sidebar-glow-btn:active {
+    transform: translateY(0);
+  }
 }
 
 @layer base {
@@ -25,8 +75,8 @@
     --primary: 193 100% 36%;        /* #0095b6 */
     --primary-light: 193 67% 87%;   /* #cceef5 */
     --accent: 42 100% 51%;          /* #ffb703 */
-    --background: 0 0% 98%;
-    --hero-background: 36 33% 93%;
+    --background: 220 17% 97.5%;    /* #f7f8fa — same as dashboard background */
+    --hero-background: 220 17% 97.5%; /* #f7f8fa — same as dashboard background */
     --foreground: 220 20% 12%;
     --muted: 210 20% 96%;
     --muted-foreground: 220 10% 50%;
@@ -37,6 +87,10 @@
     --popover-foreground: 220 20% 12%;
     --surface: 214 15% 98%;          /* #f8f9fa — fondo del contenido del dashboard */
     --radius: 0.75rem;
+
+    /* sidebar dark */
+    --sidebar-bg: 228 20% 8%;       /* #0f1117 */
+    --sidebar-hover: 0 0% 100%;     /* used with /5, /10 opacity */
 
     /* shadcn overrides */
     --ring: 193 100% 36%;

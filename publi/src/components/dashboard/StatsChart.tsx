@@ -89,7 +89,7 @@ export function StatsChart({ posts, period }: StatsChartProps) {
         {Array.from({ length: ySteps + 1 }, (_, i) => {
           const val = yMax - (yMax / ySteps) * i
           return (
-            <span key={i} className="text-xs text-gray-300 w-6 text-right block">
+            <span key={i} className="text-[10px] font-bold text-gray-400 w-6 text-right block pr-1">
               {Math.round(val)}
             </span>
           )
@@ -101,25 +101,25 @@ export function StatsChart({ posts, period }: StatsChartProps) {
           {Array.from({ length: ySteps + 1 }, (_, i) => (
             <div
               key={`line-${i}`}
-              className="absolute left-0 right-0 border-t border-gray-100"
+              className="absolute left-0 right-0 border-t border-dashed border-gray-100/60"
               style={{ bottom: `${(i / ySteps) * 100}%`, top: 'auto' }}
             />
           ))}
 
           {bars.map((bar) => (
-            <div key={bar.label} className="flex flex-col items-center gap-2 flex-1 max-w-[60px]">
+            <div key={bar.label} className="flex flex-col items-center gap-2 flex-1 max-w-[50px] group">
               <div
-                className="rounded-t-lg transition-shadow hover:shadow-md w-full min-w-[28px]"
+                className="rounded-t-xl transition-all duration-300 hover:brightness-105 hover:shadow-[0_4px_12px_rgba(0,149,182,0.15)] w-full min-w-[24px] cursor-pointer hover:scale-[1.03] active:scale-[0.97]"
                 style={{
-                  height: `${Math.max((bar.value / yMax) * 260, bar.value > 0 ? 10 : 0)}px`,
+                  height: `${Math.max((bar.value / yMax) * 250, bar.value > 0 ? 12 : 6)}px`,
                   background:
                     bar.value > 0
-                      ? 'linear-gradient(to top, #0095b6, #cceef5)'
-                      : '#e5e7eb',
+                      ? 'linear-gradient(to top, #0095b6 0%, #00b4d8 100%)'
+                      : '#f3f4f6',
                 }}
                 title={`${bar.value} publicaciones`}
               />
-              <span className="text-xs text-gray-400">{bar.label}</span>
+              <span className="text-[9px] font-bold text-gray-450 uppercase tracking-wider group-hover:text-gray-700 transition-colors">{bar.label}</span>
             </div>
           ))}
         </div>

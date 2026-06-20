@@ -114,18 +114,18 @@ export function CalendarGrid({
   const days = viewMode === "month" ? monthDays : weekDays
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white">
-      <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+    <div className="flex flex-col flex-1 overflow-hidden rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-md shadow-sm">
+      <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100/80">
         {DAY_LABELS.map((label) => (
           <div
             key={label}
-            className="text-xs font-semibold text-gray-500 text-center py-2.5 uppercase tracking-wider"
+            className="text-[10px] font-bold text-gray-400 text-center py-3 uppercase tracking-wider"
           >
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 flex-1 overflow-auto">
+      <div className="grid grid-cols-7 flex-1 overflow-auto divide-x divide-y divide-gray-100/80 border-b border-r border-gray-100/80">
         {days.map((date, i) => {
           const isCurrentMonth =
             date.getMonth() === currentMonth.getMonth() &&
@@ -145,90 +145,106 @@ export function CalendarGrid({
             <div
               key={i}
               onClick={() => onDayClick(date)}
-              className={`border border-gray-200 min-h-[100px] p-1.5 cursor-pointer hover:bg-[#cceef5]/30 transition-colors bg-white ${
-                !isCurrentMonth && viewMode === "month" ? "bg-gray-50/60 opacity-40" : ""
+              className={`min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 hover:bg-slate-50/60 relative group flex flex-col justify-between ${
+                isToday ? "bg-primary/2" : "bg-white"
+              } ${
+                !isCurrentMonth && viewMode === "month" ? "opacity-35 bg-gray-50/40" : ""
               }`}
             >
-              <div className="flex items-center mb-1">
-                {isToday ? (
-                  <span className="bg-[#0095b6] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">
-                    {date.getDate()}
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-700 font-medium">
-                    {date.getDate()}
-                  </span>
-                )}
-                {viewMode === "week" && (
-                  <span className="text-xs text-gray-400 ml-1">
-                    {date.toLocaleDateString("es-AR", { month: "short" })}
-                  </span>
-                )}
-              </div>
-              {dayPosts.slice(0, postsToShow).map((post) => {
-                const color = post.clientColor
-                const firstNetwork = post.networks[0] as Network | undefined
-                const iconPath = firstNetwork ? NETWORK_META[firstNetwork].icon : ""
-                const isStory = post.contentFormat === 'story'
-                return (
-                  <div
-                    key={post.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onPostClick(post)
-                    }}
-                    className={`flex items-center gap-1 text-[10px] rounded-r px-1.5 py-0.5 mb-0.5 cursor-pointer truncate border-l-2 ${
-                      isStory ? "border-l-[#ffb703]" : "border-l-[#0095b6]"
-                    }`}
-                    style={{ backgroundColor: color + "33", color }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={iconPath}
-                      alt=""
-                      width={10}
-                      height={10}
-                      className="shrink-0"
-                    />
-                    {isStory && (
-                      <span
-                        className="text-[8px] font-extrabold px-1 rounded shrink-0 uppercase tracking-wider"
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  {isToday ? (
+                    <span className="bg-gradient-to-br from-[#0095b6] to-[#00b4d8] text-white rounded-lg w-6 h-6 flex items-center justify-center text-xs font-bold shadow-[0_2px_8px_rgba(0,149,182,0.3)]">
+                      {date.getDate()}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500 font-bold group-hover:text-gray-900 transition-colors">
+                      {date.getDate()}
+                    </span>
+                  )}
+                  {viewMode === "week" && (
+                    <span className="text-[10px] text-gray-400 font-medium bg-gray-100 px-1.5 py-0.5 rounded">
+                      {date.toLocaleDateString("es-AR", { month: "short" })}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="space-y-1">
+                  {dayEvents.slice(0, eventsToShow).map((event) => {
+                    const time = formatEventTime(event)
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEventClick(event)
+                        }}
+                        className="flex items-center gap-1 text-[10px] rounded-lg px-2 py-1.5 cursor-pointer truncate border border-gray-100/50 border-l-4 font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-xs active:scale-[0.98]"
                         style={{
-                          color: "#ffb703",
-                          backgroundColor: "#ffb70315",
-                          border: "1px solid #ffb70340",
+                          borderLeftColor: event.color,
+                          backgroundColor: event.color + "12",
+                          color: event.color,
                         }}
                       >
-                        Story
-                      </span>
-                    )}
-                    <span className="truncate">{post.title}</span>
-                  </div>
-                )
-              })}
+                        <span className="shrink-0 text-[10px]">{EVENT_TYPE_ICONS[event.type] ?? "📅"}</span>
+                        {time && <span className="shrink-0 text-[9px] opacity-75 font-mono">{time}</span>}
+                        <span className="truncate font-medium">{event.title}</span>
+                      </div>
+                    )
+                  })}
+
+                  {dayPosts.slice(0, postsToShow).map((post) => {
+                    const color = post.clientColor
+                    const firstNetwork = post.networks[0] as Network | undefined
+                    const iconPath = firstNetwork ? NETWORK_META[firstNetwork].icon : ""
+                    const isStory = post.contentFormat === 'story'
+                    const leftBorderColor = isStory ? "#ffb703" : color
+                    return (
+                      <div
+                        key={post.id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onPostClick(post)
+                        }}
+                        className="flex items-center gap-1.5 text-[10px] rounded-lg px-2 py-1.5 cursor-pointer truncate border border-gray-100/50 border-l-4 font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-xs active:scale-[0.98]"
+                        style={{
+                          borderLeftColor: leftBorderColor,
+                          backgroundColor: color + "12",
+                          color: color,
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={iconPath}
+                          alt=""
+                          width={10}
+                          height={10}
+                          className="shrink-0 opacity-80"
+                        />
+                        {isStory && (
+                          <span
+                            className="text-[7px] font-extrabold px-1 rounded shrink-0 uppercase tracking-wider"
+                            style={{
+                              color: "#ffb703",
+                              backgroundColor: "#ffb70312",
+                              border: "1px solid #ffb70330",
+                            }}
+                          >
+                            Story
+                          </span>
+                        )}
+                        <span className="truncate font-medium">{post.title}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
               {overflow > 0 && (
-                <div className="text-[10px] text-gray-400 px-1.5">
+                <div className="text-[9px] text-gray-400 font-bold bg-gray-50 px-1.5 py-0.5 rounded self-start mt-1">
                   +{overflow} más
                 </div>
               )}
-              {dayEvents.slice(0, eventsToShow).map((event) => {
-                const time = formatEventTime(event)
-                return (
-                  <div
-                    key={event.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEventClick(event)
-                    }}
-                    className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 mb-0.5 cursor-pointer truncate"
-                    style={{ backgroundColor: event.color + "25", color: event.color }}
-                  >
-                    <span className="shrink-0 text-[9px]">{EVENT_TYPE_ICONS[event.type] ?? "📅"}</span>
-                    {time && <span className="shrink-0 text-[9px] opacity-70">{time}</span>}
-                    <span className="truncate font-medium">{event.title}</span>
-                  </div>
-                )
-              })}
             </div>
           )
         })}

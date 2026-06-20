@@ -67,7 +67,7 @@ export function MiniCalendar({ posts, events = [] }: MiniCalendarProps) {
   const rangeLabel = `${firstDay.getDate()} - ${lastDay.getDate()} de ${MONTH_NAMES[lastDay.getMonth()]}`
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
+    <div className="premium-card p-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">Esta semana</h3>
         <span className="text-sm text-gray-400">{rangeLabel}</span>
@@ -142,7 +142,7 @@ export function MiniCalendar({ posts, events = [] }: MiniCalendarProps) {
 
       <button
         onClick={() => router.push('/calendario')}
-        className="text-sm text-[#0095b6] text-center mt-4 hover:underline w-full block"
+        className="text-sm text-primary text-center mt-4 hover:text-primary/80 w-full block transition-colors"
       >
         Ver calendario completo
       </button>

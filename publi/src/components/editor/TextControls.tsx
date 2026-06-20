@@ -26,20 +26,25 @@ export function TextControls({ objectInfo, onUpdate }: TextControlsProps) {
   const color = objectInfo.color ?? '#000000'
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4 shadow-sm">
-      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-        Texto
-      </h4>
+    <div className="premium-card p-4 space-y-4 border border-slate-100/50">
+      <div className="flex items-center justify-between pb-1.5 border-b border-slate-100/50">
+        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          Texto
+        </h4>
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold tracking-wide uppercase">
+          Edición
+        </span>
+      </div>
 
       {/* Font size */}
       <div className="space-y-1.5">
-        <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Tamaño
         </span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onUpdate('fontSize', Math.max(8, fontSize - 2))}
-            className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
+            className="w-8 h-8 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -49,11 +54,11 @@ export function TextControls({ objectInfo, onUpdate }: TextControlsProps) {
             max={200}
             value={fontSize}
             onChange={(e) => onUpdate('fontSize', Number(e.target.value))}
-            className="w-14 h-7 text-center text-sm border border-gray-200 rounded-lg outline-none focus:border-[#0095b6] transition-colors"
+            className="w-14 h-8 text-center text-xs font-bold bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all"
           />
           <button
             onClick={() => onUpdate('fontSize', Math.min(200, fontSize + 2))}
-            className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
+            className="w-8 h-8 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -62,17 +67,17 @@ export function TextControls({ objectInfo, onUpdate }: TextControlsProps) {
 
       {/* Bold / Italic */}
       <div className="space-y-1.5">
-        <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Estilo
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           <button
             onClick={() => onUpdate('fontWeight', isBold ? 'normal' : 'bold')}
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+              'w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs',
               isBold
-                ? 'bg-[#cceef5] text-[#0095b6]'
-                : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700'
             )}
           >
             <Bold className="w-4 h-4" />
@@ -80,10 +85,10 @@ export function TextControls({ objectInfo, onUpdate }: TextControlsProps) {
           <button
             onClick={() => onUpdate('fontStyle', isItalic ? 'normal' : 'italic')}
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+              'w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs',
               isItalic
-                ? 'bg-[#cceef5] text-[#0095b6]'
-                : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                ? 'bg-primary/10 text-primary border border-primary/20'
+                : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700'
             )}
           >
             <Italic className="w-4 h-4" />
@@ -93,10 +98,10 @@ export function TextControls({ objectInfo, onUpdate }: TextControlsProps) {
 
       {/* Alignment */}
       <div className="space-y-1.5">
-        <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Alineación
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           {[
             { value: 'left', Icon: AlignLeft },
             { value: 'center', Icon: AlignCenter },
@@ -106,10 +111,10 @@ export function TextControls({ objectInfo, onUpdate }: TextControlsProps) {
               key={value}
               onClick={() => onUpdate('textAlign', value)}
               className={cn(
-                'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+                'w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs',
                 textAlign === value
-                  ? 'bg-[#cceef5] text-[#0095b6]'
-                  : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                  ? 'bg-primary/10 text-primary border border-primary/20'
+                  : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700'
               )}
             >
               <Icon className="w-4 h-4" />
