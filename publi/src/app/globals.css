@@ -88,9 +88,10 @@
     --surface: 214 15% 98%;          /* #f8f9fa — fondo del contenido del dashboard */
     --radius: 0.75rem;
 
-    /* sidebar dark */
-    --sidebar-bg: 228 20% 8%;       /* #0f1117 */
-    --sidebar-hover: 0 0% 100%;     /* used with /5, /10 opacity */
+    /* sidebar light */
+    --sidebar-bg: 210 40% 96.1%;    /* #f1f5f9 */
+    --sidebar-hover: 215 15% 15%;
+
 
     /* shadcn overrides */
     --ring: 193 100% 36%;

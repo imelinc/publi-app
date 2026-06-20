@@ -73,6 +73,7 @@ export function Sidebar() {
 
   const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
+  const color = activeClient?.color ?? '#0095b6'
 
   useEffect(() => {
     if (clients.length > 0 && !activeWorkspaceId) {
@@ -93,7 +94,14 @@ export function Sidebar() {
   }, [dropdownOpen])
 
   return (
-    <aside className="fixed left-0 top-0 w-[280px] h-screen bg-[#0f1117] flex flex-col z-30">
+    <aside className="fixed left-0 top-0 w-[280px] h-screen bg-[#f1f5f9] border-r border-slate-200 flex flex-col z-30">
+      {/* Accent color border on the right */}
+      <div
+        className="absolute right-0 top-0 w-[3px] h-full pointer-events-none"
+        style={{
+          background: `linear-gradient(180deg, ${color}00 0%, ${color}00 20%, ${color} 50%, ${color}00 80%, ${color}00 100%)`,
+        }}
+      />
       {/* ZONA TOP */}
       <div className="px-5 pt-6 pb-4">
         <span className="font-bold text-xl text-primary tracking-tight">
@@ -104,12 +112,12 @@ export function Sidebar() {
         <div className="relative mt-4" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((v) => !v)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.06] transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 shadow-sm shadow-slate-100/50 transition-all duration-200"
           >
             {activeClient ? (
               <>
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ring-2 ring-white/10"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ring-2 ring-slate-100"
                   style={{
                     backgroundColor: activeClient.color,
                     fontSize: '12px',
@@ -118,21 +126,21 @@ export function Sidebar() {
                 >
                   {activeClient.initials}
                 </div>
-                <span className="flex-1 text-sm font-medium text-white/90 text-left truncate">
+                <span className="flex-1 text-sm font-medium text-slate-800 text-left truncate">
                   {activeClient.name}
                 </span>
               </>
             ) : (
-              <span className="flex-1 text-sm text-white/40 text-left">Sin clientes</span>
+              <span className="flex-1 text-sm text-slate-400 text-left">Sin clientes</span>
             )}
             <ChevronDown className={cn(
-              "w-4 h-4 text-white/40 shrink-0 transition-transform duration-200",
+              "w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200",
               dropdownOpen && "rotate-180"
             )} />
           </button>
 
           {dropdownOpen && clients.length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#1a1d27] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/40 z-50 py-1.5 backdrop-blur-xl">
+            <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 z-50 py-1.5">
               {clients.map((c) => (
                 <button
                   key={c.id}
@@ -140,7 +148,7 @@ export function Sidebar() {
                     setActiveWorkspace(c.id)
                     setDropdownOpen(false)
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/[0.06] transition-colors rounded-lg mx-0"
+                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 transition-colors rounded-lg mx-0"
                 >
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
@@ -152,7 +160,7 @@ export function Sidebar() {
                   >
                     {c.initials}
                   </div>
-                  <span className="flex-1 text-sm text-white/80 text-left truncate">
+                  <span className="flex-1 text-sm text-slate-700 text-left truncate">
                     {c.name}
                   </span>
                   {c.id === activeWorkspaceId && (
@@ -185,8 +193,8 @@ export function Sidebar() {
                 className={cn(
                   'w-full flex items-center gap-3 py-2.5 px-3 rounded-xl text-sm text-left transition-all duration-200 relative group',
                   isActive
-                    ? 'bg-white/[0.08] text-white font-medium'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                    ? 'bg-primary/[0.08] text-primary font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 )}
               >
                 {/* Active indicator bar */}
@@ -196,18 +204,18 @@ export function Sidebar() {
                 <Icon
                   className={cn(
                     "w-[18px] h-[18px] shrink-0 transition-colors duration-200",
-                    isActive ? 'text-primary' : 'text-white/40 group-hover:text-white/70'
+                    isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-600'
                   )}
                 />
                 <span className="flex-1 truncate">{label}</span>
                 {userProfile?.plan === 'free' && (href === '/ai' || href === '/editor') && (
-                  <Lock className="w-3.5 h-3.5 text-white/25 shrink-0 ml-auto" />
+                  <Lock className="w-3.5 h-3.5 text-slate-400/60 shrink-0 ml-auto" />
                 )}
               </button>
             )
           })}
 
-          <div className="border-t border-white/[0.06] my-2.5" />
+          <div className="border-t border-slate-200/60 my-2.5" />
 
           {(() => {
             const isActive = pathname.startsWith('/configuracion')
@@ -217,8 +225,8 @@ export function Sidebar() {
                 className={cn(
                   'w-full flex items-center gap-3 py-2.5 px-3 rounded-xl text-sm text-left transition-all duration-200 relative group',
                   isActive
-                    ? 'bg-white/[0.08] text-white font-medium'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                    ? 'bg-primary/[0.08] text-primary font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 )}
               >
                 {isActive && (
@@ -227,7 +235,7 @@ export function Sidebar() {
                 <Settings
                   className={cn(
                     "w-[18px] h-[18px] shrink-0 transition-colors duration-200",
-                    isActive ? 'text-primary' : 'text-white/40 group-hover:text-white/70'
+                    isActive ? 'text-primary' : 'text-slate-400 group-hover:text-slate-600'
                   )}
                 />
                 Configuración
@@ -238,27 +246,27 @@ export function Sidebar() {
       </div>
 
       {/* ZONA BOTTOM */}
-      <div className="px-4 pb-5 pt-3 border-t border-white/[0.06]">
+      <div className="px-4 pb-5 pt-3 border-t border-slate-200/60">
         <div className="flex items-center gap-3">
           {userProfile?.avatarUrl ? (
             <img
               src={userProfile.avatarUrl}
               alt={userProfile.name}
-              className="w-8 h-8 rounded-full shrink-0 object-cover ring-2 ring-white/10"
+              className="w-8 h-8 rounded-full shrink-0 object-cover ring-2 ring-slate-100"
             />
           ) : (
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0 ring-2 ring-white/10"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0 ring-2 ring-slate-100"
               style={{ backgroundColor: '#0095b6' }}
             >
               {userProfile?.initials ?? '…'}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white/90 truncate">
+            <p className="text-sm font-medium text-slate-800 truncate">
               {userProfile?.name ?? '…'}
             </p>
-            <p className="text-xs text-white/40 truncate">
+            <p className="text-xs text-slate-500 truncate">
               {userProfile?.email ?? ''}
             </p>
           </div>
@@ -268,7 +276,7 @@ export function Sidebar() {
               await supabase.auth.signOut()
               router.push('/login')
             }}
-            className="text-white/30 hover:text-white/60 cursor-pointer transition-colors"
+            className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
             title="Cerrar sesión"
           >
             <LogOut className="w-4 h-4" />
