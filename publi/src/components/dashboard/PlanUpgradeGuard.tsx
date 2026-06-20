@@ -87,7 +87,7 @@ export function PlanUpgradeGuard({ featureName, activeClient }: PlanUpgradeGuard
               </li>
               <li className="flex items-center gap-2.5 text-xs text-gray-700 font-medium">
                 <CheckCircle2 className="w-4 h-4 text-[#0095b6] shrink-0" />
-                Editor de imágenes avanzado (Fabric.js)
+                Editor de imágenes avanzado
               </li>
               <li className="flex items-center gap-2.5 text-xs text-gray-700 font-medium">
                 <CheckCircle2 className="w-4 h-4 text-[#0095b6] shrink-0" />
