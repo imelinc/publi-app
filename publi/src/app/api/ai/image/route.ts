@@ -9,9 +9,28 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { prompt } = await request.json()
+    const { prompt, clientId } = await request.json()
     if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
       return Response.json({ error: 'El prompt es requerido' }, { status: 400 })
+    }
+
+    if (!clientId) {
+      return Response.json({ error: 'El ID del cliente es requerido' }, { status: 400 })
+    }
+
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('plan')
+      .eq('id', clientId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (clientError || !client) {
+      return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    }
+
+    if (client.plan === 'free') {
+      return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
     }
 
     const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID

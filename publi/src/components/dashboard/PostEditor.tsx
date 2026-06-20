@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { Wand2, Hash, Clock, ImagePlus, X, Loader2, Crop, Trash2, AlertCircle } from 'lucide-react'
+import { Wand2, Hash, Clock, ImagePlus, X, Loader2, Crop, Trash2, AlertCircle, Lock } from 'lucide-react'
 import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { NETWORK_META } from '@/lib/networks'
 import { AiPanel } from './AiPanel'
 import { CropDialog } from './CropDialog'
+import { PlanUpgradeDialog } from './PlanUpgradeDialog'
 
 interface PostEditorProps {
   clientId: string
@@ -48,6 +49,7 @@ export function PostEditor({
   const [uploading, setUploading] = useState(false)
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null)
   const [cropImageIndex, setCropImageIndex] = useState<number>(-1)
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
@@ -453,7 +455,13 @@ export function PostEditor({
 
         <div className="flex gap-2 mt-2">
           <button
-            onClick={() => setAiPanelType(aiPanelType === 'rewrite' ? null : 'rewrite')}
+            onClick={() => {
+              if (selectedClient?.plan === 'free') {
+                setUpgradeDialogOpen(true)
+              } else {
+                setAiPanelType(aiPanelType === 'rewrite' ? null : 'rewrite')
+              }
+            }}
             className={`inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors ${
               aiPanelType === 'rewrite'
                 ? 'border border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
@@ -462,9 +470,16 @@ export function PostEditor({
           >
             <Wand2 className="size-3.5" />
             Reescribir
+            {selectedClient?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
           </button>
           <button
-            onClick={() => setAiPanelType(aiPanelType === 'hashtags' ? null : 'hashtags')}
+            onClick={() => {
+              if (selectedClient?.plan === 'free') {
+                setUpgradeDialogOpen(true)
+              } else {
+                setAiPanelType(aiPanelType === 'hashtags' ? null : 'hashtags')
+              }
+            }}
             className={`inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors ${
               aiPanelType === 'hashtags'
                 ? 'border border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
@@ -473,9 +488,16 @@ export function PostEditor({
           >
             <Hash className="size-3.5" />
             Hashtags
+            {selectedClient?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
           </button>
           <button
-            onClick={() => setAiPanelType(aiPanelType === 'schedule' ? null : 'schedule')}
+            onClick={() => {
+              if (selectedClient?.plan === 'free') {
+                setUpgradeDialogOpen(true)
+              } else {
+                setAiPanelType(aiPanelType === 'schedule' ? null : 'schedule')
+              }
+            }}
             className={`inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors ${
               aiPanelType === 'schedule'
                 ? 'border border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
@@ -484,6 +506,7 @@ export function PostEditor({
           >
             <Clock className="size-3.5" />
             Horario
+            {selectedClient?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
           </button>
         </div>
 
@@ -661,6 +684,13 @@ export function PostEditor({
           onCropComplete={handleCropComplete}
         />
       )}
+
+      {/* Plan Upgrade Dialog */}
+      <PlanUpgradeDialog
+        open={upgradeDialogOpen}
+        onClose={() => setUpgradeDialogOpen(false)}
+        activeClient={selectedClient}
+      />
     </div>
   )
 }

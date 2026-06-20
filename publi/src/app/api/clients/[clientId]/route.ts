@@ -54,6 +54,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     name: client.name,
     description: client.descriptions ?? '',
     color: client.color,
+    plan: client.plan,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
     connectedNetworks,
@@ -67,6 +68,7 @@ interface UpdateClientBody {
   name?: string
   description?: string
   color?: string
+  plan?: 'free' | 'pro'
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -96,6 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (body.name !== undefined) updates.name = body.name.trim()
   if (body.description !== undefined) updates.descriptions = body.description || null
   if (body.color !== undefined) updates.color = body.color
+  if (body.plan !== undefined) updates.plan = body.plan
 
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: 'No se enviaron campos para actualizar' }, { status: 400 })
@@ -118,6 +121,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     name: client.name,
     description: client.descriptions ?? '',
     color: client.color,
+    plan: client.plan,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
   }

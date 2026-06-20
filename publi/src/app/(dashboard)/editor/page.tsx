@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { ImageEditor } from '@/components/editor/ImageEditor'
 import { Palette, Square, Smartphone, Monitor, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store/use-app-store'
+import { PlanUpgradeGuard } from '@/components/dashboard/PlanUpgradeGuard'
 
 type CanvasPreset = {
   label: string
@@ -38,6 +40,10 @@ const PRESETS: CanvasPreset[] = [
 ]
 
 export default function EditorPage() {
+  const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
+  const clients = useAppStore((s) => s.clients)
+  const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
+
   const [editorState, setEditorState] = useState<
     | { mode: 'landing' }
     | { mode: 'editor'; width: number; height: number; bgColor: string }
@@ -45,6 +51,15 @@ export default function EditorPage() {
 
   const [bgColor, setBgColor] = useState('#ffffff')
   const [selectedPreset, setSelectedPreset] = useState(0)
+
+  if (activeClient?.plan === 'free') {
+    return (
+      <PlanUpgradeGuard
+        featureName="El Editor de imágenes"
+        activeClient={activeClient}
+      />
+    )
+  }
 
   function startBlank() {
     const preset = PRESETS[selectedPreset]

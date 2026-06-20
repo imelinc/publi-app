@@ -27,12 +27,16 @@ export async function POST(req: NextRequest) {
       if (user) {
         const { data: client } = await supabase
           .from('clients')
-          .select('name, descriptions')
+          .select('name, descriptions, plan')
           .eq('id', clientId)
           .eq('user_id', user.id)
           .single()
 
         if (client) {
+          if (client.plan === 'free') {
+            return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
+          }
+
           const { data: accounts } = await supabase
             .from('social_accounts')
             .select('network')

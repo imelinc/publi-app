@@ -41,6 +41,10 @@ Asegurate de adaptar todo tu asesoramiento, copies, hashtags, formatos de posts 
           .single()
 
         if (client) {
+          if (client.plan === 'free') {
+            return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
+          }
+
           const { data: accounts } = await supabase
             .from('social_accounts')
             .select('network')
