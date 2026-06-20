@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Copy, Check, Send, Clock4, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
+import { Sparkles, Copy, Check, Send, Clock4, AlertCircle, CheckCircle2, Trash2, Lock } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
 import type { Network, PostStatus, Post } from '@/types'
 import { PostEditor } from '@/components/dashboard/PostEditor'
 import { PostPreview } from '@/components/dashboard/PostPreview'
 import { AiPanel, type ScheduleRecommendation } from '@/components/dashboard/AiPanel'
+import { PlanUpgradeDialog } from '@/components/dashboard/PlanUpgradeDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -195,6 +196,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   )
 
   const [showScheduleAi, setShowScheduleAi] = useState(false)
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const [approvalLoading, setApprovalLoading] = useState(false)
   const [approvalUrl, setApprovalUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -812,11 +814,18 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                   )
                 })()}
                 <button
-                  onClick={() => setShowScheduleAi(!showScheduleAi)}
+                  onClick={() => {
+                    if (client?.plan === 'free') {
+                      setUpgradeDialogOpen(true)
+                    } else {
+                      setShowScheduleAi(!showScheduleAi)
+                    }
+                  }}
                   className="inline-flex items-center gap-1.5 border border-[#0095b6] text-[#0095b6] text-sm rounded-lg px-3 py-1.5 hover:bg-[#cceef5] transition-colors"
                 >
                   <Sparkles className="size-3.5" />
                   IA: Sugerir horario
+                  {client?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
                 </button>
                 {showScheduleAi && (
                   <AiPanel
@@ -1133,6 +1142,13 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Plan Upgrade Dialog */}
+      <PlanUpgradeDialog
+        open={upgradeDialogOpen}
+        onClose={() => setUpgradeDialogOpen(false)}
+        activeClient={client}
+      />
     </div>
   )
 }

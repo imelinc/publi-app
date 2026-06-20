@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { ImageIcon, Download, Loader2, AlertCircle, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export default function ImageGenerator() {
+interface ImageGeneratorProps {
+  clientId: string
+}
+
+export default function ImageGenerator({ clientId }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
@@ -25,7 +29,7 @@ export default function ImageGenerator() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: trimmedPrompt }),
+        body: JSON.stringify({ prompt: trimmedPrompt, clientId }),
       })
 
       const data = await res.json()

@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
 import ImageGenerator from '@/components/dashboard/ai/ImageGenerator'
 import { ALL_NETWORKS, NETWORK_META } from '@/lib/networks'
+import { PlanUpgradeGuard } from '@/components/dashboard/PlanUpgradeGuard'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -38,7 +39,9 @@ const STORAGE_KEY = 'publi_ai_chat_sessions'
 
 export default function AiPage() {
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
-  
+  const clients = useAppStore((s) => s.clients)
+  const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
+
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [input, setInput] = useState('')
@@ -46,6 +49,15 @@ export default function AiPage() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'images'>('chat')
   const [selectedNetwork, setSelectedNetwork] = useState<string>('general')
+
+  if (activeClient?.plan === 'free') {
+    return (
+      <PlanUpgradeGuard
+        featureName="Copi IA y el Generador de imágenes"
+        activeClient={activeClient}
+      />
+    )
+  }
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -557,7 +569,7 @@ export default function AiPage() {
       </div>
     </>
   ) : (
-    <ImageGenerator />
+    <ImageGenerator clientId={activeWorkspaceId} />
   )}
       </div>
     </div>
