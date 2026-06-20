@@ -120,7 +120,7 @@ interface PostFormProps {
 export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const { addPost, updatePostRemote, deletePost, requestApproval, publishPostNow, activeWorkspaceId, clients } = useAppStore()
+  const { addPost, updatePostRemote, deletePost, requestApproval, publishPostNow, activeWorkspaceId, clients, userProfile } = useAppStore()
   const setHasUnsavedChanges = useAppStore((s) => s.setHasUnsavedChanges)
 
   // ─── Estado del form ──────────────────────────────────────────────────────────
@@ -815,7 +815,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                 })()}
                 <button
                   onClick={() => {
-                    if (client?.plan === 'free') {
+                    if (userProfile?.plan === 'free') {
                       setUpgradeDialogOpen(true)
                     } else {
                       setShowScheduleAi(!showScheduleAi)
@@ -825,7 +825,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                 >
                   <Sparkles className="size-3.5" />
                   IA: Sugerir horario
-                  {client?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
+                  {userProfile?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
                 </button>
                 {showScheduleAi && (
                   <AiPanel
@@ -1147,7 +1147,6 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       <PlanUpgradeDialog
         open={upgradeDialogOpen}
         onClose={() => setUpgradeDialogOpen(false)}
-        activeClient={client}
       />
     </div>
   )

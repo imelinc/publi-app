@@ -10,43 +10,9 @@ import type { Client } from '@/types'
 
 interface PlanUpgradeGuardProps {
   featureName: string
-  activeClient: Client | null
 }
 
-export function PlanUpgradeGuard({ featureName, activeClient }: PlanUpgradeGuardProps) {
-  const [upgrading, setUpgrading] = useState(false)
-  const updateClient = useAppStore((s) => s.updateClient)
-  const { toast } = useToast()
-  const router = useRouter()
-
-  async function handleUpgrade() {
-    if (!activeClient) return
-    setUpgrading(true)
-    try {
-      await updateClient(activeClient.id, { plan: 'pro' })
-      toast({
-        title: '¡Plan actualizado a Pro!',
-        description: `El workspace de ${activeClient.name} ahora tiene acceso a todas las herramientas Pro.`,
-      })
-      router.push(`/dashboard?upgrade_success=${encodeURIComponent(activeClient.name)}`)
-    } catch (err) {
-      toast({
-        title: 'Error al actualizar',
-        description: 'No se pudo actualizar el plan. Intentá de nuevo.',
-      })
-    } finally {
-      setUpgrading(false)
-    }
-  }
-
-  if (!activeClient) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-xs">
-        <p className="text-gray-500 text-sm">Seleccioná o creá un cliente para continuar.</p>
-      </div>
-    )
-  }
-
+export function PlanUpgradeGuard({ featureName }: PlanUpgradeGuardProps) {
   return (
     <div className="max-w-2xl mx-auto my-12">
       <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-8 sm:p-12 shadow-md">
@@ -71,7 +37,7 @@ export function PlanUpgradeGuard({ featureName, activeClient }: PlanUpgradeGuard
               {featureName} es una función <span className="text-[#0095b6]">Pro</span>
             </h2>
             <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto leading-relaxed">
-              El cliente <strong className="text-gray-900 font-semibold">{activeClient.name}</strong> está en el plan <strong className="text-[#0095b6]">Free</strong>. Para desbloquear el editor de imágenes y el asistente con IA de Copi, actualizá el plan de este cliente.
+              Tu cuenta de publi está en el plan <strong className="text-[#0095b6]">Free</strong>. Para desbloquear todas las herramientas de Inteligencia Artificial y el Editor de imágenes, necesitás el plan Pro.
             </p>
           </div>
 
@@ -100,27 +66,10 @@ export function PlanUpgradeGuard({ featureName, activeClient }: PlanUpgradeGuard
             </ul>
           </div>
 
-          {/* Interactive CTA */}
+          {/* Footnote */}
           <div className="w-full max-w-md pt-2">
-            <Button
-              onClick={handleUpgrade}
-              disabled={upgrading}
-              className="w-full py-6 rounded-xl bg-[#0095b6] hover:bg-[#007a96] text-white font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {upgrading ? (
-                <>
-                  <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                  Actualizando cliente a Pro...
-                </>
-              ) : (
-                <>
-                  Actualizar {activeClient.name} a Pro por $9.99/mes
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-            <p className="text-[10px] text-gray-400 mt-2.5">
-              Los cambios se aplicarán inmediatamente y se facturarán a tu cuenta.
+            <p className="text-xs text-gray-400 mt-2.5">
+              Si querés actualizar tu suscripción, ponete en contacto con el administrador de tu cuenta.
             </p>
           </div>
         </div>

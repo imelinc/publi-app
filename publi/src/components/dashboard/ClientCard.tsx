@@ -21,7 +21,6 @@ export function ClientCard({
   onManageNetworks,
 }: ClientCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const isPro = client.plan === 'pro'
 
   useEffect(() => {
     if (!dropdownOpen) return
@@ -58,20 +57,6 @@ export function ClientCard({
               <span className="font-bold text-gray-900 text-lg leading-snug group-hover:text-[#0095b6] transition-colors duration-200">
                 {client.name}
               </span>
-              
-              {/* Premium Plan Badge */}
-              <div className="flex">
-                {isPro ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 to-[#ffb703] text-white shadow-xs border border-amber-400/20">
-                    <Crown className="w-3 h-3" />
-                    PRO
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#cceef5]/70 text-[#0095b6] border border-[#0095b6]/10">
-                    FREE
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 

@@ -18,44 +18,14 @@ import type { Client } from '@/types'
 interface PlanUpgradeDialogProps {
   open: boolean
   onClose: () => void
-  activeClient: Client | null
   featureName?: string
 }
 
 export function PlanUpgradeDialog({
   open,
   onClose,
-  activeClient,
   featureName = 'las herramientas de Inteligencia Artificial',
 }: PlanUpgradeDialogProps) {
-  const [upgrading, setUpgrading] = useState(false)
-  const updateClient = useAppStore((s) => s.updateClient)
-  const { toast } = useToast()
-  const router = useRouter()
-
-  async function handleUpgrade() {
-    if (!activeClient) return
-    setUpgrading(true)
-    try {
-      await updateClient(activeClient.id, { plan: 'pro' })
-      toast({
-        title: '¡Plan actualizado a Pro!',
-        description: `El workspace de ${activeClient.name} ahora tiene acceso a todas las herramientas Pro.`,
-      })
-      onClose()
-      router.push(`/dashboard?upgrade_success=${encodeURIComponent(activeClient.name)}`)
-    } catch (err) {
-      toast({
-        title: 'Error al actualizar',
-        description: 'No se pudo actualizar el plan. Intentá de nuevo.',
-      })
-    } finally {
-      setUpgrading(false)
-    }
-  }
-
-  if (!activeClient) return null
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <DialogContent className="sm:max-w-[440px] p-6 rounded-2xl bg-white border border-gray-100 shadow-xl overflow-hidden">
@@ -72,10 +42,10 @@ export function PlanUpgradeDialog({
 
           <div className="space-y-1">
             <DialogTitle className="text-xl font-bold text-gray-900">
-              Desbloqueá Pro
+              Función Pro de publi
             </DialogTitle>
             <p className="text-sm text-gray-500">
-              Para usar {featureName} con <strong>{activeClient.name}</strong>, necesitás activar el plan Pro.
+              Para usar {featureName}, necesitás activar el plan Pro en tu cuenta.
             </p>
           </div>
 
@@ -85,34 +55,17 @@ export function PlanUpgradeDialog({
               <li>Generación y reescritura de copies por IA</li>
               <li>Sugerencia inteligente de hashtags y horario óptimo</li>
               <li>Editor y generador de imágenes integrado</li>
+              <li>Workspaces ilimitados (más de 3 clientes)</li>
             </ul>
           </div>
         </div>
 
-        <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
+        <DialogFooter className="mt-6 flex justify-center">
           <Button
-            variant="outline"
             onClick={onClose}
-            disabled={upgrading}
-            className="w-full sm:w-auto text-xs"
+            className="w-full text-xs bg-[#0095b6] hover:bg-[#007a96] text-white font-medium flex items-center justify-center"
           >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleUpgrade}
-            disabled={upgrading}
-            className="w-full sm:flex-1 text-xs bg-[#0095b6] hover:bg-[#007a96] text-white font-medium flex items-center justify-center gap-1.5"
-          >
-            {upgrading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Actualizando...
-              </>
-            ) : (
-              <>
-                Actualizar a Pro ($9.99/mes)
-              </>
-            )}
+            Entendido
           </Button>
         </DialogFooter>
       </DialogContent>

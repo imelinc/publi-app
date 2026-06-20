@@ -30,17 +30,16 @@ interface ClientModalProps {
   client: Client | null
   /**
    * Guarda el cliente (crear o actualizar) y devuelve el cliente resultante,
-   * que se usa para conocer su `id` y avanzar al paso 3 (conexión de redes).
+   * que se usa para conocer su `id` y avanzar al paso 2 (conexión de redes).
    */
-  onSave: (data: { name: string; description?: string; color: string; plan: Plan }) => Promise<Client>
+  onSave: (data: { name: string; description?: string; color: string }) => Promise<Client>
 }
 
 export function ClientModal({ open, onClose, client, onSave }: ClientModalProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2>(1)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [color, setColor] = useState<string>(COLORS[0])
-  const [plan, setPlan] = useState<Plan>('free')
   const [savedClientId, setSavedClientId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -51,8 +50,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
       setName(client.name)
       setDescription(client.description ?? '')
       setColor(client.color)
-      setPlan(client.plan)
-      setSavedClientId(client.id) // ya existe, podemos saltar a paso 3 si quisiéramos
+      setSavedClientId(client.id)
       setStep(1)
     }
   }, [client])
@@ -62,7 +60,6 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
       setName('')
       setDescription('')
       setColor(COLORS[0])
-      setPlan('free')
       setStep(1)
       setSavedClientId(null)
       setSaving(false)
@@ -76,10 +73,9 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
         name: name.trim(),
         description: description.trim() || undefined,
         color,
-        plan,
       })
       setSavedClientId(result.id)
-      setStep(3)
+      setStep(2)
     } finally {
       setSaving(false)
     }
@@ -93,7 +89,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <div className="flex items-center gap-2 mt-2">
-            {([1, 2, 3] as const).map((s) => (
+            {([1, 2] as const).map((s) => (
               <div
                 key={s}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold"
@@ -153,8 +149,8 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
                     style={{
                       backgroundColor: c,
                       ...(color === c
-                        ? { boxShadow: '0 0 0 2px white, 0 0 0 4px #111827' }
-                        : {}),
+                         ? { boxShadow: '0 0 0 2px white, 0 0 0 4px #111827' }
+                         : {}),
                     }}
                   />
                 ))}
@@ -163,43 +159,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
           </div>
         )}
 
-        {step === 2 && (
-          <div className="flex flex-col gap-4">
-            <label className="text-sm font-medium text-gray-700">Plan</label>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setPlan('free')}
-                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors text-left ${
-                  plan === 'free'
-                    ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                    : 'border-gray-200 bg-white text-gray-600'
-                }`}
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Free</span>
-                  <span className="text-xs">Gratis, hasta 3 clientes, sin IA</span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlan('pro')}
-                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors text-left ${
-                  plan === 'pro'
-                    ? 'border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                    : 'border-gray-200 bg-white text-gray-600'
-                }`}
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Pro</span>
-                  <span className="text-xs">$9.99/mes, clientes ilimitados, con IA</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && savedClientId && (
+        {step === 2 && savedClientId && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">
               Ingresá el usuario de las redes que quieras conectar. Podés saltearte este
@@ -211,29 +171,20 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
 
         <DialogFooter>
           {step === 1 && (
-            <Button
-              onClick={() => setStep(2)}
-              disabled={!name.trim()}
-              className="bg-[#0095b6] hover:bg-[#007a96] text-white"
-            >
-              Siguiente
-            </Button>
-          )}
-          {step === 2 && (
             <>
-              <Button variant="outline" onClick={() => setStep(1)} disabled={saving}>
-                Atrás
+              <Button variant="outline" onClick={onClose} disabled={saving}>
+                Cancelar
               </Button>
               <Button
                 onClick={handleSaveAndNext}
-                disabled={saving}
+                disabled={!name.trim() || saving}
                 className="bg-[#0095b6] hover:bg-[#007a96] text-white"
               >
                 {saving ? 'Guardando…' : 'Guardar y continuar'}
               </Button>
             </>
           )}
-          {step === 3 && (
+          {step === 2 && (
             <Button
               onClick={onClose}
               className="bg-[#0095b6] hover:bg-[#007a96] text-white"

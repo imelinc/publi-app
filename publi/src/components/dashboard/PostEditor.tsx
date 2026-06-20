@@ -55,6 +55,7 @@ export function PostEditor({
 
   const clients = useAppStore((s) => s.clients)
   const uploadMedia = useAppStore((s) => s.uploadMedia)
+  const userProfile = useAppStore((s) => s.userProfile)
   const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
 
   const [activeEditorTab, setActiveEditorTab] = useState<Network | null>(null)
@@ -456,7 +457,7 @@ export function PostEditor({
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => {
-              if (selectedClient?.plan === 'free') {
+              if (userProfile?.plan === 'free') {
                 setUpgradeDialogOpen(true)
               } else {
                 setAiPanelType(aiPanelType === 'rewrite' ? null : 'rewrite')
@@ -470,11 +471,11 @@ export function PostEditor({
           >
             <Wand2 className="size-3.5" />
             Reescribir
-            {selectedClient?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
+            {userProfile?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
           </button>
           <button
             onClick={() => {
-              if (selectedClient?.plan === 'free') {
+              if (userProfile?.plan === 'free') {
                 setUpgradeDialogOpen(true)
               } else {
                 setAiPanelType(aiPanelType === 'hashtags' ? null : 'hashtags')
@@ -488,11 +489,11 @@ export function PostEditor({
           >
             <Hash className="size-3.5" />
             Hashtags
-            {selectedClient?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
+            {userProfile?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
           </button>
           <button
             onClick={() => {
-              if (selectedClient?.plan === 'free') {
+              if (userProfile?.plan === 'free') {
                 setUpgradeDialogOpen(true)
               } else {
                 setAiPanelType(aiPanelType === 'schedule' ? null : 'schedule')
@@ -506,7 +507,7 @@ export function PostEditor({
           >
             <Clock className="size-3.5" />
             Horario
-            {selectedClient?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
+            {userProfile?.plan === 'free' && <Lock className="size-3 text-[#0095b6] shrink-0" />}
           </button>
         </div>
 
@@ -689,7 +690,6 @@ export function PostEditor({
       <PlanUpgradeDialog
         open={upgradeDialogOpen}
         onClose={() => setUpgradeDialogOpen(false)}
-        activeClient={selectedClient}
       />
     </div>
   )

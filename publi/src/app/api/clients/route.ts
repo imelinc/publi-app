@@ -75,12 +75,11 @@ export async function GET() {
       else if (typed.status === 'published') entry.published++
     }
 
-    const result = clients.map((c: { id: string; name: string; descriptions: string | null; color: string; plan: Plan; created_at: string }) => ({
+    const result = clients.map((c: { id: string; name: string; descriptions: string | null; color: string; created_at: string }) => ({
       id: c.id,
       name: c.name,
       description: c.descriptions ?? '',
       color: c.color,
-      plan: c.plan,
       createdAt: c.created_at,
       initials: c.name.slice(0, 2).toUpperCase(),
       connectedNetworks: networksByClient.get(c.id) ?? ([] as Network[]),
@@ -100,7 +99,6 @@ interface CreateClientBody {
   description?: string
   color: string
   networks?: Network[]
-  plan?: Plan
 }
 
 export async function POST(request: NextRequest) {
@@ -117,17 +115,45 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 })
   }
 
-const { data: client, error: insertError } = await supabase
+  // 1. Obtener el perfil del usuario para ver su plan
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError) {
+    return Response.json({ error: 'No se pudo obtener el perfil del usuario' }, { status: 500 })
+  }
+
+  const userPlan = profile?.plan ?? 'free'
+
+  if (userPlan === 'free') {
+    // Contar cuántos clientes ya tiene el usuario
+    const { count, error: countError } = await supabase
       .from('clients')
-      .insert({
-        user_id: user.id,
-        name: body.name.trim(),
-        descriptions: body.description ?? null,
-        color: body.color,
-        plan: body.plan ?? 'free',
-      })
-      .select()
-      .single()
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    if (countError) {
+      return Response.json({ error: 'No se pudo verificar el límite de clientes' }, { status: 500 })
+    }
+
+    if (count !== null && count >= 3) {
+      return Response.json({ error: 'Límite de clientes alcanzado para el plan Free (máximo 3)' }, { status: 400 })
+    }
+  }
+
+  const { data: client, error: insertError } = await supabase
+        .from('clients')
+        .insert({
+          user_id: user.id,
+          name: body.name.trim(),
+          descriptions: body.description ?? null,
+          color: body.color,
+        })
+        .select()
+        .single()
 
   if (insertError) {
     return Response.json({ error: insertError.message }, { status: 500 })
@@ -138,7 +164,6 @@ const { data: client, error: insertError } = await supabase
     name: client.name,
     description: client.descriptions ?? '',
     color: client.color,
-    plan: client.plan,
     createdAt: client.created_at,
     initials: client.name.slice(0, 2).toUpperCase(),
     connectedNetworks: [] as Network[],

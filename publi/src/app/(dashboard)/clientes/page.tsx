@@ -8,7 +8,7 @@ import { ClientModal } from '@/components/dashboard/ClientModal'
 import { ManageNetworksDialog } from '@/components/dashboard/ManageNetworksDialog'
 import { useToast } from '@/components/ui/use-toast'
 import { Plus } from 'lucide-react'
-import type { Client, Plan } from '@/types'
+import type { Client } from '@/types'
 
 function ClientCardSkeleton() {
   return (
@@ -127,7 +127,10 @@ export default function ClientesPage() {
     }
   }
 
-  async function handleSave(data: { name: string; description?: string; color: string; plan: Plan }): Promise<Client> {
+  const userProfile = useAppStore((s) => s.userProfile)
+  const isLimitReached = userProfile?.plan === 'free' && clients.length >= 3
+
+  async function handleSave(data: { name: string; description?: string; color: string }): Promise<Client> {
     try {
       if (editingClient) {
         await updateClient(editingClient.id, data)
@@ -141,7 +144,7 @@ export default function ClientesPage() {
     } catch (err) {
       toast({
         title: 'Error al guardar',
-        description: 'No se pudo guardar el cliente. Intentá de nuevo.',
+        description: err instanceof Error ? err.message : 'No se pudo guardar el cliente. Intentá de nuevo.',
       })
       throw err
     }
@@ -166,7 +169,16 @@ export default function ClientesPage() {
           <p className="text-sm text-gray-500">Gestioná los workspaces de tus clientes</p>
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            if (isLimitReached) {
+              toast({
+                title: 'Límite de clientes alcanzado',
+                description: 'En el plan Free podés gestionar hasta 3 clientes. Pasate a Pro para tener clientes ilimitados.',
+              })
+              return
+            }
+            setModalOpen(true)
+          }}
           className="flex items-center gap-1.5 bg-[#0095b6] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#007a96] transition-colors"
         >
           <Plus className="w-4 h-4" />

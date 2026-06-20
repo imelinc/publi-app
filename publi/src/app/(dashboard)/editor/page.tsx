@@ -42,6 +42,7 @@ const PRESETS: CanvasPreset[] = [
 export default function EditorPage() {
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const clients = useAppStore((s) => s.clients)
+  const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
 
   const [editorState, setEditorState] = useState<
@@ -52,11 +53,10 @@ export default function EditorPage() {
   const [bgColor, setBgColor] = useState('#ffffff')
   const [selectedPreset, setSelectedPreset] = useState(0)
 
-  if (activeClient?.plan === 'free') {
+  if (userProfile?.plan === 'free') {
     return (
       <PlanUpgradeGuard
         featureName="El Editor de imágenes"
-        activeClient={activeClient}
       />
     )
   }
