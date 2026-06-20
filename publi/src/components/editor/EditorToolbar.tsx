@@ -102,21 +102,21 @@ export function EditorToolbar({
   ]
 
   return (
-    <div className="relative z-20 bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-2xl p-2 flex flex-col gap-1.5 w-[66px] items-center shrink-0 select-none">
+    <div className="relative z-20 bg-white/90 backdrop-blur-xl border border-gray-150/40 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-2xl p-2 flex flex-col gap-1.5 w-[66px] items-center shrink-0 select-none">
       {tools.map(({ id, label, Icon, onClick, isActive }) => (
         <div key={id} className="relative w-full flex justify-center">
           <button
             onClick={onClick}
             className={cn(
-              'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 hover:scale-[1.06] active:scale-[0.96] border border-transparent',
+              'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 hover:scale-[1.06] active:scale-[0.96] border border-transparent cursor-pointer',
               isActive
-                ? 'bg-[#cceef5]/70 text-[#0095b6] border-[#0095b6]/20 shadow-sm shadow-[#0095b6]/5'
-                : 'text-slate-500 hover:bg-slate-50/80 hover:text-slate-800'
+                ? 'bg-primary/10 text-primary border-primary/20 shadow-xs'
+                : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800'
             )}
             title={label}
           >
             <Icon className="w-5 h-5" strokeWidth={1.8} />
-            <span className="text-[8px] font-semibold tracking-wide leading-none">{label}</span>
+            <span className="text-[8px] font-bold tracking-wide leading-none">{label}</span>
           </button>
 
           {id === 'shapes' && showShapes && (
@@ -141,30 +141,30 @@ export function EditorToolbar({
         onClick={onUndo}
         disabled={!canUndo}
         className={cn(
-          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0',
+          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0 cursor-pointer',
           canUndo
-            ? 'text-slate-500 hover:bg-slate-50/80 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
+            ? 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
             : 'text-slate-300 cursor-not-allowed opacity-35'
         )}
         title="Deshacer (Ctrl+Z)"
       >
         <Undo2 className="w-5 h-5" strokeWidth={1.8} />
-        <span className="text-[8px] font-semibold tracking-wide leading-none">Deshacer</span>
+        <span className="text-[8px] font-bold tracking-wide leading-none">Deshacer</span>
       </button>
 
       <button
         onClick={onRedo}
         disabled={!canRedo}
         className={cn(
-          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0',
+          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0 cursor-pointer',
           canRedo
-            ? 'text-slate-500 hover:bg-slate-50/80 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
+            ? 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
             : 'text-slate-300 cursor-not-allowed opacity-35'
         )}
         title="Rehacer (Ctrl+Y)"
       >
         <Redo2 className="w-5 h-5" strokeWidth={1.8} />
-        <span className="text-[8px] font-semibold tracking-wide leading-none">Rehacer</span>
+        <span className="text-[8px] font-bold tracking-wide leading-none">Rehacer</span>
       </button>
 
       <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1.5 self-center shrink-0" />
@@ -174,30 +174,30 @@ export function EditorToolbar({
         onClick={onBringToFront}
         disabled={!hasSelection}
         className={cn(
-          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0',
+          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0 cursor-pointer',
           hasSelection
-            ? 'text-slate-500 hover:bg-slate-50/80 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
+            ? 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
             : 'text-slate-300 cursor-not-allowed opacity-35'
         )}
         title="Traer al frente"
       >
         <ArrowUpToLine className="w-5 h-5" strokeWidth={1.8} />
-        <span className="text-[8px] font-semibold tracking-wide leading-none">Frente</span>
+        <span className="text-[8px] font-bold tracking-wide leading-none">Frente</span>
       </button>
 
       <button
         onClick={onSendToBack}
         disabled={!hasSelection}
         className={cn(
-          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0',
+          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0 cursor-pointer',
           hasSelection
-            ? 'text-slate-500 hover:bg-slate-50/80 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
+            ? 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
             : 'text-slate-300 cursor-not-allowed opacity-35'
         )}
         title="Enviar atrás"
       >
         <ArrowDownToLine className="w-5 h-5" strokeWidth={1.8} />
-        <span className="text-[8px] font-semibold tracking-wide leading-none">Atrás</span>
+        <span className="text-[8px] font-bold tracking-wide leading-none">Atrás</span>
       </button>
 
       {/* Duplicate */}
@@ -205,15 +205,15 @@ export function EditorToolbar({
         onClick={onDuplicate}
         disabled={!hasSelection}
         className={cn(
-          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0',
+          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0 cursor-pointer',
           hasSelection
-            ? 'text-slate-500 hover:bg-slate-50/80 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
+            ? 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-800 hover:scale-[1.06] active:scale-[0.96]'
             : 'text-slate-300 cursor-not-allowed opacity-35'
         )}
         title="Duplicar seleccionado"
       >
         <Copy className="w-5 h-5" strokeWidth={1.8} />
-        <span className="text-[8px] font-semibold tracking-wide leading-none">Duplicar</span>
+        <span className="text-[8px] font-bold tracking-wide leading-none">Duplicar</span>
       </button>
 
       {/* Delete */}
@@ -221,15 +221,15 @@ export function EditorToolbar({
         onClick={onDelete}
         disabled={!hasSelection}
         className={cn(
-          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0',
+          'w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 border border-transparent shrink-0 cursor-pointer',
           hasSelection
-            ? 'text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-100 hover:scale-[1.06] active:scale-[0.96]'
+            ? 'text-rose-500 hover:bg-rose-50 hover:text-rose-600 hover:scale-[1.06] active:scale-[0.96]'
             : 'text-slate-300 cursor-not-allowed opacity-35'
         )}
         title="Eliminar seleccionado"
       >
         <Trash2 className="w-5 h-5" strokeWidth={1.8} />
-        <span className="text-[8px] font-semibold tracking-wide leading-none">Borrar</span>
+        <span className="text-[8px] font-bold tracking-wide leading-none">Borrar</span>
       </button>
 
       <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1.5 self-center shrink-0" />
@@ -237,7 +237,7 @@ export function EditorToolbar({
       {/* Export */}
       <button
         onClick={onExport}
-        className="w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 text-white bg-gradient-to-br from-primary to-[#00a2c7] shadow-sm shadow-primary/20 transition-all duration-300 hover:scale-[1.06] hover:shadow-md hover:shadow-primary/30 hover:brightness-105 active:scale-[0.96] shrink-0"
+        className="w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-1 text-white bg-gradient-to-br from-primary to-[#00a2c7] shadow-sm shadow-primary/20 transition-all duration-300 hover:scale-[1.06] hover:shadow-md hover:shadow-primary/30 hover:brightness-105 active:scale-[0.96] shrink-0 cursor-pointer"
         title="Descargar PNG"
       >
         <Download className="w-5 h-5" strokeWidth={1.8} />

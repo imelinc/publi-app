@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Plus,
   PanelRightOpen,
   PanelRightClose,
@@ -57,7 +58,7 @@ export default function CalendarioPage() {
     return events.filter((e) => e.clientId === clientFilter)
   }, [events, clientFilter])
 
-  function handlePrev() {
+  const handlePrev = () => {
     if (viewMode === "week") {
       setCurrentMonth(
         (prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 7)
@@ -69,7 +70,7 @@ export default function CalendarioPage() {
     }
   }
 
-  function handleNext() {
+  const handleNext = () => {
     if (viewMode === "week") {
       setCurrentMonth(
         (prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 7)
@@ -134,26 +135,26 @@ export default function CalendarioPage() {
     <div className="flex gap-4 h-[calc(100vh-112px)]">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={handlePrev}>
-              <ChevronLeft className="h-4 w-4" />
+          <div className="flex items-center gap-2 bg-white rounded-xl p-1 border border-gray-100 shadow-sm">
+            <Button variant="ghost" size="icon" onClick={handlePrev} className="h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors">
+              <ChevronLeft className="h-4 w-4 text-gray-600" />
             </Button>
-            <span className="text-lg font-semibold text-gray-900 min-w-[180px] text-center">
+            <span className="text-sm font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent min-w-[200px] text-center tracking-tight">
               {capitalizedMonthLabel}
             </span>
-            <Button variant="ghost" size="icon" onClick={handleNext}>
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={handleNext} className="h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors">
+              <ChevronRight className="h-4 w-4 text-gray-600" />
             </Button>
           </div>
 
-          <div className="flex rounded-full bg-[#f5f0e8] p-1 ring-1 ring-[#e8f4f7]">
+          <div className="flex rounded-xl bg-gray-100/80 p-1 ring-1 ring-black/5 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setViewMode("month")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-all duration-200 ${
                 viewMode === "month"
-                  ? "bg-[#0095b6] text-white"
-                  : "bg-transparent text-gray-400 hover:text-gray-600"
+                  ? "bg-white text-gray-800 shadow-sm"
+                  : "bg-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
               Mes
@@ -161,10 +162,10 @@ export default function CalendarioPage() {
             <button
               type="button"
               onClick={() => setViewMode("week")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-all duration-200 ${
                 viewMode === "week"
-                  ? "bg-[#0095b6] text-white"
-                  : "bg-transparent text-gray-400 hover:text-gray-600"
+                  ? "bg-white text-gray-800 shadow-sm"
+                  : "bg-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
               Semana
@@ -172,27 +173,33 @@ export default function CalendarioPage() {
           </div>
 
           <div className="flex gap-2 items-center">
-            <select
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-              className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-700 outline-none"
-            >
-              <option value="all">Todos los clientes</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={clientFilter}
+                onChange={(e) => setClientFilter(e.target.value)}
+                className="h-9 rounded-xl border border-gray-200 bg-white pl-3 pr-8 text-xs font-medium text-gray-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer shadow-sm hover:border-gray-300 appearance-none"
+              >
+                <option value="all">Todos los clientes</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                <ChevronDown className="h-3.5 w-3.5" />
+              </div>
+            </div>
 
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
               disabled={refreshing}
+              className="h-9 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 shadow-sm transition-all"
               title="Refrescar para ver respuestas de aprobación recientes"
             >
-              <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Actualizando…' : 'Actualizar'}
             </Button>
 
@@ -201,10 +208,10 @@ export default function CalendarioPage() {
                 setSelectedDate(new Date())
                 setEventModalOpen(true)
               }}
-              className="bg-[#0095b6] text-white text-sm hover:opacity-90"
+              className="h-9 bg-gradient-to-r from-[#0095b6] to-[#00b4d8] text-white text-xs font-semibold hover:opacity-95 shadow-[0_4px_12px_rgba(0,149,182,0.25)] rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
               size="sm"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-3.5 w-3.5 mr-1" />
               Agregar evento
             </Button>
 
@@ -212,6 +219,7 @@ export default function CalendarioPage() {
               variant="outline"
               size="icon"
               onClick={() => setDraftPanelOpen(!draftPanelOpen)}
+              className="h-9 w-9 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-gray-800 shadow-sm transition-all"
             >
               {draftPanelOpen ? (
                 <PanelRightClose className="h-4 w-4" />

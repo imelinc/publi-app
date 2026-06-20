@@ -71,14 +71,14 @@ export function StickerPicker({ onAddSticker, onClose }: StickerPickerProps) {
   return (
     <div
       ref={panelRef}
-      className="absolute left-full ml-2 top-0 bg-white rounded-xl border border-gray-100 shadow-xl z-50 w-[340px] animate-in fade-in slide-in-from-left-2 duration-150"
+      className="absolute left-full ml-3 top-0 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-100 shadow-[0_12px_38px_rgba(0,0,0,0.08)] z-50 w-[340px] animate-in fade-in slide-in-from-left-2 duration-200"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <h4 className="text-sm font-semibold text-gray-900">Stickers</h4>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100/60">
+        <h4 className="text-sm font-bold text-slate-800">Stickers</h4>
         <button
           onClick={onClose}
-          className="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 transition-all active:scale-90 cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -93,7 +93,7 @@ export function StickerPicker({ onAddSticker, onClose }: StickerPickerProps) {
               onAddSticker(`/stickers/${file}`)
               onClose()
             }}
-            className="w-full aspect-square rounded-lg border border-gray-100 hover:border-[#0095b6] hover:bg-[#cceef5]/30 flex items-center justify-center p-1.5 transition-all hover:scale-105"
+            className="w-full aspect-square rounded-xl border border-slate-150 bg-white hover:border-primary hover:bg-primary/5 hover:scale-105 active:scale-95 transition-all flex items-center justify-center p-1.5 cursor-pointer shadow-2xs hover:shadow-sm"
             title={name}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,7 +110,7 @@ export function StickerPicker({ onAddSticker, onClose }: StickerPickerProps) {
       <div className="px-3 pb-3 pt-1">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 hover:border-[#0095b6] hover:text-[#0095b6] hover:bg-[#cceef5]/20 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-slate-350 text-xs font-bold text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer shadow-2xs"
         >
           <Upload className="w-4 h-4" />
           Subir mi sticker
@@ -126,3 +126,4 @@ export function StickerPicker({ onAddSticker, onClose }: StickerPickerProps) {
     </div>
   )
 }
+

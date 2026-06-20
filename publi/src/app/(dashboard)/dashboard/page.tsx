@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAppStore, getScheduledPosts, getDraftPosts, getPostsByClient } from '@/store/use-app-store'
 import { MiniCalendar } from '@/components/dashboard/MiniCalendar'
-import { CheckCircle2, FileText, TrendingUp, TrendingDown, X, Sparkles, Crown } from 'lucide-react'
+import { CheckCircle2, FileText, TrendingUp, TrendingDown, X, Sparkles, Crown, CalendarDays, Send, PenLine } from 'lucide-react'
 import { NETWORK_META } from '@/lib/networks'
 
 function formatDateShort(dateStr: string): string {
@@ -154,85 +154,118 @@ export default function DashboardPage() {
     return `hace ${Math.floor(diffDays / 30)} meses`
   }
 
+  const kpiCards = [
+    {
+      label: 'Publicaciones esta semana',
+      value: thisWeekCount,
+      icon: CalendarDays,
+      iconColor: '#0095b6',
+      iconBg: '#0095b614',
+      diff: weekDiff,
+      diffLabel: 'vs semana pasada',
+    },
+    {
+      label: 'Programadas',
+      value: scheduledPosts.length,
+      icon: Send,
+      iconColor: '#8b5cf6',
+      iconBg: '#8b5cf614',
+      subtext: `${futureScheduled} pendientes`,
+    },
+    {
+      label: 'Borradores',
+      value: draftPosts.length,
+      icon: PenLine,
+      iconColor: '#f59e0b',
+      iconBg: '#f59e0b14',
+    },
+    {
+      label: 'Publicadas',
+      value: publishedPosts.length,
+      icon: CheckCircle2,
+      iconColor: '#10b981',
+      iconBg: '#10b98114',
+      diff: publishedDiff,
+      diffLabel: 'vs semana pasada',
+    },
+  ]
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">
-          Buen día, {userProfile?.name?.split(' ')[0] ?? '…'} 👋
+          Buen día,{' '}
+          <span className="gradient-text">
+            {userProfile?.name?.split(' ')[0] ?? '…'}
+          </span>{' '}
+          👋
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-400 mt-1">
           {activeClient?.name ?? 'Todos'} · {todayFormatted}
         </p>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mt-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-            Publicaciones esta semana
-          </p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{thisWeekCount}</p>
-          <div className="flex items-center gap-1 text-xs mt-1">
-            {weekDiff > 0 ? (
-              <>
-                <TrendingUp className="w-3 h-3 text-green-500" />
-                <span className="text-green-600">↑ +{weekDiff} vs semana pasada</span>
-              </>
-            ) : weekDiff < 0 ? (
-              <>
-                <TrendingDown className="w-3 h-3 text-red-500" />
-                <span className="text-red-600">↓ {weekDiff} vs semana pasada</span>
-              </>
-            ) : (
-              <span className="text-gray-400">Igual que la semana pasada</span>
-            )}
-          </div>
-        </div>
+        {kpiCards.map((kpi) => {
+          const KpiIcon = kpi.icon
+          return (
+            <div key={kpi.label} className="premium-card p-5 relative overflow-hidden">
+              {/* Decorative icon */}
+              <div
+                className="absolute -right-2 -top-2 w-16 h-16 rounded-full flex items-center justify-center opacity-[0.07]"
+              >
+                <KpiIcon className="w-12 h-12" style={{ color: kpi.iconColor }} />
+              </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Programadas</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{scheduledPosts.length}</p>
-          <div className="flex items-center gap-1 text-xs mt-1">
-            <span className="text-gray-400">{futureScheduled} pendientes</span>
-          </div>
-        </div>
+              <div className="flex items-center gap-2.5 mb-2">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: kpi.iconBg }}
+                >
+                  <KpiIcon className="w-4 h-4" style={{ color: kpi.iconColor }} />
+                </div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                  {kpi.label}
+                </p>
+              </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Borradores</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{draftPosts.length}</p>
-        </div>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{kpi.value}</p>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Publicadas</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{publishedPosts.length}</p>
-          <div className="flex items-center gap-1 text-xs mt-1">
-            {publishedDiff > 0 ? (
-              <>
-                <TrendingUp className="w-3 h-3 text-green-500" />
-                <span className="text-green-600">↑ +{publishedDiff} vs semana pasada</span>
-              </>
-            ) : publishedDiff < 0 ? (
-              <>
-                <TrendingDown className="w-3 h-3 text-red-500" />
-                <span className="text-red-600">↓ {publishedDiff} vs semana pasada</span>
-              </>
-            ) : (
-              <span className="text-gray-400">Igual que la semana pasada</span>
-            )}
-          </div>
-        </div>
+              <div className="flex items-center gap-1 text-xs mt-1.5 min-h-[18px]">
+                {kpi.diff !== undefined && kpi.diff > 0 ? (
+                  <>
+                    <TrendingUp className="w-3 h-3 text-emerald-500" />
+                    <span className="text-emerald-600">↑ +{kpi.diff} {kpi.diffLabel}</span>
+                  </>
+                ) : kpi.diff !== undefined && kpi.diff < 0 ? (
+                  <>
+                    <TrendingDown className="w-3 h-3 text-red-500" />
+                    <span className="text-red-500">↓ {kpi.diff} {kpi.diffLabel}</span>
+                  </>
+                ) : kpi.diff !== undefined ? (
+                  <span className="text-gray-400">Igual que la semana pasada</span>
+                ) : kpi.subtext ? (
+                  <span className="text-gray-400">{kpi.subtext}</span>
+                ) : null}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
+      {/* Calendar + Upcoming */}
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2">
           <MiniCalendar posts={postsForClient} events={eventsForClient} />
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <div className="premium-card p-5">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-gray-900">Próximas</h3>
             <button
               onClick={() => router.push('/calendario')}
-              className="text-sm text-[#0095b6] border-0 bg-transparent hover:text-[#0095b6] cursor-pointer"
+              className="text-sm text-primary border-0 bg-transparent hover:text-primary/80 cursor-pointer transition-colors"
             >
               Ver calendario
             </button>
@@ -247,7 +280,7 @@ export default function DashboardPage() {
               {upcomingPosts.map((post) => (
                 <div
                   key={post.id}
-                  className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                  className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 -mx-2 px-2 rounded-lg transition-colors"
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-semibold flex-shrink-0"
@@ -281,23 +314,32 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      {/* Recent activity */}
+      <div className="premium-card p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Actividad reciente</h3>
         {activityItems.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">Sin actividad reciente</p>
         ) : (
           activityItems.map((activity) => {
             const iconMap = {
-              post_published: <CheckCircle2 className="w-4 h-4 text-green-500" />,
-              draft_saved: <FileText className="w-4 h-4 text-[#0095b6]" />,
+              post_published: (
+                <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+              ),
+              draft_saved: (
+                <div className="w-7 h-7 rounded-full bg-primary-light/40 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-3.5 h-3.5 text-primary" />
+                </div>
+              ),
             }
 
             return (
               <div
                 key={activity.id}
-                className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0"
+                className="flex gap-3 items-start py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 -mx-2 px-2 rounded-lg transition-colors"
               >
-                <div className="flex-shrink-0 mt-0.5">{iconMap[activity.type]}</div>
+                <div className="mt-0.5">{iconMap[activity.type]}</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-gray-900">{activity.clientName}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{activity.text}</p>
@@ -315,7 +357,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-gray-100 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Top gradient line */}
-            <div className="h-1.5 bg-gradient-to-r from-[#0095b6] to-[#ffb703] absolute top-0 inset-x-0" />
+            <div className="h-1.5 bg-gradient-to-r from-primary to-accent absolute top-0 inset-x-0" />
             
             {/* Close button */}
             <button
@@ -328,10 +370,10 @@ export default function DashboardPage() {
 
             <div className="flex flex-col items-center text-center space-y-4 pt-2">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-[#cceef5]/60 flex items-center justify-center animate-bounce">
-                  <Crown className="w-9 h-9 text-[#0095b6]" />
+                <div className="w-16 h-16 rounded-full bg-primary-light/60 flex items-center justify-center animate-bounce">
+                  <Crown className="w-9 h-9 text-primary" />
                 </div>
-                <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-[#ffb703] animate-pulse" />
+                <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-accent animate-pulse" />
               </div>
 
               <div className="space-y-2">
@@ -339,7 +381,7 @@ export default function DashboardPage() {
                   ¡Felicitaciones! 🎉
                 </h3>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  El cliente <strong className="text-gray-900 font-semibold">{upgradedClientName}</strong> ahora es <strong className="text-[#0095b6] font-bold">Pro</strong>.
+                  El cliente <strong className="text-gray-900 font-semibold">{upgradedClientName}</strong> ahora es <strong className="text-primary font-bold">Pro</strong>.
                 </p>
                 <p className="text-xs text-gray-500 leading-relaxed">
                   Ya tienen acceso a todas las funcionalidades premium de publi: Asistente de IA (Copi chat, sugerencia de copys y hashtags), Editor de fotos profesional, Generación de imágenes y sugerencias inteligentes de horarios óptimos.
@@ -348,7 +390,7 @@ export default function DashboardPage() {
 
               <button
                 onClick={() => setUpgradedClientName(null)}
-                className="w-full mt-4 py-3 rounded-xl bg-[#0095b6] hover:bg-[#007a96] text-white font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99] shadow-md cursor-pointer"
+                className="w-full mt-4 py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99] shadow-md cursor-pointer"
               >
                 ¡Excelente, a trabajar!
               </button>

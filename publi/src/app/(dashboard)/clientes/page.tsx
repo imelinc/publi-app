@@ -12,26 +12,26 @@ import type { Client } from '@/types'
 
 function ClientCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse">
-      <div className="flex gap-3 items-center">
-        <div className="w-12 h-12 rounded-full bg-gray-200" />
+    <div className="premium-card p-6 animate-pulse min-h-[340px]">
+      <div className="flex gap-3.5 items-center">
+        <div className="w-14 h-14 rounded-2xl bg-gray-100" />
         <div className="flex flex-col gap-2">
-          <div className="h-4 w-24 bg-gray-200 rounded" />
-          <div className="h-4 w-12 bg-gray-200 rounded-full" />
+          <div className="h-4 w-28 bg-gray-100 rounded-lg" />
+          <div className="h-3 w-16 bg-gray-50 rounded-lg" />
         </div>
       </div>
-      <div className="mt-3">
-        <div className="h-3 w-28 bg-gray-200 rounded" />
-        <div className="flex gap-2 mt-2">
-          <div className="h-6 w-20 bg-gray-200 rounded-full" />
+      <div className="mt-4">
+        <div className="h-3 w-32 bg-gray-100 rounded-lg" />
+        <div className="flex gap-2 mt-3">
+          <div className="h-6 w-24 bg-gray-50 rounded-full" />
         </div>
       </div>
-      <div className="flex gap-4 mt-4 pt-4 border-t border-gray-50">
-        <div className="h-8 w-12 bg-gray-200 rounded" />
-        <div className="h-8 w-12 bg-gray-200 rounded" />
-        <div className="h-8 w-12 bg-gray-200 rounded" />
+      <div className="grid grid-cols-3 gap-1 bg-gray-50/50 rounded-2xl p-3 mt-4">
+        <div className="h-10 bg-gray-100 rounded-xl" />
+        <div className="h-10 bg-gray-100 rounded-xl" />
+        <div className="h-10 bg-gray-100 rounded-xl" />
       </div>
-      <div className="mt-4 h-9 w-full bg-gray-200 rounded-lg" />
+      <div className="mt-5 h-10 w-full bg-gray-100 rounded-xl" />
     </div>
   )
 }
@@ -165,8 +165,10 @@ export default function ClientesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Clientes</h1>
-          <p className="text-sm text-gray-500">Gestioná los workspaces de tus clientes</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            <span className="gradient-text">Clientes</span>
+          </h1>
+          <p className="text-sm text-gray-400 mt-0.5">Gestioná los workspaces de tus clientes</p>
         </div>
         <button
           onClick={() => {
@@ -179,7 +181,8 @@ export default function ClientesPage() {
             }
             setModalOpen(true)
           }}
-          className="flex items-center gap-1.5 bg-[#0095b6] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#007a96] transition-colors"
+          className="flex items-center gap-1.5 bg-gradient-to-r from-primary to-[#00b4d8] text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:shadow-lg transition-all duration-200 cursor-pointer"
+          style={{ boxShadow: '0 4px 14px rgba(0, 149, 182, 0.3)' }}
         >
           <Plus className="w-4 h-4" />
           Nuevo cliente
@@ -187,20 +190,23 @@ export default function ClientesPage() {
       </div>
 
       {clientsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <ClientCardSkeleton />
           <ClientCardSkeleton />
           <ClientCardSkeleton />
         </div>
       ) : clients.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-500">No tenés clientes todavía.</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Creá tu primer cliente para empezar a gestionar sus redes.
+        <div className="premium-card text-center py-20 px-8">
+          <div className="w-16 h-16 rounded-2xl bg-primary/[0.06] flex items-center justify-center mx-auto mb-4">
+            <Plus className="w-7 h-7 text-primary/40" />
+          </div>
+          <p className="text-gray-600 font-medium">No tenés clientes todavía</p>
+          <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+            Creá tu primer cliente para empezar a gestionar sus redes sociales.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {clients.map((client) => (
             <ClientCard
               key={client.id}
