@@ -106,30 +106,32 @@ export async function publishPostPublications(
     accountsByNetwork.set(a.network, a)
   }
 
-  // Caption real: descripción + hashtags.
-  const tags = ((post.hashtags as string[] | null) ?? [])
-    .map((h) => (h.startsWith('#') ? h : `#${h}`))
-    .join(' ')
-  const caption = [post.description as string | null, tags].filter(Boolean).join('\n\n')
   const mediaUrls = (post.media_urls as string[] | null) ?? []
-
+ 
   // Resolver cada publication. Las ya resueltas se saltean (idempotencia).
   const { data: pubs } = await supabase
     .from('post_publications')
-    .select('id, network, status')
+    .select('id, network, status, description')
     .eq('post_id', postId)
-
+ 
   const results: { network: string; status: string; error?: string }[] = []
-
-  for (const pub of (pubs ?? []) as { id: string; network: string; status: string }[]) {
+ 
+  for (const pub of (pubs ?? []) as { id: string; network: string; status: string; description: string | null }[]) {
     if (pub.status === 'published' || pub.status === 'simulated') {
       results.push({ network: pub.network, status: pub.status })
       continue
     }
-
+ 
     const account = accountsByNetwork.get(pub.network)
     const isRealInstagram =
       pub.network === 'instagram' && account && !account.is_simulated && account.access_token
+ 
+    // Caption real: descripción específica de la red (si existe) o la base del post + hashtags.
+    const activeDescription = pub.description ?? post.description
+    const tags = ((post.hashtags as string[] | null) ?? [])
+      .map((h) => (h.startsWith('#') ? h : `#${h}`))
+      .join(' ')
+    const caption = [activeDescription as string | null, tags].filter(Boolean).join('\n\n')
 
     if (isRealInstagram) {
       // Publicación REAL en Instagram.

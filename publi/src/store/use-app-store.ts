@@ -61,6 +61,7 @@ interface AppState {
     mediaUrls: string[]
     hashtags: string[]
     contentFormat?: 'feed' | 'story'
+    customDescriptions?: Record<Network, string> | null
   }) => Promise<Post>
   updatePost: (id: string, updates: Partial<Post>) => void
   updatePostRemote: (
@@ -74,6 +75,7 @@ interface AppState {
       status?: 'draft' | 'scheduled' | 'published'
       scheduledAt?: string | null
       contentFormat?: 'feed' | 'story'
+      customDescriptions?: Record<Network, string> | null
     }
   ) => Promise<Post>
   deletePost: (id: string) => Promise<void>
