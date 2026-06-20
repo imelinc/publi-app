@@ -31,7 +31,7 @@ export function ClientCard({
   }, [dropdownOpen])
 
   return (
-    <div className="group bg-white rounded-3xl border border-gray-100 p-6 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[340px] relative overflow-hidden">
+    <div className="group bg-white rounded-3xl border border-gray-100 p-6 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between min-h-[340px] relative overflow-hidden">
       {/* Subtle top brand line overlay on hover */}
       <div 
         className="absolute top-0 inset-x-0 h-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -44,7 +44,7 @@ export function ClientCard({
           <div className="flex gap-3.5 items-center">
             {/* Elegant Colored Avatar */}
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-lg relative overflow-hidden transition-transform duration-300 group-hover:scale-105"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-lg relative overflow-hidden transition-transform duration-300"
               style={{ 
                 backgroundColor: client.color,
                 boxShadow: `0 8px 20px -6px ${client.color}77`
@@ -181,7 +181,7 @@ export function ClientCard({
       {/* CTA Button */}
       <button
         onClick={() => onViewWorkspace(client)}
-        className="mt-5 w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-white border-2 border-[#0095b6] text-[#0095b6] font-bold text-xs uppercase tracking-wider transition-all hover:bg-[#0095b6] hover:text-white hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 shadow-2xs cursor-pointer"
+        className="mt-5 w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-white border-2 border-[#0095b6] text-[#0095b6] font-bold text-xs uppercase tracking-wider transition-all hover:bg-[#0095b6] hover:text-white hover:shadow-md active:translate-y-0 shadow-2xs cursor-pointer"
       >
         Ingresar al Workspace
       </button>
