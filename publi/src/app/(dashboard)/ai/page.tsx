@@ -40,6 +40,7 @@ const STORAGE_KEY = 'publi_ai_chat_sessions'
 export default function AiPage() {
   const activeWorkspaceId = useAppStore((s) => s.activeWorkspaceId)
   const clients = useAppStore((s) => s.clients)
+  const userProfile = useAppStore((s) => s.userProfile)
   const activeClient = clients.find((c) => c.id === activeWorkspaceId) ?? clients[0] ?? null
 
   const [sessions, setSessions] = useState<ChatSession[]>([])
@@ -50,11 +51,10 @@ export default function AiPage() {
   const [activeTab, setActiveTab] = useState<'chat' | 'images'>('chat')
   const [selectedNetwork, setSelectedNetwork] = useState<string>('general')
 
-  if (activeClient?.plan === 'free') {
+  if (userProfile?.plan === 'free') {
     return (
       <PlanUpgradeGuard
         featureName="Copi IA y el Generador de imágenes"
-        activeClient={activeClient}
       />
     )
   }

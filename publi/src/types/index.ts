@@ -32,7 +32,6 @@ export interface Client {
   description: string
   color: string
   initials: string
-  plan: Plan
   connectedNetworks: Network[]
   stats: {
     scheduled: number
@@ -112,6 +111,7 @@ export interface UserProfile {
   createdAt?: string
   loginCount?: number
   timeSpentCreating?: number
+  plan?: Plan
 }
 
 export type NotificationType =

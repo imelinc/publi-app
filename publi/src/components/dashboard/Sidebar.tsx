@@ -197,7 +197,7 @@ export function Sidebar() {
                   style={{ color: isActive ? '#0095b6' : undefined }}
                 />
                 <span className="flex-1 truncate">{label}</span>
-                {activeClient?.plan === 'free' && (href === '/ai' || href === '/editor') && (
+                {userProfile?.plan === 'free' && (href === '/ai' || href === '/editor') && (
                   <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0 ml-auto" />
                 )}
               </button>

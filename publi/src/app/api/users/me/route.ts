@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, workspace_name, login_count, time_spent_creating')
+    .select('name, workspace_name, login_count, time_spent_creating, plan')
     .eq('id', user.id)
     .single()
 
@@ -20,6 +20,7 @@ export async function GET() {
   const workspaceName: string = profile?.workspace_name ?? 'Mi workspace'
   const loginCount: number = profile?.login_count ?? 0
   const timeSpentCreating: number = profile?.time_spent_creating ?? 0
+  const plan: string = profile?.plan ?? 'free'
 
   const words = name.trim().split(/\s+/)
   const initials = (
@@ -35,6 +36,7 @@ export async function GET() {
     workspaceName,
     loginCount,
     timeSpentCreating,
+    plan,
   })
 }
 
@@ -64,7 +66,7 @@ export async function PATCH(request: NextRequest) {
   const { data: profile, error: upsertError } = await supabase
     .from('profiles')
     .upsert({ id: user.id, ...updates })
-    .select('name, workspace_name, login_count, time_spent_creating')
+    .select('name, workspace_name, login_count, time_spent_creating, plan')
     .single()
 
   if (upsertError) {
@@ -76,6 +78,7 @@ export async function PATCH(request: NextRequest) {
   const workspaceName: string = profile?.workspace_name ?? 'Mi workspace'
   const loginCount: number = profile?.login_count ?? 0
   const timeSpentCreating: number = profile?.time_spent_creating ?? 0
+  const plan: string = profile?.plan ?? 'free'
 
   const words = name.trim().split(/\s+/)
   const initials = (
@@ -91,6 +94,7 @@ export async function PATCH(request: NextRequest) {
     workspaceName,
     loginCount,
     timeSpentCreating,
+    plan,
   })
 }
 
