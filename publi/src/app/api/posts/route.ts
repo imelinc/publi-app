@@ -155,6 +155,7 @@ interface CreatePostBody {
   mediaUrls: string[]
   hashtags: string[]
   contentFormat?: 'feed' | 'story'
+  customDescriptions?: Record<Network, string> | null
 }
 
 export async function POST(request: NextRequest) {
@@ -254,6 +255,7 @@ export async function POST(request: NextRequest) {
     const rows = body.networks.map((network) => ({
       post_id: post.id,
       network,
+      description: body.customDescriptions?.[network] || null,
       // Estado inicial:
       //  - si el post se está publicando ahora y la red es simulada → 'simulated'
       //  - en cualquier otro caso → 'pending' (se actualiza al publicar)

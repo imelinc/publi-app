@@ -335,7 +335,10 @@ export default function EditarBorradorPage({ params }: PageProps) {
           <div className="lg:col-span-5">
             <div className="sticky top-6">
               <PostPreview
-                description={post.description}
+                description={
+                  (activeNetwork && post.publications?.find((p) => p.network === activeNetwork)?.description) ||
+                  post.description
+                }
                 mediaUrls={post.mediaUrls}
                 client={client}
                 networks={post.networks}

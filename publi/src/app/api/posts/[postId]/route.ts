@@ -161,6 +161,7 @@ interface UpdatePostBody {
   status?: 'draft' | 'scheduled' | 'published'
   scheduledAt?: string | null
   contentFormat?: 'feed' | 'story'
+  customDescriptions?: Record<Network, string> | null
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -317,6 +318,83 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       { error: 'No se pudo actualizar la programación, intentá de nuevo' },
       { status: 503 }
     )
+  }
+
+  // ─── Sincronizar post_publications (redes y copys personalizados) ───
+  if (body.networks !== undefined || body.customDescriptions !== undefined) {
+    const finalNetworks = body.networks ?? (post.networks as Network[]) ?? []
+    
+    // Obtener publicaciones actuales
+    const { data: currentPubs, error: fetchPubsErr } = await supabase
+      .from('post_publications')
+      .select('id, network')
+      .eq('post_id', postId)
+      
+    if (fetchPubsErr) {
+      return Response.json({ error: fetchPubsErr.message }, { status: 500 })
+    }
+    
+    const currentPubsList = (currentPubs ?? []) as { id: string; network: string }[]
+    
+    const networksToDelete = currentPubsList
+      .filter(p => !finalNetworks.includes(p.network as Network))
+      .map(p => p.network)
+      
+    const networksToAdd = finalNetworks
+      .filter(n => !currentPubsList.some(p => p.network === n))
+      
+    const networksToKeep = finalNetworks
+      .filter(n => currentPubsList.some(p => p.network === n))
+      
+    // 1. Eliminar publicaciones de redes deseleccionadas
+    if (networksToDelete.length > 0) {
+      const { error: delPubsErr } = await supabase
+        .from('post_publications')
+        .delete()
+        .eq('post_id', postId)
+        .in('network', networksToDelete)
+        
+      if (delPubsErr) {
+        return Response.json({ error: delPubsErr.message }, { status: 500 })
+      }
+    }
+    
+    // 2. Agregar publicaciones para redes nuevas
+    if (networksToAdd.length > 0) {
+      const newPubsRows = networksToAdd.map(network => ({
+        post_id: postId,
+        network,
+        description: body.customDescriptions?.[network] || null,
+        status: 'pending',
+      }))
+      
+      const { error: addPubsErr } = await supabase
+        .from('post_publications')
+        .insert(newPubsRows)
+        
+      if (addPubsErr) {
+        return Response.json({ error: addPubsErr.message }, { status: 500 })
+      }
+    }
+    
+    // 3. Actualizar descripciones en redes que se mantienen si se envió customDescriptions
+    if (body.customDescriptions !== undefined) {
+      for (const network of networksToKeep) {
+        const newDesc = body.customDescriptions === null 
+          ? null 
+          : (body.customDescriptions[network] || null)
+          
+        const { error: updPubErr } = await supabase
+          .from('post_publications')
+          .update({ description: newDesc })
+          .eq('post_id', postId)
+          .eq('network', network)
+          
+        if (updPubErr) {
+          return Response.json({ error: updPubErr.message }, { status: 500 })
+        }
+      }
+    }
   }
 
   const { data: updated, error: updateErr } = await supabase

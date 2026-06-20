@@ -136,6 +136,23 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   const [contentFormat, setContentFormat] = useState<'feed' | 'story'>(
     initialPost?.contentFormat ?? 'feed'
   )
+  const [isCustomized, setIsCustomized] = useState(() => {
+    if (initialPost?.publications) {
+      return initialPost.publications.some((pub) => pub.description !== null)
+    }
+    return false
+  })
+  const [customDescriptions, setCustomDescriptions] = useState<Record<Network, string>>(() => {
+    const customs = {} as Record<Network, string>
+    if (initialPost?.publications) {
+      for (const pub of initialPost.publications) {
+        if (pub.description !== null) {
+          customs[pub.network] = pub.description
+        }
+      }
+    }
+    return customs
+  })
 
   const [dailyLimit, setDailyLimit] = useState<{ used: number; limit: number; remaining: number; nextSlotAvailableAt: string | null } | null>(null)
   const [loadingDailyLimit, setLoadingDailyLimit] = useState(false)
@@ -199,6 +216,22 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   // ─── Tracking de cambios sin guardar ─────────────────────────────────────────
   // Snapshot del estado "limpio" (al cargar o después de cada save exitoso).
   // Comparamos contra esto para saber si hay cambios pendientes.
+  // Extract initial custom descriptions for snapshot
+  const getInitialCustomDescriptions = () => {
+    const customs = {} as Record<Network, string>
+    if (initialPost?.publications) {
+      for (const pub of initialPost.publications) {
+        if (pub.description !== null) {
+          customs[pub.network] = pub.description
+        }
+      }
+    }
+    return customs
+  }
+  const initialIsCustomizedVal = initialPost?.publications 
+    ? initialPost.publications.some((pub) => pub.description !== null)
+    : false
+
   const cleanSnapshotRef = useRef({
     title: initialPost?.title ?? '',
     description: initialPost?.description ?? '',
@@ -208,6 +241,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     scheduleDate: initialPost?.scheduledAt ? toDateInput(new Date(initialPost.scheduledAt)) : '',
     scheduleTime: initialPost?.scheduledAt ? toTimeInput(initialPost.scheduledAt) : '',
     contentFormat: initialPost?.contentFormat ?? 'feed',
+    isCustomized: initialIsCustomizedVal,
+    customDescriptions: getInitialCustomDescriptions(),
   })
 
   // Al iniciar la publicación o programación, inicializamos los índices de forma aleatoria y rotamos mensajes
@@ -248,10 +283,12 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       clientId !== s.clientId ||
       scheduleDate !== s.scheduleDate ||
       scheduleTime !== s.scheduleTime ||
-      contentFormat !== s.contentFormat
+      contentFormat !== s.contentFormat ||
+      isCustomized !== s.isCustomized ||
+      JSON.stringify(customDescriptions) !== JSON.stringify(s.customDescriptions)
     )
     setHasUnsavedChanges(dirty)
-  }, [mode, title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, contentFormat, setHasUnsavedChanges])
+  }, [mode, title, description, networks, mediaUrls, clientId, scheduleDate, scheduleTime, contentFormat, isCustomized, customDescriptions, setHasUnsavedChanges])
 
   // Al desmontar el form, asegurarse de limpiar el flag global
   useEffect(() => {
@@ -273,6 +310,20 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
 
   /** Refresca el snapshot "limpio" después de un save exitoso */
   function markClean(post?: Post) {
+    const customs = {} as Record<Network, string>
+    let isCust = false
+    if (post?.publications) {
+      for (const pub of post.publications) {
+        if (pub.description !== null) {
+          isCust = true
+          customs[pub.network] = pub.description
+        }
+      }
+    } else {
+      isCust = isCustomized
+      Object.assign(customs, customDescriptions)
+    }
+
     cleanSnapshotRef.current = {
       title: post?.title ?? title,
       description: post?.description ?? description,
@@ -282,6 +333,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       scheduleDate,
       scheduleTime,
       contentFormat: post?.contentFormat ?? contentFormat,
+      isCustomized: isCust,
+      customDescriptions: customs,
     }
     setHasUnsavedChanges(false)
   }
@@ -362,6 +415,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     setSaving(true)
     try {
       let result: Post
+      const customDescPayload = isCustomized ? customDescriptions : null
       if (savedPost) {
         // PATCH al post existente — cambia status si corresponde (ej: scheduled → draft)
         result = await updatePostRemote(savedPost.id, {
@@ -373,6 +427,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           status: status === 'draft' ? 'draft' : status === 'scheduled' ? 'scheduled' : 'published',
           scheduledAt: status === 'draft' ? null : buildScheduledAt(),
           contentFormat,
+          customDescriptions: customDescPayload,
         })
         setSavedPost(result)
         setTitle(effectiveTitle)
@@ -387,6 +442,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           mediaUrls,
           hashtags: [],
           contentFormat,
+          customDescriptions: customDescPayload,
         })
         setSavedPost(result)
         setTitle(effectiveTitle)
@@ -634,12 +690,20 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             onNetworksChange={handleNetworksChange}
             onMediaUrlsChange={handleMediaUrlsChange}
             onContentFormatChange={setContentFormat}
+            isCustomized={isCustomized}
+            onIsCustomizedChange={setIsCustomized}
+            customDescriptions={customDescriptions}
+            onCustomDescriptionsChange={setCustomDescriptions}
           />
         </div>
 
         <div className="w-96 flex flex-col gap-4">
           <PostPreview
-            description={description}
+            description={
+              isCustomized && activePreviewNetwork
+                ? (customDescriptions[activePreviewNetwork] ?? description)
+                : description
+            }
             mediaUrls={mediaUrls}
             client={client}
             networks={networks}

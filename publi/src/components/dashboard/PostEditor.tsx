@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Wand2, Hash, Clock, ImagePlus, X, Loader2, Crop, Trash2, AlertCircle } from 'lucide-react'
 import type { Network } from '@/types'
 import { useAppStore } from '@/store/use-app-store'
@@ -22,6 +22,10 @@ interface PostEditorProps {
   onNetworksChange: (networks: Network[]) => void
   onMediaUrlsChange: (urls: string[]) => void
   onContentFormatChange: (format: 'feed' | 'story') => void
+  isCustomized: boolean
+  onIsCustomizedChange: (v: boolean) => void
+  customDescriptions: Record<Network, string>
+  onCustomDescriptionsChange: (v: Record<Network, string>) => void
 }
 
 export function PostEditor({
@@ -35,6 +39,10 @@ export function PostEditor({
   onNetworksChange,
   onMediaUrlsChange,
   onContentFormatChange,
+  isCustomized,
+  onIsCustomizedChange,
+  customDescriptions,
+  onCustomDescriptionsChange,
 }: PostEditorProps) {
   const [aiPanelType, setAiPanelType] = useState<'rewrite' | 'hashtags' | 'schedule' | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -46,6 +54,36 @@ export function PostEditor({
   const clients = useAppStore((s) => s.clients)
   const uploadMedia = useAppStore((s) => s.uploadMedia)
   const selectedClient = clients.find((c) => c.id === clientId) ?? clients[0] ?? null
+
+  const [activeEditorTab, setActiveEditorTab] = useState<Network | null>(null)
+
+  // Sincronizar activeEditorTab con redes seleccionadas
+  useEffect(() => {
+    if (networks.length > 0) {
+      if (!activeEditorTab || !networks.includes(activeEditorTab)) {
+        setActiveEditorTab(networks[0])
+      }
+    } else {
+      setActiveEditorTab(null)
+    }
+  }, [networks, activeEditorTab])
+
+  // Limpiar descripciones personalizadas de redes deseleccionadas
+  useEffect(() => {
+    if (isCustomized) {
+      let changed = false
+      const updated = { ...customDescriptions }
+      for (const net in updated) {
+        if (!networks.includes(net as Network)) {
+          delete updated[net as Network]
+          changed = true
+        }
+      }
+      if (changed) {
+        onCustomDescriptionsChange(updated)
+      }
+    }
+  }, [networks, isCustomized, customDescriptions, onCustomDescriptionsChange])
 
   async function handleFilesSelected(files: FileList) {
     const remainingSlots = contentFormat === 'story' ? 1 - mediaUrls.length : 10 - mediaUrls.length
@@ -122,8 +160,17 @@ export function PostEditor({
     }
   }
 
-  const charLimit = networks.length > 0 ? NETWORK_META[networks[0]].charLimit : 2200
-  const charCount = description.length
+  const charLimit = isCustomized && activeEditorTab
+    ? NETWORK_META[activeEditorTab].charLimit
+    : networks.length > 0
+      ? NETWORK_META[networks[0]].charLimit
+      : 2200
+
+  const activeText = isCustomized && activeEditorTab
+    ? (customDescriptions[activeEditorTab] ?? '')
+    : description
+
+  const charCount = activeText.length
 
   const charCountColor =
     charCount > charLimit
@@ -153,9 +200,24 @@ export function PostEditor({
 
   function handleAiAccept(result: string) {
     if (aiPanelType === 'rewrite') {
-      onDescriptionChange(result)
+      if (isCustomized && activeEditorTab) {
+        onCustomDescriptionsChange({
+          ...customDescriptions,
+          [activeEditorTab]: result,
+        })
+      } else {
+        onDescriptionChange(result)
+      }
     } else if (aiPanelType === 'hashtags') {
-      onDescriptionChange(description ? `${description} ${result}` : result)
+      const merged = activeText ? `${activeText} ${result}` : result
+      if (isCustomized && activeEditorTab) {
+        onCustomDescriptionsChange({
+          ...customDescriptions,
+          [activeEditorTab]: merged,
+        })
+      } else {
+        onDescriptionChange(merged)
+      }
     }
     setAiPanelType(null)
   }
@@ -269,20 +331,117 @@ export function PostEditor({
         </div>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between mb-1">
           <Label className="text-sm font-medium text-gray-700">Descripción</Label>
           <span className={`text-xs ${charCountColor}`}>
             {charCount}/{charLimit}
           </span>
         </div>
+
+        {/* Selector de personalización */}
+        {networks.length > 1 && (
+          <div className="flex bg-gray-50 border border-gray-100 rounded-lg p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (isCustomized) {
+                  const confirmClear = window.confirm(
+                    "¿Seguro que querés volver a usar el mismo copy para todas las redes? Esto borrará los textos individuales y se usará el copy unificado."
+                  )
+                  if (confirmClear) {
+                    const fallbackCopy = activeEditorTab ? (customDescriptions[activeEditorTab] ?? description) : description
+                    onDescriptionChange(fallbackCopy)
+                    onIsCustomizedChange(false)
+                  }
+                }
+              }}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                !isCustomized
+                  ? 'bg-white text-gray-900 shadow-xs border border-gray-200/50'
+                  : 'text-gray-555 hover:text-gray-900'
+              }`}
+            >
+              Mismo copy para todas
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isCustomized) {
+                  const populated = {} as Record<Network, string>
+                  networks.forEach(net => {
+                    populated[net] = description
+                  })
+                  onCustomDescriptionsChange(populated)
+                  onIsCustomizedChange(true)
+                }
+              }}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                isCustomized
+                  ? 'bg-white text-gray-900 shadow-xs border border-gray-200/50'
+                  : 'text-gray-555 hover:text-gray-900'
+              }`}
+            >
+              Personalizar por red
+            </button>
+          </div>
+        )}
+
+        {/* Pestañas de redes sociales para edición */}
+        {isCustomized && networks.length > 0 && (
+          <div className="flex gap-2 border-b border-gray-100 pb-2 overflow-x-auto">
+            {networks.map((net) => {
+              const isActive = activeEditorTab === net
+              const hasText = !!(customDescriptions[net]?.trim())
+              return (
+                <button
+                  key={net}
+                  type="button"
+                  onClick={() => setActiveEditorTab(net)}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 -mb-2 transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'border-[#0095b6] text-[#0095b6]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={NETWORK_META[net].iconColor}
+                    alt={NETWORK_META[net].label}
+                    className="size-3.5 object-contain"
+                  />
+                  {NETWORK_META[net].label}
+                  {hasText && (
+                    <span className="size-1.5 rounded-full bg-[#ffb703] animate-pulse" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         <Textarea
           rows={6}
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          placeholder="Escribí el copy de tu publicación..."
+          value={activeText}
+          onChange={(e) => {
+            const val = e.target.value
+            if (isCustomized && activeEditorTab) {
+              onCustomDescriptionsChange({
+                ...customDescriptions,
+                [activeEditorTab]: val,
+              })
+            } else {
+              onDescriptionChange(val)
+            }
+          }}
+          placeholder={
+            isCustomized && activeEditorTab
+              ? `Escribí el copy específico para ${NETWORK_META[activeEditorTab].label}...`
+              : "Escribí el copy de tu publicación..."
+          }
           className="resize-none"
         />
+
         {contentFormat === 'story' && (
           <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
             <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
@@ -291,6 +450,7 @@ export function PostEditor({
             </span>
           </p>
         )}
+
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => setAiPanelType(aiPanelType === 'rewrite' ? null : 'rewrite')}
@@ -308,7 +468,7 @@ export function PostEditor({
             className={`inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors ${
               aiPanelType === 'hashtags'
                 ? 'border border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                : 'border border-gray-200 text-gray-600 hover:bg-gray-55'
             }`}
           >
             <Hash className="size-3.5" />
@@ -319,7 +479,7 @@ export function PostEditor({
             className={`inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors ${
               aiPanelType === 'schedule'
                 ? 'border border-[#0095b6] bg-[#cceef5] text-[#0095b6]'
-                : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                : 'border border-gray-200 text-gray-600 hover:bg-gray-55'
             }`}
           >
             <Clock className="size-3.5" />
@@ -330,8 +490,8 @@ export function PostEditor({
         {aiPanelType && (
           <AiPanel
             type={aiPanelType}
-            content={description}
-            networks={networks}
+            content={activeText}
+            networks={isCustomized && activeEditorTab ? [activeEditorTab] : networks}
             onAccept={handleAiAccept}
             onDiscard={handleAiDiscard}
           />
