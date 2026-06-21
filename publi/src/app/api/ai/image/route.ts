@@ -18,19 +18,29 @@ export async function POST(request: Request) {
       return Response.json({ error: 'El ID del cliente es requerido' }, { status: 400 })
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      return Response.json({ error: 'Perfil de usuario no encontrado' }, { status: 404 })
+    }
+
+    if (profile.plan === 'free') {
+      return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
+    }
+
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('plan')
+      .select('id')
       .eq('id', clientId)
       .eq('user_id', user.id)
       .single()
 
     if (clientError || !client) {
       return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
-    }
-
-    if (client.plan === 'free') {
-      return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
     }
 
     const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID

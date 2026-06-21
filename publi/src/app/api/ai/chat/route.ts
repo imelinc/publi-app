@@ -33,18 +33,28 @@ Asegurate de adaptar todo tu asesoramiento, copies, hashtags, formatos de posts 
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
+        // 1. Obtener perfil para verificar plan
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', user.id)
+          .single()
+
+        const userPlan = profile?.plan ?? 'free'
+
+        if (userPlan === 'free') {
+          return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
+        }
+
+        // 2. Obtener cliente
         const { data: client } = await supabase
           .from('clients')
-          .select('id, name, plan, color, descriptions')
+          .select('id, name, color, descriptions')
           .eq('id', clientId)
           .eq('user_id', user.id)
           .single()
 
         if (client) {
-          if (client.plan === 'free') {
-            return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
-          }
-
           const { data: accounts } = await supabase
             .from('social_accounts')
             .select('network')
@@ -70,7 +80,7 @@ Asegurate de adaptar todo tu asesoramiento, copies, hashtags, formatos de posts 
 
 CLIENTE ACTIVO: ${client.name}
 Redes conectadas: ${connectedNetworks}
-Plan: ${client.plan}
+Plan: ${userPlan}
 Posts recientes: ${recentSummary || 'ninguno'}${client.descriptions ? `\nDescripción: ${client.descriptions}` : ''}`
         }
       }

@@ -30,17 +30,26 @@ export async function POST(req: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
+        // 1. Obtener perfil para verificar plan
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', user.id)
+          .single()
+
+        if (profile && profile.plan === 'free') {
+          return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
+        }
+
+        // 2. Obtener cliente
         const { data: client } = await supabase
           .from('clients')
-          .select('name, descriptions, plan')
+          .select('name, descriptions')
           .eq('id', clientId)
           .eq('user_id', user.id)
           .single()
 
         if (client) {
-          if (client.plan === 'free') {
-            return Response.json({ error: 'El plan gratuito no incluye acceso a la IA.' }, { status: 403 })
-          }
 
           const { data: accounts } = await supabase
             .from('social_accounts')
