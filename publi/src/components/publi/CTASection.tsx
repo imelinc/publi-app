@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -105,21 +106,21 @@ export function CTASection({ isLoggedIn = false }: CTASectionProps) {
           style={{ transitionDelay: "220ms" }}
         >
           {isLoggedIn ? (
-            <a
+            <Link
               href="/dashboard"
               className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-[15px] transition-opacity duration-150 hover:opacity-90"
               style={{ backgroundColor: "#ffb703", color: "#1a1a2e" }}
             >
               Ir al dashboard →
-            </a>
+            </Link>
           ) : (
-            <a
+            <Link
               href="/register"
               className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-[15px] transition-opacity duration-150 hover:opacity-90"
               style={{ backgroundColor: "#ffb703", color: "#1a1a2e" }}
             >
               Empezar gratis →
-            </a>
+            </Link>
           )}
           <a
             href="#"
