@@ -385,7 +385,7 @@ export default function ConfiguracionPage() {
                     Mejorar a Plan Pro
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-lg overflow-y-auto max-h-[90vh]">
+                <DialogContent className="rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-2xl overflow-y-auto max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle className="font-extrabold text-slate-900 text-xl flex items-center gap-2">
                       <Crown className="h-5 w-5 text-[#ffb703] animate-bounce" />
