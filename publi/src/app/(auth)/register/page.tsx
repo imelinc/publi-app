@@ -215,56 +215,104 @@ export default function RegisterPage() {
         </Link>
 
         {/* Floating Previews */}
-        <div className="relative my-auto flex flex-col items-center justify-center h-[340px] w-full">
-          {/* Card 1 */}
-          <div className="absolute top-0 -left-6 w-56 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-xl hover:scale-105 transition-all duration-500">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-6 w-6 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                <Crown className="h-3.5 w-3.5" />
+        <div className="relative my-auto flex flex-col items-center justify-center h-[420px] max-w-[460px] mx-auto w-full">
+          {/* Card de métricas */}
+          <div className="absolute top-4 -left-12 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 transition-all duration-500 animate-in fade-in slide-in-from-left-8 duration-700">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold tracking-wider text-white/50 uppercase">Rendimiento Semanal</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">+34.8%</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black">42.8k</span>
+              <span className="text-[10px] text-white/70">Impresiones totales</span>
+            </div>
+            <div className="mt-4 h-10 w-full overflow-hidden">
+              <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path
+                  d="M0,25 Q15,5 30,18 T60,5 T90,12 T100,2 L100,30 L0,30 Z"
+                  fill="url(#gradient-chart-reg)"
+                  opacity="0.3"
+                />
+                <path
+                  d="M0,25 Q15,5 30,18 T60,5 T90,12 T100,2"
+                  fill="none"
+                  stroke="#0095b6"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                <defs>
+                  <linearGradient id="gradient-chart-reg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0095b6" />
+                    <stop offset="100%" stopColor="#0095b6" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+
+          {/* Card de publicación programada */}
+          <div className="absolute bottom-6 -right-12 w-72 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5 shadow-2xl hover:scale-105 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10">
+                <img
+                  src="/images/restaurant.jpg"
+                  alt="Restaurant Post"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' fill='%230095b6'/></svg>"
+                  }}
+                />
               </div>
-              <span className="text-[10px] font-bold text-white/90">Acceso Pro Ilimitado</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-white">Menu Primavera - Bistro</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <p className="text-[10px] text-white/60">Programado · Hoy 18:30</p>
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-white/70 leading-relaxed">
-              Planificá sin límites de marcas, automatizá posts y delegá la aprobación al cliente con links mágicos.
-            </p>
           </div>
 
-          {/* Card 2 */}
-          <div className="absolute bottom-4 -right-6 w-60 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-xl hover:scale-105 transition-all duration-500">
-            <div className="flex items-center gap-2 mb-2 text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="text-[10px] font-bold text-white/90">Sincronización IG</span>
+          {/* Card central de IA */}
+          <div className="w-80 rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0a2027]/80 to-[#0e2730]/90 backdrop-blur-xl p-6 shadow-3xl ring-1 ring-white/10 hover:scale-[1.02] transition-all duration-500">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 rounded-xl bg-primary/20 text-primary border border-primary/20">
+                <Sparkles className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold">Copi IA Asistente</h4>
+                <p className="text-[9px] text-white/50">Tono dinámico y engagement</p>
+              </div>
             </div>
-            <p className="text-[11px] text-white/70 leading-relaxed">
-              Subida automática y directa de imágenes y videos directamente al feed e historias.
-            </p>
-          </div>
-
-          {/* Premium graphic center */}
-          <div className="h-32 w-32 rounded-full border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/40 flex items-center justify-center animate-pulse">
-            <Sparkles className="h-12 w-12 text-[#ffb703] animate-bounce" style={{ animationDuration: '4s' }} />
+            <div className="space-y-3">
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <p className="text-[10px] leading-relaxed text-white/80 italic">"¡Presentamos la nueva carta! Hecha con amor y de estación."</p>
+              </div>
+              <div className="flex justify-center">
+                <ChevronRight className="h-4 w-4 text-primary/70 rotate-90" />
+              </div>
+              <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
+                <p className="text-[10px] leading-relaxed text-white font-semibold">"🌸 La primavera se siente en cada plato. ¿Listo para descubrir sabores frescos que despiertan tus sentidos? Vení a probar nuestro nuevo menú. #BistroPrimavera"</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Carousel */}
-        <div className="relative z-10 max-w-sm mx-auto text-center px-4">
-          <div className="h-24 overflow-hidden relative">
-            {carouselSlides.map((feat, index) => (
-              <div
-                key={index}
-                className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 transform ${
-                  index === currentSlide
-                    ? "opacity-100 translate-y-0 scale-100"
-                    : "opacity-0 translate-y-4 scale-95 pointer-events-none"
-                }`}
-              >
-                <h3 className="text-sm font-bold text-white tracking-wide">{feat.title}</h3>
-                <p className="text-xs text-white/70 mt-1 max-w-xs font-medium">{feat.description}</p>
-              </div>
-            ))}
+        <div className="relative z-10 max-w-sm mx-auto text-center px-4 mt-auto">
+          <div className="h-28 flex flex-col items-center justify-center">
+            {(() => {
+              const slide = carouselSlides[currentSlide];
+              return (
+                <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <h3 className="text-sm font-bold text-white tracking-wide">{slide.title}</h3>
+                  <p className="text-xs text-white/70 mt-1 max-w-xs font-medium leading-relaxed">{slide.description}</p>
+                </div>
+              );
+            })()}
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 mt-3">
+          <div className="flex items-center justify-center gap-1.5 mt-2">
             {carouselSlides.map((_, index) => (
               <button
                 key={index}
@@ -536,7 +584,7 @@ export default function RegisterPage() {
                   <Button
                     onClick={() => executeSignUp("free")}
                     disabled={loading}
-                    className="h-12 flex-1 rounded-xl bg-slate-850 hover:bg-slate-900 text-white font-bold hover:scale-[1.01] transition-all shadow-md cursor-pointer border border-transparent"
+                    className="h-12 flex-1 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-bold hover:scale-[1.01] transition-all shadow-md cursor-pointer border border-transparent"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">

@@ -36,6 +36,12 @@ export default function LoginPage() {
   const [forgotOpen, setForgotOpen] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
 
+  // Password recovery states
+  const [recoveryEmail, setRecoveryEmail] = useState("")
+  const [recoveryLoading, setRecoveryLoading] = useState(false)
+  const [recoverySuccess, setRecoverySuccess] = useState(false)
+  const [recoveryError, setRecoveryError] = useState<string | null>(null)
+
   // Carousel of features on the left teaser panel
   const features = [
     {
@@ -61,6 +67,39 @@ export default function LoginPage() {
     }, 6000)
     return () => clearInterval(timer)
   }, [features.length])
+
+  // Reset recovery state when modal is opened/closed
+  useEffect(() => {
+    if (!forgotOpen) {
+      setRecoveryEmail("")
+      setRecoverySuccess(false)
+      setRecoveryError(null)
+    }
+  }, [forgotOpen])
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setRecoveryError(null)
+    setRecoveryLoading(true)
+
+    const supabase = createClient()
+    
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (resetError) {
+        throw new Error(resetError.message)
+      }
+
+      setRecoverySuccess(true)
+    } catch (err) {
+      setRecoveryError(err instanceof Error ? err.message : "Error al enviar el email de recuperación.")
+    } finally {
+      setRecoveryLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -181,26 +220,22 @@ export default function LoginPage() {
         </div>
 
         {/* Carousel de Features */}
-        <div className="relative z-10 max-w-md mx-auto text-center px-4">
-          <div className="h-28 overflow-hidden relative">
-            {features.map((feat, index) => (
-              <div
-                key={index}
-                className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 transform ${
-                  index === currentSlide
-                    ? "opacity-100 translate-y-0 scale-100"
-                    : "opacity-0 translate-y-4 scale-95 pointer-events-none"
-                }`}
-              >
-                <div className="mb-2 bg-white/5 p-2 rounded-full border border-white/5">{feat.icon}</div>
-                <h3 className="text-sm font-bold text-white tracking-wide">{feat.title}</h3>
-                <p className="text-xs text-white/70 mt-1 max-w-sm font-medium">{feat.description}</p>
-              </div>
-            ))}
+        <div className="relative z-10 max-w-md mx-auto text-center px-4 mt-auto">
+          <div className="h-32 flex flex-col items-center justify-center">
+            {(() => {
+              const feat = features[currentSlide];
+              return (
+                <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="mb-2 bg-white/5 p-2 rounded-full border border-white/5">{feat.icon}</div>
+                  <h3 className="text-sm font-bold text-white tracking-wide">{feat.title}</h3>
+                  <p className="text-xs text-white/70 mt-1 max-w-sm font-medium leading-relaxed">{feat.description}</p>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Dots Indicator */}
-          <div className="flex items-center justify-center gap-1.5 mt-4">
+          <div className="flex items-center justify-center gap-1.5 mt-2">
             {features.map((_, index) => (
               <button
                 key={index}
@@ -275,24 +310,67 @@ export default function LoginPage() {
                   <DialogContent className="rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-sm">
                     <DialogHeader>
                       <DialogTitle className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5 text-primary" />
-                        ¿Olvidaste tu contraseña?
+                        <ShieldCheck className="h-5 w-5 text-primary animate-pulse" />
+                        Recuperar Contraseña
                       </DialogTitle>
                       <DialogDescription className="text-xs text-slate-500 leading-relaxed font-semibold pt-2">
-                        Para reestablecer tu contraseña de forma segura, ponete en contacto con nuestro equipo de soporte técnico.
+                        Ingresá tu email y te enviaremos un enlace de recuperación seguro.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="flex items-center justify-center gap-2 py-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <a
-                        href="mailto:support@publi.com"
-                        className="text-sm font-bold text-primary hover:underline"
-                      >
-                        soporte@publi.io
-                      </a>
-                    </div>
-                    <Button onClick={() => setForgotOpen(false)} className="w-full h-11 rounded-xl font-bold bg-primary hover:bg-primary/95 text-white shadow-md">
-                      Entendido
-                    </Button>
+
+                    {recoverySuccess ? (
+                      <div className="space-y-4 text-center py-4 animate-in fade-in duration-300">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                          <CheckCircle2 className="h-5.5 w-5.5" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-900">¡Email enviado!</p>
+                          <p className="text-[11px] text-slate-500 font-medium">Revisá tu bandeja de entrada y spam.</p>
+                        </div>
+                        <Button onClick={() => setForgotOpen(false)} className="w-full h-10 rounded-xl font-bold bg-primary hover:bg-primary/95 text-white">
+                          Cerrar
+                        </Button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleResetPassword} className="space-y-4 pt-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="reset-email" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Email</Label>
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="tu@email.com"
+                            required
+                            value={recoveryEmail}
+                            onChange={(e) => setRecoveryEmail(e.target.value)}
+                            className="h-11 rounded-xl border border-slate-200"
+                          />
+                        </div>
+
+                        {recoveryError && (
+                          <p className="text-xs font-semibold text-rose-500 bg-rose-50 border border-rose-100 rounded-lg p-2 flex items-center gap-1.5">
+                            {recoveryError}
+                          </p>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setForgotOpen(false)}
+                            className="rounded-xl h-10 flex-1 font-bold"
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={recoveryLoading}
+                            className="rounded-xl h-10 flex-1 bg-primary text-white font-bold hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                          >
+                            {recoveryLoading ? "Enviando..." : "Enviar enlace"}
+                          </Button>
+                        </div>
+                      </form>
+                    )}
                   </DialogContent>
                 </Dialog>
               </div>
