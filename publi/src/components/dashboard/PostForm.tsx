@@ -6,6 +6,7 @@ import { Sparkles, Copy, Check, Send, Clock4, AlertCircle, CheckCircle2, Trash2,
 import { useAppStore } from '@/store/use-app-store'
 import type { Network, PostStatus, Post } from '@/types'
 import { PostEditor } from '@/components/dashboard/PostEditor'
+import { NETWORK_META } from '@/lib/networks'
 import { PostPreview } from '@/components/dashboard/PostPreview'
 import { AiPanel, type ScheduleRecommendation } from '@/components/dashboard/AiPanel'
 import { PlanUpgradeDialog } from '@/components/dashboard/PlanUpgradeDialog'
@@ -539,7 +540,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         try {
           const { approvalUrl: url } = await requestApproval(post.id)
           setApprovalUrl(url)
-          setSavedPost({ ...post, status: 'pending_approval' })
+          setSavedPost({ ...post, status: 'pending_approval', clientFeedback: null })
         } finally {
           setApprovalLoading(false)
         }
@@ -700,6 +701,53 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         </div>
 
         <div className="w-96 flex flex-col gap-4">
+          {savedPost && savedPost.clientFeedback && (
+            <div className={`rounded-xl border p-5 shadow-xs transition-all duration-300 ${
+              savedPost.status === 'approved'
+                ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950 shadow-emerald-100/30'
+                : 'bg-rose-50/70 border-rose-200 text-rose-950 shadow-rose-100/30'
+            }`}>
+              <div className="flex items-center gap-2.5 mb-3">
+                {savedPost.status === 'approved' ? (
+                  <div className="size-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 shadow-xs">
+                    <CheckCircle2 className="size-4" />
+                  </div>
+                ) : (
+                  <div className="size-7 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 shrink-0 shadow-xs">
+                    <AlertCircle className="size-4" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-semibold text-[10px] uppercase tracking-wider text-gray-500">
+                    Feedback del Cliente
+                  </h3>
+                  <p className="text-xs font-bold text-gray-900 leading-tight">
+                    {savedPost.status === 'approved'
+                      ? 'Publicación Aprobada'
+                      : 'Cambios Solicitados'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-white/95 border border-black/5 rounded-xl p-3.5 text-xs italic text-gray-700 leading-relaxed font-sans shadow-xs relative overflow-hidden">
+                <span className="text-gray-200 text-3xl font-serif absolute -top-1.5 left-1 select-none pointer-events-none">“</span>
+                <p className="pl-4 pr-1 pt-0.5 font-medium whitespace-pre-wrap">{savedPost.clientFeedback}</p>
+                <span className="text-gray-200 text-3xl font-serif absolute -bottom-4 right-1 select-none pointer-events-none">”</span>
+              </div>
+              
+              {savedPost.updatedAt && (
+                <p className="text-[9px] text-gray-400 mt-2 text-right font-medium">
+                  Recibido el {new Date(savedPost.updatedAt).toLocaleDateString('es-AR', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+
           <PostPreview
             description={
               isCustomized && activePreviewNetwork
@@ -752,11 +800,6 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
               >
                 {approvalState.icon}
                 <span className="font-medium">{approvalState.label}</span>
-                {approvalState.kind === 'rejected' && (
-                  <span className="ml-1 italic opacity-80 truncate">
-                    “{approvalState.feedback}”
-                  </span>
-                )}
               </div>
             )}
 
@@ -1062,43 +1105,85 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       </Dialog>
 
       <Dialog open={!!approvalUrl} onOpenChange={(open) => !open && setApprovalUrl(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="size-4 text-[#0095b6]" />
-              Link de aprobación listo
+        <DialogContent className="sm:max-w-md bg-white border border-gray-100 p-6 rounded-2xl shadow-xl overflow-hidden">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#cceef5]/60 text-[#0095b6] ring-8 ring-[#cceef5]/20 mb-4 animate-pulse">
+            <Send className="h-6 w-6" />
+          </div>
+
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl font-bold text-gray-900 text-center">
+              ¡Link de Aprobación Listo!
             </DialogTitle>
-            <DialogDescription>
-              Copiá este link y enviáselo a tu cliente por WhatsApp, email o como prefieras.
-              No necesita crear una cuenta para responder.
+            <DialogDescription className="text-xs text-gray-500 text-center max-w-xs mx-auto mt-1">
+              Copiá este enlace exclusivo y compartilo con tu cliente. No necesita registrarse ni iniciar sesión para responder.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 truncate">
-              {approvalUrl}
+          <div className="bg-[#f5f0e8]/45 border border-[#cceef5]/40 rounded-xl p-4 my-3 space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500 font-medium">Cliente Destinatario</span>
+              <span className="inline-flex items-center gap-1.5 font-bold text-gray-950">
+                <span className="size-2 rounded-full" style={{ backgroundColor: client?.color ?? '#0095b6' }} />
+                {client?.name ?? 'Cliente'}
+              </span>
             </div>
-            <button
-              onClick={handleCopyLink}
-              className="shrink-0 flex items-center gap-1.5 bg-[#0095b6] text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-[#007a94] transition-colors"
-            >
-              {copied ? (
-                <>
-                  <Check className="size-4" />
-                  Copiado
-                </>
-              ) : (
-                <>
-                  <Copy className="size-4" />
-                  Copiar
-                </>
-              )}
-            </button>
+            
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500 font-medium">Redes Sociales</span>
+              <div className="flex gap-1">
+                {networks.map((network) => (
+                  <span key={network} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white border border-gray-150 text-gray-700 shadow-2xs">
+                    <span className="size-1.5 rounded-full" style={{ backgroundColor: NETWORK_META[network]?.color ?? '#999' }} />
+                    {NETWORK_META[network]?.label ?? network}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <p className="text-xs text-gray-400 mt-2">
-            El post quedó en estado <strong>pendiente de aprobación</strong>.
-            Una vez que tu cliente responda, verás el resultado acá mismo o en el calendario.
+          <div className="space-y-3 mt-2">
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-150 rounded-xl p-1.5 pl-3">
+              <div className="flex-1 text-xs text-gray-600 font-mono truncate select-all">
+                {approvalUrl}
+              </div>
+              <Button
+                size="sm"
+                onClick={handleCopyLink}
+                className="h-8 bg-[#0095b6] hover:bg-[#007a94] text-white text-xs font-semibold px-3 rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5" />
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" />
+                    Copiar
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {approvalUrl && (
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                  `¡Hola! Te comparto el borrador de la publicación "${title || 'Nueva publicación'}" de ${client?.name ?? 'Cliente'} para que la revises, dejes tus comentarios o la apruebes desde este link:\n\n${approvalUrl}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] active:scale-[0.98] text-white font-semibold rounded-xl py-2.5 text-xs transition-all shadow-xs hover:shadow-md cursor-pointer"
+              >
+                <svg className="size-4 fill-white" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.062 5.248 5.308 0 11.722 0c3.107.001 6.027 1.212 8.225 3.413 2.198 2.2 3.407 5.122 3.407 8.23 0 6.438-5.247 11.687-11.66 11.687-1.994-.001-3.956-.51-5.698-1.485L0 24zm6.59-4.846c1.6.95 3.518 1.45 5.474 1.452 5.516 0 10.007-4.48 10.01-9.986.002-2.67-1.036-5.18-2.919-7.065C17.228 1.666 14.72 1.63 12.05 1.63c-5.522 0-10.015 4.481-10.017 9.988-.001 1.957.51 3.868 1.485 5.48L2.513 20.89l3.864-1.013c.123-.03.245-.06.37-.083z"/>
+                </svg>
+                Compartir por WhatsApp
+              </a>
+            )}
+          </div>
+
+          <p className="text-[10px] text-center text-gray-400 leading-normal mt-3">
+            El post quedó en estado <strong className="text-gray-600 font-semibold">pendiente de aprobación</strong>. Cuando el cliente responda, verás el resultado en tiempo real aquí mismo o en tu calendario.
           </p>
         </DialogContent>
       </Dialog>
