@@ -22,7 +22,10 @@ import {
   Calendar,
   Settings,
   ShieldCheck,
-  Building
+  Building,
+  Sliders,
+  TrendingUp,
+  Image as ImageIcon
 } from "lucide-react"
 
 type RegisterStep = "details" | "plan" | "payment"
@@ -54,12 +57,24 @@ export default function RegisterPage() {
 
   const carouselSlides = [
     {
-      title: "Asistente Copi IA",
-      description: "Copys adaptados, hashtags inteligentes y sugerencias de horario óptimo en un clic."
+      icon: <Calendar className="h-6 w-6 text-primary" />,
+      title: "Planificación Unificada",
+      description: "Gestioná múltiples clientes y agendas mensuales en una sola cuadrícula visual intuitiva."
     },
     {
-      title: "Gestión Multi-Cliente",
-      description: "Estructurá el trabajo de tus marcas con workspaces independientes y flujos de aprobación."
+      icon: <Sparkles className="h-6 w-6 text-[#ffb703]" />,
+      title: "Copys Optimizados con IA",
+      description: "Generá textos y hashtags adaptados al tono de tu cliente en segundos con Copi IA."
+    },
+    {
+      icon: <ImageIcon className="h-6 w-6 text-[#00b4d8]" />,
+      title: "Diseño & Edición Integrados",
+      description: "Generá imágenes desde cero con IA y aplicales filtros profesionales directo en la plataforma."
+    },
+    {
+      icon: <TrendingUp className="h-6 w-6 text-emerald-400" />,
+      title: "Métricas de Performance",
+      description: "Analizá el engagement, impresiones y crecimiento de tus marcas con gráficos automatizados."
     }
   ]
 
@@ -211,39 +226,143 @@ export default function RegisterPage() {
         </Link>
 
         {/* Floating Previews */}
-        <div className="relative my-auto flex flex-col items-center justify-center h-[420px] max-w-[460px] mx-auto w-full">
+        <div className="relative my-auto flex flex-col items-center justify-center h-[560px] max-w-[480px] mx-auto w-full scale-[0.9] xl:scale-100 transition-all duration-300">
+          {/* Card 1: Cuentas Conectadas */}
+          <div className="absolute -top-12 -left-16 w-52 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-left-8 duration-700">
+            <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase block mb-2.5">Cuentas Conectadas</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-yellow-500 flex items-center justify-center text-[9px] font-black">IG</div>
+                  <span className="text-[11px] font-bold text-white/90">@bistromenu</span>
+                </div>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-[#1877f2] flex items-center justify-center text-[9px] font-black">FB</div>
+                  <span className="text-[11px] font-bold text-white/70">Bistro Oficial</span>
+                </div>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </div>
+            </div>
+          </div>
 
-          {/* Card de publicación programada */}
-          <div className="absolute bottom-6 -right-12 w-72 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5 shadow-2xl hover:scale-105 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/10">
+          {/* Card 2: Generador IA */}
+          <div className="absolute -top-16 -right-16 w-60 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase">Generador IA</span>
+              <span className="text-[9px] font-bold text-[#00b4d8] bg-[#00b4d8]/10 px-2 py-0.5 rounded-full">Listo</span>
+            </div>
+            <p className="text-[10px] text-white/80 font-mono bg-black/20 p-1.5 rounded border border-white/5 truncate mb-2">
+              "Atardecer en Venecia con..."
+            </p>
+            <div className="flex gap-2">
+              <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 relative">
                 <img
-                  src="/images/restaurant.jpg"
-                  alt="Restaurant Post"
+                  src="/images/paisaje_canal.jpg"
+                  alt="Generated IA"
                   className="h-full w-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' fill='%230095b6'/></svg>"
+                    e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='48' viewBox='0 0 60 48'><rect width='60' height='48' fill='%2300b4d8'/></svg>"
                   }}
                 />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-white">Menu Primavera - Bistro</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <p className="text-[10px] text-white/60">Programado · Hoy 18:30</p>
+              <div className="flex-1 flex flex-col justify-between">
+                <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                  <div className="bg-[#00b4d8] h-full w-full" />
+                </div>
+                <p className="text-[9px] text-white/60 font-medium">Resolución: 1:1 HD</p>
+                <div className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded self-start font-bold">100% Optimizado</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Editor de Fotos */}
+          <div className="absolute top-20 -left-20 w-56 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-left-8 duration-700 delay-200">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase">Editor de Fotos</span>
+              <Sliders className="h-3 w-3 text-white/40" />
+            </div>
+            <div className="flex gap-3">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/10 relative">
+                <img
+                  src="/images/bicicleta.jpg"
+                  alt="Edit preview"
+                  className="h-full w-full object-cover saturate-[1.65]"
+                  onError={(e) => {
+                    e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'><rect width='56' height='56' fill='%23ffb703'/></svg>"
+                  }}
+                />
+                <span className="absolute bottom-1 right-1 text-[7px] bg-black/60 px-1 py-0.5 rounded text-white font-bold">Juno</span>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <div className="space-y-0.5">
+                  <div className="flex justify-between text-[8px] text-white/60 font-bold">
+                    <span>Brillo</span>
+                    <span>+80%</span>
+                  </div>
+                  <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="bg-[#ffb703] h-full w-[80%]" />
+                  </div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex justify-between text-[8px] text-white/60 font-bold">
+                    <span>Saturación</span>
+                    <span>+65%</span>
+                  </div>
+                  <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="bg-primary h-full w-[65%]" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Card central de IA */}
-          <div className="w-80 rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0a2027]/80 to-[#0e2730]/90 backdrop-blur-xl p-6 shadow-3xl ring-1 ring-white/10 hover:scale-[1.02] transition-all duration-500">
+          {/* Card 4: Gráfico de Crecimiento */}
+          <div className="absolute top-24 -right-24 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase">Métricas de Crecimiento</span>
+              <span className="text-[9px] font-bold text-emerald-400 flex items-center gap-0.5 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
+                <TrendingUp className="h-2.5 w-2.5" /> +15.4%
+              </span>
+            </div>
+            <div className="mb-2">
+              <p className="text-lg font-black text-white leading-none">18.4k</p>
+              <p className="text-[9px] text-white/40 font-medium">Seguidores Totales · Bistro</p>
+            </div>
+            <div className="h-14 w-full relative">
+              <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="chart-glow-reg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0095b6" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#0095b6" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,25 C15,22 25,8 40,15 C55,22 70,5 85,12 C92,15 96,6 100,5"
+                  fill="none"
+                  stroke="#0095b6"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M0,25 C15,22 25,8 40,15 C55,22 70,5 85,12 C92,15 96,6 100,5 L100,30 L0,30 Z"
+                  fill="url(#chart-glow-reg)"
+                />
+                <circle cx="100" cy="5" r="2.5" fill="#00b4d8" className="animate-pulse" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 5: Card central de IA */}
+          <div className="w-80 rounded-3xl border border-primary/20 bg-gradient-to-br from-[#0a2027]/90 to-[#0e2730]/95 backdrop-blur-xl p-6 shadow-3xl ring-1 ring-white/10 hover:scale-[1.02] transition-all duration-500 relative z-10">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-2 rounded-xl bg-primary/20 text-primary border border-primary/20">
                 <Sparkles className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h4 className="text-xs font-bold">Copi IA Asistente</h4>
+                <h4 className="text-xs font-bold text-white">Copi IA Asistente</h4>
                 <p className="text-[9px] text-white/50">Tono dinámico y engagement</p>
               </div>
             </div>
@@ -259,6 +378,88 @@ export default function RegisterPage() {
               </div>
             </div>
           </div>
+
+          {/* Card 6: Post Publicado con Métricas */}
+          <div className="absolute bottom-16 -left-20 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-left-8 duration-700 delay-300">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase">Publicado hace 2h</span>
+              <span className="text-[9px] font-bold text-[#e1306c] bg-[#e1306c]/10 px-2 py-0.5 rounded-full">Instagram</span>
+            </div>
+            <div className="flex gap-3 mb-2.5">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                <img
+                  src="/images/starbucks.webp"
+                  alt="Post metrics thumbnail"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' fill='%23e1306c'/></svg>"
+                  }}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-white/90 font-bold truncate">Café de Especialidad</p>
+                <p className="text-[9px] text-white/50 leading-relaxed truncate">"Despertá tus sentidos..."</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-1 pt-2 border-t border-white/5 text-center text-[10px] text-white/70 font-semibold">
+              <div>
+                <p className="font-bold text-white">1.2k</p>
+                <p className="text-[7px] text-white/40 uppercase">Likes</p>
+              </div>
+              <div>
+                <p className="font-bold text-white">84</p>
+                <p className="text-[7px] text-white/40 uppercase">Comments</p>
+              </div>
+              <div>
+                <p className="font-bold text-white">14.5k</p>
+                <p className="text-[7px] text-white/40 uppercase">Reach</p>
+              </div>
+              <div>
+                <p className="font-bold text-emerald-400">5.8%</p>
+                <p className="text-[7px] text-white/40 uppercase">Eng.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 7: Aprobación de Cliente */}
+          <div className="absolute bottom-28 -right-20 w-60 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase">Link de Aprobación</span>
+              <span className="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full animate-pulse">Pendiente</span>
+            </div>
+            <p className="text-[11px] text-white/80 font-medium">Borrador: Campaña de Primavera</p>
+            <div className="flex gap-2 mt-3">
+              <div className="flex-1 text-center py-1 rounded bg-white/5 text-[9px] font-bold border border-white/5 cursor-not-allowed text-white/60">Corregir</div>
+              <div className="flex-1 text-center py-1 rounded bg-[#0095b6] text-[9px] font-bold text-white cursor-not-allowed">Aprobar ✓</div>
+            </div>
+          </div>
+
+          {/* Card 8: Calendario Semanal */}
+          <div className="absolute -bottom-16 -right-16 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
+            <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase block mb-3">Calendario Semanal</span>
+            <div className="grid grid-cols-5 gap-1.5 text-center text-[10px]">
+              <div className="bg-white/5 rounded p-1 border border-white/5">
+                <p className="text-white/40 text-[8px] font-bold">LUN</p>
+                <div className="h-1.5 w-1.5 rounded-full bg-purple-500 mx-auto mt-1" />
+              </div>
+              <div className="bg-white/10 rounded p-1 border border-primary/30">
+                <p className="text-primary font-bold">MAR</p>
+                <div className="h-1.5 w-1.5 rounded-full bg-amber-400 mx-auto mt-1 animate-pulse" />
+              </div>
+              <div className="bg-white/5 rounded p-1 border border-white/5">
+                <p className="text-white/40 text-[8px] font-bold">MIÉ</p>
+                <div className="h-1.5 w-1.5 rounded-full bg-[#1877f2] mx-auto mt-1" />
+              </div>
+              <div className="bg-white/5 rounded p-1 border border-white/5">
+                <p className="text-white/40 text-[8px] font-bold">JUE</p>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 mx-auto mt-1" />
+              </div>
+              <div className="bg-white/5 rounded p-1 border border-white/5">
+                <p className="text-white/40 text-[8px] font-bold">VIE</p>
+                <div className="h-1.5 w-1.5 rounded-full bg-purple-500 mx-auto mt-1" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Carousel */}
@@ -268,6 +469,7 @@ export default function RegisterPage() {
               const slide = carouselSlides[currentSlide];
               return (
                 <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="mb-2 bg-white/5 p-2 rounded-full border border-white/5">{slide.icon}</div>
                   <h3 className="text-sm font-bold text-white tracking-wide">{slide.title}</h3>
                   <p className="text-xs text-white/70 mt-1 max-w-xs font-medium leading-relaxed">{slide.description}</p>
                 </div>
