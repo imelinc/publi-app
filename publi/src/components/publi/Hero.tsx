@@ -104,7 +104,7 @@ export function Hero({ isLoggedIn = false }: HeroProps) {
                   size="lg"
                   className="h-14 rounded-full px-7 text-base font-semibold shadow-[0_22px_50px_-28px_hsl(var(--primary)/0.9)] hover:bg-primary/90"
                 >
-                  <Link href="/waitlist">
+                  <Link href="/register">
                     Empezar gratis
                     <ArrowRight className="size-4" />
                   </Link>

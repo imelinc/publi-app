@@ -46,7 +46,7 @@ export function Navbar({ isLoggedIn = false }: NavbarProps) {
                 asChild
                 className="h-11 rounded-full px-5 text-sm font-semibold shadow-sm hover:bg-primary/90"
               >
-                <Link href="/waitlist">Registrarse</Link>
+                <Link href="/register">Registrarse</Link>
               </Button>
             </>
           )}
@@ -97,7 +97,7 @@ export function Navbar({ isLoggedIn = false }: NavbarProps) {
                 asChild
                 className="h-11 rounded-full text-sm font-semibold hover:bg-primary/90"
               >
-                <Link href="/waitlist" onClick={() => setIsOpen(false)}>
+                <Link href="/register" onClick={() => setIsOpen(false)}>
                   Registrarse
                 </Link>
               </Button>
