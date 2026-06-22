@@ -43,6 +43,7 @@ export async function GET() {
 interface PatchBody {
   name?: string
   workspaceName?: string
+  plan?: 'free' | 'pro'
 }
 
 export async function PATCH(request: NextRequest) {
@@ -58,6 +59,9 @@ export async function PATCH(request: NextRequest) {
 
   if (body.name !== undefined) updates.name = body.name.trim()
   if (body.workspaceName !== undefined) updates.workspace_name = body.workspaceName.trim()
+  if (body.plan !== undefined && (body.plan === 'free' || body.plan === 'pro')) {
+    updates.plan = body.plan
+  }
 
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: 'No se enviaron campos para actualizar' }, { status: 400 })
