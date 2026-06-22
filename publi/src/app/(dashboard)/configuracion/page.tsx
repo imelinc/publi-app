@@ -7,6 +7,11 @@ import {
   Sparkles,
   CheckCircle2,
   Building2,
+  CreditCard,
+  Info,
+  ShieldCheck,
+  Mail,
+  Lock,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
@@ -23,6 +28,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -45,6 +58,115 @@ export default function ConfiguracionPage() {
   )
   const [savingWorkspace, setSavingWorkspace] = React.useState(false)
   const [savingAccount, setSavingAccount] = React.useState(false)
+
+  // Upgrade/Downgrade Subscription States
+  const fetchUserProfile = useAppStore((s) => s.fetchUserProfile)
+  const [upgradeModalOpen, setUpgradeModalOpen] = React.useState(false)
+  const [cardNumber, setCardNumber] = React.useState("")
+  const [cardHolder, setCardHolder] = React.useState("")
+  const [cardExpiry, setCardExpiry] = React.useState("")
+  const [cardCvv, setCardCvv] = React.useState("")
+  const [cvvFocused, setCvvFocused] = React.useState(false)
+  const [paying, setPaying] = React.useState(false)
+  const [payPhase, setPayPhase] = React.useState("")
+  const [cancelOpen, setCancelOpen] = React.useState(false)
+  const [paymentError, setPaymentError] = React.useState<string | null>(null)
+
+  const onCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
+    const formatted = value.match(/.{1,4}/g)?.join(" ") || ""
+    setCardNumber(formatted.slice(0, 19))
+  }
+
+  const onExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "")
+    if (value.length > 2) {
+      value = `${value.slice(0, 2)}/${value.slice(2, 4)}`
+    }
+    setCardExpiry(value.slice(0, 5))
+  }
+
+  const onCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "")
+    setCardCvv(value.slice(0, 4))
+  }
+
+  async function handleUpgradePlan(e: React.FormEvent) {
+    e.preventDefault()
+    setPaymentError(null)
+
+    if (!cardNumber || cardNumber.length < 19) {
+      setPaymentError("El número de tarjeta no es válido.")
+      return
+    }
+    if (!cardHolder.trim()) {
+      setPaymentError("El nombre del titular es requerido.")
+      return
+    }
+    if (!cardExpiry || cardExpiry.length < 5) {
+      setPaymentError("La fecha de expiración no es válida.")
+      return
+    }
+    if (!cardCvv || cardCvv.length < 3) {
+      setPaymentError("El código CVV no es válido.")
+      return
+    }
+
+    setPaying(true)
+    try {
+      setPayPhase("Conectando pasarela...")
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setPayPhase("Verificando tarjeta...")
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setPayPhase("Confirmando plan...")
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'pro' }),
+      })
+
+      if (!res.ok) {
+        toast({ title: 'Error en la suscripción', description: 'No se pudo registrar la tarjeta.' })
+        return
+      }
+
+      await fetchUserProfile()
+      toast({ title: '¡Suscripción Pro Activa!', description: 'Ahora contás con acceso completo a Copi IA e ilimitados clientes.' })
+      setUpgradeModalOpen(false)
+      // reset form
+      setCardNumber("")
+      setCardHolder("")
+      setCardExpiry("")
+      setCardCvv("")
+    } catch {
+      toast({ title: 'Error en el servidor', description: 'No se pudo conectar con el servidor.' })
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  async function handleCancelSubscription() {
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'free' }),
+      })
+
+      if (!res.ok) {
+        toast({ title: 'Error al cancelar', description: 'No se pudo realizar el cambio.' })
+        return
+      }
+
+      await fetchUserProfile()
+      toast({ title: 'Plan Pro Cancelado', description: 'Tu cuenta ha sido rebajada a Plan Free.' })
+      setCancelOpen(false)
+    } catch {
+      toast({ title: 'Error al conectar', description: 'Intente nuevamente más tarde.' })
+    }
+  }
 
   React.useEffect(() => {
     if (userProfile) {
@@ -220,6 +342,214 @@ export default function ConfiguracionPage() {
               </div>
             </div>
           </div>
+
+          <Separator className="bg-slate-100/80 my-4" />
+          
+          <div className="flex justify-end">
+            {userProfile?.plan === 'pro' ? (
+              /* PRO Action: Downgrade / Cancel */
+              <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto h-11 rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all font-bold px-6 cursor-pointer shadow-2xs"
+                  >
+                    Cancelar Suscripción Pro
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-3xl border border-slate-100 shadow-2xl p-6">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="font-extrabold text-slate-900 text-lg">¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm text-slate-500 leading-relaxed font-semibold">
+                      Tu plan volverá a ser Free. Perderás de inmediato el acceso al asistente Copi IA, herramientas de imágenes y tu límite de clientes será de un máximo de 3.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="mt-4 gap-2">
+                    <AlertDialogCancel className="rounded-xl font-bold border-slate-200 hover:bg-slate-50 cursor-pointer">Seguir en Pro</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelSubscription}
+                      className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold cursor-pointer"
+                    >
+                      Confirmar Cancelación
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              /* FREE Action: Upgrade to Pro */
+              <Dialog open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full sm:w-auto h-11 rounded-xl bg-gradient-to-br from-primary to-[#00b4d8] text-white font-bold px-6 shadow-[0_4px_12px_rgba(0,149,182,0.2)] hover:shadow-[0_6px_20px_rgba(0,149,182,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    Mejorar a Plan Pro
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-lg overflow-y-auto max-h-[90vh]">
+                  <DialogHeader>
+                    <DialogTitle className="font-extrabold text-slate-900 text-xl flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-[#ffb703] animate-bounce" />
+                      Suscripción a publi Pro
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500 leading-relaxed font-semibold">
+                      Completá los datos de tu tarjeta simulada para habilitar clientes ilimitados e inteligencia artificial.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  {paymentError && (
+                    <p className="text-xs font-bold text-rose-500 bg-rose-50 border border-rose-100 rounded-xl p-2.5 flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                      {paymentError}
+                    </p>
+                  )}
+
+                  {/* Digital Card Preview */}
+                  <div className="perspective-1000 py-2">
+                    <div
+                      className={`w-full max-w-[320px] h-[180px] mx-auto rounded-2xl p-5 text-white bg-gradient-to-br from-[#0d2a33] to-[#003b49] border border-white/10 shadow-xl relative transition-transform duration-700 preserve-3d ${
+                        cvvFocused ? "rotate-y-180" : ""
+                      }`}
+                    >
+                      {/* Front */}
+                      <div className="absolute inset-0 p-5 flex flex-col justify-between backface-hidden">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black tracking-tight flex items-center gap-1"><Crown className="h-4 w-4 text-[#ffb703]" /> publi</span>
+                          <CreditCard className="h-5 w-5 opacity-70" />
+                        </div>
+                        <div className="my-2">
+                          <div className="w-8 h-6 rounded bg-[#ffd700]/30 border border-[#ffd700]/40 mb-2" />
+                          <p className="text-md font-mono tracking-widest text-center">
+                            {cardNumber || "•••• •••• •••• ••••"}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p className="text-[6px] text-white/50 uppercase font-bold">Titular</p>
+                            <p className="text-[10px] font-semibold truncate uppercase">{cardHolder || "Juan Pérez"}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[6px] text-white/50 uppercase font-bold">Expiración</p>
+                            <p className="text-[10px] font-semibold">{cardExpiry || "MM/AA"}</p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Back */}
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#07161b] to-[#0b2229] border border-white/10 flex flex-col justify-between py-5 backface-hidden rotate-y-180">
+                        <div className="w-full h-8 bg-black/60 mt-1" />
+                        <div className="px-5 flex items-center justify-between gap-3">
+                          <div className="flex-1 bg-white/10 h-7 rounded px-2.5 flex items-center justify-end text-[10px] font-mono italic">
+                            {cardCvv || "•••"}
+                          </div>
+                          <div className="w-8 h-2 bg-primary/30 rounded" />
+                        </div>
+                        <p className="text-[6px] text-white/30 text-center px-4">Simulación. No ingresar datos reales.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleUpgradePlan} className="space-y-4 pt-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="modal-card-number" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Número de tarjeta</Label>
+                      <Input
+                        id="modal-card-number"
+                        placeholder="4000 1234 5678 9010"
+                        required
+                        value={cardNumber}
+                        onChange={onCardNumberChange}
+                        className="h-10 rounded-xl border border-slate-200 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="modal-card-holder" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Nombre del titular</Label>
+                      <Input
+                        id="modal-card-holder"
+                        placeholder="COMO APARECE EN LA TARJETA"
+                        required
+                        value={cardHolder}
+                        onChange={(e) => setCardHolder(e.target.value)}
+                        className="h-10 rounded-xl border border-slate-200 bg-white uppercase"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="modal-card-expiry" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Expiración</Label>
+                        <Input
+                          id="modal-card-expiry"
+                          placeholder="MM/AA"
+                          required
+                          value={cardExpiry}
+                          onChange={onExpiryChange}
+                          className="h-10 rounded-xl border border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="modal-card-cvv" className="text-xs font-bold text-slate-400 uppercase tracking-wide">CVV</Label>
+                        <Input
+                          id="modal-card-cvv"
+                          type="password"
+                          placeholder="123"
+                          required
+                          value={cardCvv}
+                          onChange={onCvvChange}
+                          onFocus={() => setCvvFocused(true)}
+                          onBlur={() => setCvvFocused(false)}
+                          className="h-10 rounded-xl border border-slate-200 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-[#ffb703]/10 border border-[#ffb703]/20 rounded-xl p-3 flex items-start gap-2">
+                      <Info className="h-4.5 w-4.5 text-[#ffb703] shrink-0 mt-0.5" />
+                      <p className="text-[9px] text-amber-800 leading-normal font-semibold">
+                        <strong>Simulación:</strong> pubil-app no procesará ningún cobro bancario real. Es seguro completar el formulario con números de prueba.
+                      </p>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setUpgradeModalOpen(false)}
+                        className="rounded-xl font-bold"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={paying}
+                        className="rounded-xl bg-primary hover:bg-primary/95 text-white font-bold px-6 cursor-pointer"
+                      >
+                        {paying ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>{payPhase}</span>
+                          </div>
+                        ) : (
+                          <span>Pagar $9.99/mes</span>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+          
+          {/* Estilos CSS Inline de perspectiva y rotaciones 3D */}
+          <style jsx global>{`
+            .perspective-1000 {
+              perspective: 1000px;
+            }
+            .preserve-3d {
+              transform-style: preserve-3d;
+            }
+            .backface-hidden {
+              backface-visibility: hidden;
+            }
+            .rotate-y-180 {
+              transform: rotateY(180deg);
+            }
+          `}</style>
         </CardContent>
       </Card>
 
