@@ -114,7 +114,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Rechazo → vuelve a draft para que el CM lo edite y reenvíe
         status: 'draft',
         approved_at: null,
-        client_feedback: body.feedback?.trim() || null,
+        client_feedback: body.feedback?.trim() || 'El cliente solicitó cambios sin dejar comentarios.',
       }
 
   const { error: updateErr } = await supabase

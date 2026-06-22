@@ -252,18 +252,16 @@ export default function ApprovalPage({
       <div className="p-6 sm:p-8 md:p-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Interactive Post Preview */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center">
-            <div className="w-full max-w-sm sticky top-6 bg-white rounded-2xl border border-gray-100/60 p-4 shadow-sm">
-              <PostPreview
-                description={post.description}
-                mediaUrls={post.mediaUrls}
-                client={mockClient}
-                networks={post.networks}
-                activeNetwork={activePreviewNetwork}
-                contentFormat="feed"
-                onNetworkSelect={(net) => setActivePreviewNetwork(net)}
-              />
-            </div>
+          <div className="lg:col-span-5 flex flex-col items-center justify-center lg:sticky lg:top-6">
+            <PostPreview
+              description={post.description}
+              mediaUrls={post.mediaUrls}
+              client={mockClient}
+              networks={post.networks}
+              activeNetwork={activePreviewNetwork}
+              contentFormat="feed"
+              onNetworkSelect={(net) => setActivePreviewNetwork(net)}
+            />
           </div>
 
           {/* Right Column: Meta details, feedback, & actions */}
