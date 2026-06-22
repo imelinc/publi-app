@@ -293,17 +293,17 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Card 6: Post Publicado con Métricas */}
+          {/* Card 6: Post Publicado */}
           <div className="absolute bottom-16 -left-20 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 hover:border-primary/30 transition-all duration-500 animate-in fade-in slide-in-from-left-8 duration-700 delay-300">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2.5">
               <span className="text-[9px] font-bold tracking-wider text-white/50 uppercase">Publicado hace 2h</span>
               <span className="text-[9px] font-bold text-[#e1306c] bg-[#e1306c]/10 px-2 py-0.5 rounded-full">Instagram</span>
             </div>
-            <div className="flex gap-3 mb-2.5">
+            <div className="flex gap-3">
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10">
                 <img
                   src="/images/starbucks.webp"
-                  alt="Post metrics thumbnail"
+                  alt="Post thumbnail"
                   className="h-full w-full object-cover"
                   onError={(e) => {
                     e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' fill='%23e1306c'/></svg>"
@@ -312,25 +312,7 @@ export default function LoginPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] text-white/90 font-bold truncate">Café de Especialidad</p>
-                <p className="text-[9px] text-white/50 leading-relaxed truncate">"Despertá tus sentidos..."</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 gap-1 pt-2 border-t border-white/5 text-center text-[10px] text-white/70 font-semibold">
-              <div>
-                <p className="font-bold text-white">1.2k</p>
-                <p className="text-[7px] text-white/40 uppercase">Likes</p>
-              </div>
-              <div>
-                <p className="font-bold text-white">84</p>
-                <p className="text-[7px] text-white/40 uppercase">Comments</p>
-              </div>
-              <div>
-                <p className="font-bold text-white">14.5k</p>
-                <p className="text-[7px] text-white/40 uppercase">Reach</p>
-              </div>
-              <div>
-                <p className="font-bold text-emerald-400">5.8%</p>
-                <p className="text-[7px] text-white/40 uppercase">Eng.</p>
+                <p className="text-[9px] text-white/50 leading-relaxed truncate">"Despertá tus sentidos con nuestro nuevo blend..."</p>
               </div>
             </div>
           </div>
