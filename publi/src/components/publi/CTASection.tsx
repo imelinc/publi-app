@@ -93,7 +93,7 @@ export function CTASection({ isLoggedIn = false }: CTASectionProps) {
           )}
           style={{ color: "#cceef5", transitionDelay: "120ms" }}
         >
-          Probá publi y su asistente de IA gratis durante 14 días. Sin tarjeta de crédito. Sin límites.
+          Empezá a gestionar tus redes con publi. Sin tarjeta de crédito. Sin límites.
         </p>
 
         <div
