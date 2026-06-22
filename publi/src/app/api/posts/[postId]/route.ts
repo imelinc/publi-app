@@ -59,6 +59,9 @@ function mapPost(
       reach: (p.reach as number) ?? 0,
     },
     publications,
+    approvalToken: (p.approval_token as string) ?? null,
+    approvedAt: (p.approved_at as string) ?? null,
+    clientFeedback: (p.client_feedback as string) ?? null,
     createdAt: p.created_at,
     updatedAt: p.updated_at,
   }

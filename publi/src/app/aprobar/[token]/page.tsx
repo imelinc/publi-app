@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Clock, ImageOff, Loader2 } from 'lucide-react'
+import { useState, useEffect, use } from 'react'
+import { CheckCircle2, AlertCircle, Clock, Loader2, Send, Check, MessageSquare, Calendar } from 'lucide-react'
+import { PostPreview } from '@/components/dashboard/PostPreview'
 import { NETWORK_META } from '@/lib/networks'
 import type { Network } from '@/types'
 
@@ -46,6 +47,7 @@ export default function ApprovalPage({
   const [state, setState] = useState<PageState>({ status: 'loading' })
   const [currentPost, setCurrentPost] = useState<PostPreviewData | null>(null)
   const [feedback, setFeedback] = useState('')
+  const [activePreviewNetwork, setActivePreviewNetwork] = useState<Network | null>(null)
 
   // Resolver params (Next.js 15 los hace async)
   useEffect(() => {
@@ -65,6 +67,9 @@ export default function ApprovalPage({
         } else {
           setCurrentPost(json.data)
           setState({ status: 'ready', post: json.data })
+          if (json.data.networks && json.data.networks.length > 0) {
+            setActivePreviewNetwork(json.data.networks[0])
+          }
         }
       })
       .catch(() => setState({ status: 'invalid' }))
@@ -95,9 +100,11 @@ export default function ApprovalPage({
   if (state.status === 'loading') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-3 py-16 text-gray-500">
-          <Loader2 className="size-8 animate-spin" />
-          <p>Cargando publicación…</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-gray-550">
+          <div className="relative flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-100 border-t-[#0095b6]"></div>
+          </div>
+          <p className="text-sm font-medium animate-pulse">Cargando publicación…</p>
         </div>
       </Shell>
     )
@@ -106,13 +113,15 @@ export default function ApprovalPage({
   if (state.status === 'invalid') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-3 py-16 text-gray-500">
-          <XCircle className="size-10 text-red-400" />
-          <p className="font-medium text-gray-700">Link inválido o expirado</p>
-          <p className="text-sm text-center">
-            Este link de aprobación no existe o ya no está activo.
-            <br />
-            Pedile al CM que te reenvíe un link nuevo.
+        <div className="p-8 sm:p-12 flex flex-col items-center text-center max-w-md mx-auto">
+          <div className="size-16 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 ring-8 ring-rose-50 mb-6 animate-pulse">
+            <AlertCircle className="size-8" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Enlace inválido o expirado
+          </h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Este link de aprobación no existe o ha sido desactivado. Por favor, solicitá un link nuevo al CM.
           </p>
         </div>
       </Shell>
@@ -121,17 +130,35 @@ export default function ApprovalPage({
 
   if (state.status === 'already_processed') {
     const label: Record<string, string> = {
-      approved: 'Aprobado ✅',
-      draft: 'Enviado de vuelta para revisión',
-      scheduled: 'Programado 🗓',
-      published: 'Publicado 🚀',
+      approved: 'Aprobada ✅',
+      draft: 'Devuelta para cambios ✍️',
+      scheduled: 'Programada para publicación 🗓',
+      published: 'Publicada en redes 🚀',
     }
+    const isApproved = state.postStatus === 'approved' || state.postStatus === 'scheduled' || state.postStatus === 'published'
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-3 py-16 text-gray-500">
-          <CheckCircle className="size-10 text-green-400" />
-          <p className="font-medium text-gray-700">Este post ya fue procesado</p>
-          <p className="text-sm">Estado actual: {label[state.postStatus] ?? state.postStatus}</p>
+        <div className="p-8 sm:p-12 flex flex-col items-center text-center max-w-md mx-auto">
+          <div className={`size-16 rounded-full flex items-center justify-center ring-8 mb-6 ${
+            isApproved 
+              ? 'bg-emerald-100 text-emerald-600 ring-emerald-50' 
+              : 'bg-amber-100 text-amber-600 ring-amber-50'
+          }`}>
+            {isApproved ? (
+              <CheckCircle2 className="size-8" />
+            ) : (
+              <AlertCircle className="size-8" />
+            )}
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Publicación ya procesada
+          </h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Esta publicación ya ha sido respondida previamente.
+          </p>
+          <div className="mt-4 px-4 py-2 bg-gray-50 border border-gray-150 rounded-xl text-xs font-bold text-gray-700">
+            Estado actual: {label[state.postStatus] ?? state.postStatus}
+          </div>
         </div>
       </Shell>
     )
@@ -140,13 +167,15 @@ export default function ApprovalPage({
   if (state.status === 'approved') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-4 py-16">
-          <div className="size-16 rounded-full bg-green-100 flex items-center justify-center">
-            <CheckCircle className="size-9 text-green-500" />
+        <div className="p-8 sm:p-12 flex flex-col items-center text-center max-w-md mx-auto">
+          <div className="size-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 ring-8 ring-emerald-50 mb-6 animate-bounce">
+            <CheckCircle2 className="size-8" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-800">¡Post aprobado!</h2>
-          <p className="text-gray-500 text-center text-sm max-w-xs">
-            Gracias. El equipo ya fue notificado y se encargará de programar la publicación.
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            ¡Publicación Aprobada!
+          </h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            ¡Muchas gracias! Ya notificamos al equipo. Nos encargaremos de programar y publicar el contenido en las fechas indicadas.
           </p>
         </div>
       </Shell>
@@ -156,13 +185,15 @@ export default function ApprovalPage({
   if (state.status === 'rejected') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-4 py-16">
-          <div className="size-16 rounded-full bg-orange-100 flex items-center justify-center">
-            <XCircle className="size-9 text-orange-500" />
+        <div className="p-8 sm:p-12 flex flex-col items-center text-center max-w-md mx-auto">
+          <div className="size-16 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 ring-8 ring-rose-50 mb-6">
+            <Send className="size-7" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-800">Feedback enviado</h2>
-          <p className="text-gray-500 text-center text-sm max-w-xs">
-            Gracias por tu respuesta. El equipo revisará tus comentarios y te enviará una versión actualizada.
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Feedback enviado al equipo
+          </h2>
+          <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            Gracias por tus sugerencias. El equipo revisará tus comentarios para ajustar el contenido y te enviaremos una versión corregida para tu revisión.
           </p>
         </div>
       </Shell>
@@ -172,14 +203,20 @@ export default function ApprovalPage({
   if (state.status === 'error') {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-3 py-16 text-gray-500">
-          <XCircle className="size-10 text-red-400" />
-          <p className="font-medium text-gray-700">Ocurrió un error</p>
-          <p className="text-sm">{state.message}</p>
+        <div className="p-8 sm:p-12 flex flex-col items-center text-center max-w-md mx-auto">
+          <div className="size-16 rounded-full bg-red-100 flex items-center justify-center text-red-600 ring-8 ring-red-50 mb-6">
+            <AlertCircle className="size-8" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Ocurrió un error
+          </h2>
+          <p className="text-sm text-red-600 mt-1 leading-relaxed">
+            {state.message}
+          </p>
           {currentPost && (
             <button
               onClick={() => setState({ status: 'ready', post: currentPost })}
-              className="mt-2 text-sm text-[#0095b6] underline"
+              className="mt-6 text-sm font-semibold text-[#0095b6] hover:underline"
             >
               Volver a intentar
             </button>
@@ -199,128 +236,135 @@ export default function ApprovalPage({
 
   const isSubmitting = state.status === 'submitting'
 
+  // Construir mockClient para PostPreview
+  const mockClient = {
+    id: post.id,
+    name: post.clientName,
+    color: post.clientColor,
+    initials: post.clientName
+      ? post.clientName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+      : 'CL',
+    connectedNetworks: post.networks,
+  } as any
+
   return (
     <Shell>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <div
-            className="size-5 rounded-full"
-            style={{ backgroundColor: post.clientColor }}
-          />
-          <span className="text-sm font-medium text-gray-500">{post.clientName}</span>
+      <div className="p-6 sm:p-8 md:p-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Interactive Post Preview */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center">
+            <div className="w-full max-w-sm sticky top-6 bg-white rounded-2xl border border-gray-100/60 p-4 shadow-sm">
+              <PostPreview
+                description={post.description}
+                mediaUrls={post.mediaUrls}
+                client={mockClient}
+                networks={post.networks}
+                activeNetwork={activePreviewNetwork}
+                contentFormat="feed"
+                onNetworkSelect={(net) => setActivePreviewNetwork(net)}
+              />
+            </div>
+          </div>
+
+          {/* Right Column: Meta details, feedback, & actions */}
+          <div className="lg:col-span-7 space-y-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="size-5 rounded-full ring-2 ring-white shadow-xs flex-shrink-0"
+                  style={{ backgroundColor: post.clientColor }}
+                />
+                <span className="text-sm font-bold text-gray-800">{post.clientName}</span>
+                <span className="text-xs text-gray-400">·</span>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100 flex items-center gap-1">
+                  <Clock className="size-3" />
+                  Pendiente de revisión
+                </span>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+                Revisá tu publicación
+              </h2>
+              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                Examiná el diseño y el texto de la publicación para cada red social. Si estás de acuerdo, aprobala para programar su publicación; si necesitás cambios, déjanos tu comentario.
+              </p>
+            </div>
+
+            {/* Details Box */}
+            <div className="bg-[#f5f0e8]/40 border border-[#cceef5]/40 rounded-2xl p-4 space-y-3.5 shadow-inner">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500 font-medium">Redes Seleccionadas</span>
+                <div className="flex gap-1 flex-wrap justify-end">
+                  {post.networks.map((network) => (
+                    <span key={network} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white border border-gray-150 text-gray-700 shadow-2xs">
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: NETWORK_META[network]?.color ?? '#999' }} />
+                      {NETWORK_META[network]?.label ?? network}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              {post.scheduledAt && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-medium">Fecha Programada</span>
+                  <span className="font-semibold text-gray-800 flex items-center gap-1.5">
+                    <Calendar className="size-3.5 text-[#0095b6]" />
+                    {formatDate(post.scheduledAt)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <hr className="border-gray-100" />
+
+            {/* Comments section */}
+            <div className="space-y-2">
+              <label htmlFor="feedback-input" className="block text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                <MessageSquare className="size-4 text-[#0095b6]" />
+                Comentario o sugerencia (opcional)
+              </label>
+              <textarea
+                id="feedback-input"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="¿Tenés alguna sugerencia, corrección o comentario? Escribilo acá para que el equipo pueda ajustarlo..."
+                rows={4}
+                disabled={isSubmitting}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-xs resize-none focus:outline-none focus:ring-2 focus:ring-[#0095b6] focus:border-transparent transition-all duration-300 disabled:opacity-50"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+              <button
+                onClick={() => handleDecision(true)}
+                disabled={isSubmitting}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#0095b6] hover:bg-[#007a94] active:scale-[0.99] disabled:opacity-50 text-white font-bold rounded-2xl py-3.5 px-4 text-sm transition-all shadow-md hover:shadow-lg cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-4.5 animate-spin" />
+                ) : (
+                  <Check className="size-4.5" />
+                )}
+                Aprobar Publicación
+              </button>
+              
+              <button
+                onClick={() => handleDecision(false)}
+                disabled={isSubmitting}
+                className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-600 bg-white hover:bg-red-50/50 active:scale-[0.99] disabled:opacity-50 font-semibold rounded-2xl py-3.5 px-4 text-sm transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-4.5 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                Solicitar Cambios
+              </button>
+            </div>
+          </div>
         </div>
-        <h2 className="text-xl font-semibold text-gray-800">
-          Revisá esta publicación
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Aprobala o enviá tu feedback al equipo.
-        </p>
       </div>
-
-      {/* Redes a las que va */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {(post.networks as Network[]).map((network: Network) => (
-          <span
-            key={network}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
-          >
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: NETWORK_META[network]?.color ?? '#999' }}
-            />
-            {NETWORK_META[network]?.label ?? network}
-          </span>
-        ))}
-      </div>
-
-      {/* Imagen */}
-      {post.mediaUrls && post.mediaUrls.length > 0 ? (
-        <div className="rounded-xl overflow-hidden mb-5 bg-gray-100 aspect-square w-full max-w-sm mx-auto">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.mediaUrls[0]}
-            alt="Imagen de la publicación"
-            className="w-full h-full object-cover"
-          />
-        </div>
-      ) : (
-        <div className="rounded-xl bg-gray-50 border border-dashed border-gray-200 aspect-square w-full max-w-sm mx-auto flex flex-col items-center justify-center gap-2 mb-5 text-gray-400">
-          <ImageOff className="size-8" />
-          <span className="text-sm">Sin imagen</span>
-        </div>
-      )}
-
-      {/* Descripción */}
-      <div className="bg-gray-50 rounded-xl p-4 mb-5">
-        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-          {post.description}
-        </p>
-        {post.hashtags && post.hashtags.length > 0 && (
-          <p className="mt-3 text-sm text-[#0095b6] font-medium">
-            {(post.hashtags as string[]).map((h: string) => `#${h.replace(/^#/, '')}`).join(' ')}
-          </p>
-        )}
-      </div>
-
-      {/* Fecha programada */}
-      {post.scheduledAt && (
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-          <Clock className="size-4" />
-          <span>Programada para el {formatDate(post.scheduledAt)}</span>
-        </div>
-      )}
-
-      {/* Separador */}
-      <hr className="border-gray-100 mb-6" />
-
-      {/* Feedback */}
-      <div className="mb-5">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Comentario (opcional)
-        </label>
-        <textarea
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          placeholder="¿Tenés alguna sugerencia o corrección? Podés escribirla acá…"
-          rows={3}
-          disabled={isSubmitting}
-          className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0095b6] focus:border-transparent disabled:opacity-50"
-        />
-      </div>
-
-      {/* Botones */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={() => handleDecision(true)}
-          disabled={isSubmitting}
-          className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-medium rounded-xl py-3 text-sm transition-colors"
-        >
-          {isSubmitting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <CheckCircle className="size-4" />
-          )}
-          Aprobar publicación
-        </button>
-        <button
-          onClick={() => handleDecision(false)}
-          disabled={isSubmitting}
-          className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 font-medium rounded-xl py-3 text-sm transition-colors"
-        >
-          {isSubmitting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <XCircle className="size-4" />
-          )}
-          Pedir cambios
-        </button>
-      </div>
-
-      {/* Nota al pie */}
-      <p className="text-xs text-gray-400 text-center mt-6">
-        Este link es exclusivo para vos. No necesitás crear una cuenta.
-      </p>
     </Shell>
   )
 }
@@ -329,14 +373,23 @@ export default function ApprovalPage({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-start py-10 px-4">
-      {/* Logo */}
-      <div className="mb-8">
-        <span className="text-2xl font-bold text-[#0095b6]">publi</span>
+    <div className="min-h-screen bg-[#f5f0e8] relative overflow-hidden flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Mesh decorative blobs */}
+      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#cceef5]/40 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#ffb703]/10 blur-[120px] pointer-events-none" />
+      
+      {/* Brand Header */}
+      <div className="relative z-10 mb-8 flex flex-col items-center">
+        <span className="text-3xl font-extrabold tracking-tight text-gray-900 flex items-center gap-1.5">
+          <span className="text-[#0095b6]">publi</span>
+          <span className="text-xs bg-[#cceef5] text-[#0095b6] px-2 py-0.5 rounded-md font-semibold uppercase tracking-wide">
+            Portal
+          </span>
+        </span>
       </div>
 
-      {/* Tarjeta */}
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+      {/* Main Card */}
+      <div className="relative z-10 w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-3xl border border-[#cceef5]/60 shadow-xl overflow-hidden transition-all duration-300">
         {children}
       </div>
     </div>
