@@ -144,7 +144,7 @@ export function Hero({ isLoggedIn = false }: HeroProps) {
                   500+ CMs ya confían en publi
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  14 días gratis · Sin tarjeta de crédito
+                  Sin tarjeta de crédito · Plan Free disponible
                 </p>
               </div>
             </div>

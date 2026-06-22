@@ -18,7 +18,6 @@ import { createClient } from "@/lib/supabase/client"
 import {
   Sparkles,
   Calendar,
-  TrendingUp,
   Mail,
   Lock,
   ArrowRight,
@@ -53,11 +52,6 @@ export default function LoginPage() {
       icon: <Sparkles className="h-6 w-6 text-[#ffb703]" />,
       title: "Copys Optimizados con IA",
       description: "Generá textos y hashtags adaptados al tono de tu cliente en segundos con Copi IA."
-    },
-    {
-      icon: <TrendingUp className="h-6 w-6 text-emerald-400" />,
-      title: "Métricas que Impactan",
-      description: "Visualizá y exportá reportes de engagement de forma automática y premium."
     }
   ]
 
@@ -134,40 +128,6 @@ export default function LoginPage() {
 
         {/* Mockups interactivos flotantes */}
         <div className="relative my-auto flex flex-col items-center justify-center h-[420px] max-w-[460px] mx-auto w-full">
-          {/* Card de métricas */}
-          <div className="absolute top-4 -left-12 w-64 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-4 shadow-2xl hover:scale-105 transition-all duration-500 animate-in fade-in slide-in-from-left-8 duration-700">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold tracking-wider text-white/50 uppercase">Rendimiento Semanal</span>
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">+34.8%</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black">42.8k</span>
-              <span className="text-[10px] text-white/70">Impresiones totales</span>
-            </div>
-            {/* Gráfico SVG simple y premium */}
-            <div className="mt-4 h-10 w-full overflow-hidden">
-              <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
-                <path
-                  d="M0,25 Q15,5 30,18 T60,5 T90,12 T100,2 L100,30 L0,30 Z"
-                  fill="url(#gradient-chart)"
-                  opacity="0.3"
-                />
-                <path
-                  d="M0,25 Q15,5 30,18 T60,5 T90,12 T100,2"
-                  fill="none"
-                  stroke="#0095b6"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <defs>
-                  <linearGradient id="gradient-chart" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0095b6" />
-                    <stop offset="100%" stopColor="#0095b6" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-          </div>
 
           {/* Card de publicación programada */}
           <div className="absolute bottom-6 -right-12 w-72 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5 shadow-2xl hover:scale-105 transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
