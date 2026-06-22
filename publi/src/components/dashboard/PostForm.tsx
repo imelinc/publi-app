@@ -701,52 +701,58 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         </div>
 
         <div className="w-96 flex flex-col gap-4">
-          {savedPost && savedPost.clientFeedback && (
-            <div className={`rounded-xl border p-5 shadow-xs transition-all duration-300 ${
-              savedPost.status === 'approved'
-                ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950 shadow-emerald-100/30'
-                : 'bg-rose-50/70 border-rose-200 text-rose-950 shadow-rose-100/30'
-            }`}>
-              <div className="flex items-center gap-2.5 mb-3">
-                {savedPost.status === 'approved' ? (
-                  <div className="size-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 shadow-xs">
-                    <CheckCircle2 className="size-4" />
+          {savedPost && (savedPost.clientFeedback || savedPost.status === 'approved') && (() => {
+            const feedbackText = savedPost.clientFeedback || 
+              (savedPost.status === 'approved' 
+                ? 'El cliente aprobó esta publicación.' 
+                : 'El cliente solicitó cambios.')
+            return (
+              <div className={`rounded-xl border p-5 shadow-xs transition-all duration-300 ${
+                savedPost.status === 'approved'
+                  ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950 shadow-emerald-100/30'
+                  : 'bg-rose-50/70 border-rose-200 text-rose-950 shadow-rose-100/30'
+              }`}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  {savedPost.status === 'approved' ? (
+                    <div className="size-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 shadow-xs">
+                      <CheckCircle2 className="size-4" />
+                    </div>
+                  ) : (
+                    <div className="size-7 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 shrink-0 shadow-xs">
+                      <AlertCircle className="size-4" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-semibold text-[10px] uppercase tracking-wider text-gray-500">
+                      Feedback del Cliente
+                    </h3>
+                    <p className="text-xs font-bold text-gray-900 leading-tight">
+                      {savedPost.status === 'approved'
+                        ? 'Publicación Aprobada'
+                        : 'Cambios Solicitados'}
+                    </p>
                   </div>
-                ) : (
-                  <div className="size-7 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 shrink-0 shadow-xs">
-                    <AlertCircle className="size-4" />
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-semibold text-[10px] uppercase tracking-wider text-gray-500">
-                    Feedback del Cliente
-                  </h3>
-                  <p className="text-xs font-bold text-gray-900 leading-tight">
-                    {savedPost.status === 'approved'
-                      ? 'Publicación Aprobada'
-                      : 'Cambios Solicitados'}
-                  </p>
                 </div>
+                
+                <div className="bg-white/95 border border-black/5 rounded-xl p-3.5 text-xs italic text-gray-700 leading-relaxed font-sans shadow-xs relative overflow-hidden">
+                  <span className="text-gray-200 text-3xl font-serif absolute -top-1.5 left-1 select-none pointer-events-none">“</span>
+                  <p className="pl-4 pr-1 pt-0.5 font-medium whitespace-pre-wrap">{feedbackText}</p>
+                  <span className="text-gray-200 text-3xl font-serif absolute -bottom-4 right-1 select-none pointer-events-none">”</span>
+                </div>
+                
+                {savedPost.updatedAt && (
+                  <p className="text-[9px] text-gray-400 mt-2 text-right font-medium">
+                    Recibido el {new Date(savedPost.updatedAt).toLocaleDateString('es-AR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                )}
               </div>
-              
-              <div className="bg-white/95 border border-black/5 rounded-xl p-3.5 text-xs italic text-gray-700 leading-relaxed font-sans shadow-xs relative overflow-hidden">
-                <span className="text-gray-200 text-3xl font-serif absolute -top-1.5 left-1 select-none pointer-events-none">“</span>
-                <p className="pl-4 pr-1 pt-0.5 font-medium whitespace-pre-wrap">{savedPost.clientFeedback}</p>
-                <span className="text-gray-200 text-3xl font-serif absolute -bottom-4 right-1 select-none pointer-events-none">”</span>
-              </div>
-              
-              {savedPost.updatedAt && (
-                <p className="text-[9px] text-gray-400 mt-2 text-right font-medium">
-                  Recibido el {new Date(savedPost.updatedAt).toLocaleDateString('es-AR', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              )}
-            </div>
-          )}
+            )
+          })()}
 
           <PostPreview
             description={
@@ -1105,7 +1111,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       </Dialog>
 
       <Dialog open={!!approvalUrl} onOpenChange={(open) => !open && setApprovalUrl(null)}>
-        <DialogContent className="sm:max-w-md bg-white border border-gray-100 p-6 rounded-2xl shadow-xl overflow-hidden">
+        <DialogContent className="!flex !flex-col gap-4 !max-w-md sm:!max-w-md bg-white border border-gray-150 p-6 rounded-2xl shadow-xl">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#cceef5]/60 text-[#0095b6] ring-8 ring-[#cceef5]/20 mb-4 animate-pulse">
             <Send className="h-6 w-6" />
           </div>
