@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { ensureProfile } from '@/lib/profile'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET() {
   const supabase = await createClient()
@@ -67,14 +69,21 @@ export async function PATCH(request: NextRequest) {
     return Response.json({ error: 'No se enviaron campos para actualizar' }, { status: 400 })
   }
 
-  const { data: profile, error: upsertError } = await supabase
+  // Asegurar que el perfil existe en la BD antes de actualizar
+  const { error: ensureError } = await ensureProfile(supabase, user)
+  if (ensureError) {
+    return Response.json({ error: ensureError }, { status: 500 })
+  }
+
+  const { data: profile, error: updateError } = await supabase
     .from('profiles')
-    .upsert({ id: user.id, ...updates })
+    .update(updates)
+    .eq('id', user.id)
     .select('name, workspace_name, login_count, time_spent_creating, plan')
     .single()
 
-  if (upsertError) {
-    return Response.json({ error: upsertError.message }, { status: 500 })
+  if (updateError) {
+    return Response.json({ error: updateError.message }, { status: 500 })
   }
 
   const meta = user.user_metadata ?? {}
@@ -119,7 +128,8 @@ export async function DELETE() {
     return Response.json({ error: deleteError.message }, { status: 500 })
   }
 
-  const { error: authDeleteError } = await supabase.auth.admin.deleteUser(user.id)
+  const adminSupabase = createAdminClient()
+  const { error: authDeleteError } = await adminSupabase.auth.admin.deleteUser(user.id)
   if (authDeleteError) {
     return Response.json({ error: authDeleteError.message }, { status: 500 })
   }
