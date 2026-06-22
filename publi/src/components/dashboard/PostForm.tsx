@@ -352,6 +352,58 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     }
   }, [clientId, activeWorkspaceId, clients])
 
+  // Sincronizar initialPost externo con estados internos de PostForm.
+  // Esto es crucial para re-fetch, tiempo real y cuando cambia el post desde el padre,
+  // sin forzar un remount total del componente que rompería flujos (ej: popup de aprobación).
+  useEffect(() => {
+    if (!initialPost) return
+
+    setSavedPost(initialPost)
+
+    const hasChanges = useAppStore.getState().hasUnsavedChanges
+    // Solo sobreescribimos los campos editables si no hay cambios sin guardar.
+    if (!hasChanges) {
+      setTitle(initialPost.title ?? '')
+      setClientId(initialPost.clientId)
+      setDescription(initialPost.description ?? '')
+      setNetworks(initialPost.networks ?? [])
+      setMediaUrls(initialPost.mediaUrls ?? [])
+      setContentFormat(initialPost.contentFormat ?? 'feed')
+      
+      const isCust = initialPost.publications 
+        ? initialPost.publications.some((pub) => pub.description !== null)
+        : false
+      setIsCustomized(isCust)
+
+      const customs = {} as Record<Network, string>
+      if (initialPost.publications) {
+        for (const pub of initialPost.publications) {
+          if (pub.description !== null) {
+            customs[pub.network] = pub.description
+          }
+        }
+      }
+      setCustomDescriptions(customs)
+
+      setScheduleDate(initialPost.scheduledAt ? toDateInput(new Date(initialPost.scheduledAt)) : '')
+      setScheduleTime(initialPost.scheduledAt ? toTimeInput(initialPost.scheduledAt) : '')
+
+      // Actualizamos también el snap de limpieza
+      cleanSnapshotRef.current = {
+        title: initialPost.title ?? '',
+        description: initialPost.description ?? '',
+        networks: initialPost.networks ?? [],
+        mediaUrls: initialPost.mediaUrls ?? [],
+        clientId: initialPost.clientId,
+        scheduleDate: initialPost.scheduledAt ? toDateInput(new Date(initialPost.scheduledAt)) : '',
+        scheduleTime: initialPost.scheduledAt ? toTimeInput(initialPost.scheduledAt) : '',
+        contentFormat: initialPost.contentFormat ?? 'feed',
+        isCustomized: isCust,
+        customDescriptions: customs,
+      }
+    }
+  }, [initialPost])
+
   // En modo create, cuando se elige cliente, pre-cargar sus redes conectadas
   useEffect(() => {
     if (mode === 'edit') return
@@ -1180,8 +1232,9 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] active:scale-[0.98] text-white font-semibold rounded-xl py-2.5 text-xs transition-all shadow-xs hover:shadow-md cursor-pointer"
               >
-                <svg className="size-4 fill-white" viewBox="0 0 24 24">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.062 5.248 5.308 0 11.722 0c3.107.001 6.027 1.212 8.225 3.413 2.198 2.2 3.407 5.122 3.407 8.23 0 6.438-5.247 11.687-11.66 11.687-1.994-.001-3.956-.51-5.698-1.485L0 24zm6.59-4.846c1.6.95 3.518 1.45 5.474 1.452 5.516 0 10.007-4.48 10.01-9.986.002-2.67-1.036-5.18-2.919-7.065C17.228 1.666 14.72 1.63 12.05 1.63c-5.522 0-10.015 4.481-10.017 9.988-.001 1.957.51 3.868 1.485 5.48L2.513 20.89l3.864-1.013c.123-.03.245-.06.37-.083z"/>
+                <svg className="size-4 fill-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6.014 8.00613C6.12827 7.1024 7.30277 5.87414 8.23488 6.01043L8.23339 6.00894C9.14051 6.18132 9.85859 7.74261 10.2635 8.44465C10.5504 8.95402 10.3641 9.4701 10.0965 9.68787C9.7355 9.97883 9.17099 10.3803 9.28943 10.7834C9.5 11.5 12 14 13.2296 14.7107C13.695 14.9797 14.0325 14.2702 14.3207 13.9067C14.5301 13.6271 15.0466 13.46 15.5548 13.736C16.3138 14.178 17.0288 14.6917 17.69 15.27C18.0202 15.546 18.0977 15.9539 17.8689 16.385C17.4659 17.1443 16.3003 18.1456 15.4542 17.9421C13.9764 17.5868 8 15.27 6.08033 8.55801C5.97237 8.24048 5.99955 8.12044 6.014 8.00613Z" fill="currentColor"/>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M12 23C10.7764 23 10.0994 22.8687 9 22.5L6.89443 23.5528C5.56462 24.2177 4 23.2507 4 21.7639V19.5C1.84655 17.492 1 15.1767 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12C23 18.0751 18.0751 23 12 23ZM6 18.6303L5.36395 18.0372C3.69087 16.4772 3 14.7331 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C11.0143 21 10.552 20.911 9.63595 20.6038L8.84847 20.3397L6 21.7639V18.6303Z" fill="currentColor"/>
                 </svg>
                 Compartir por WhatsApp
               </a>

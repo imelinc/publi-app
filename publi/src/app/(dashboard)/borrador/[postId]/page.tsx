@@ -353,8 +353,8 @@ export default function EditarBorradorPage({ params }: PageProps) {
     )
   }
 
-  // Key fuerza remount del PostForm cuando cambia el status del post.
-  // Sin esto, al re-fetch obtener un nuevo estado (ej: pending → approved),
-  // los estados internos del form quedarían desactualizados.
-  return <PostForm key={`${post.id}-${post.status}`} mode="edit" initialPost={post} />
+  // Usamos el id como key para mantener la misma instancia de PostForm durante la edición.
+  // Los cambios de estado (ej: pending_approval) se sincronizan internamente mediante useEffect
+  // sin destruir el componente (lo cual cerraría diálogos activos como el de copiar link).
+  return <PostForm key={post.id} mode="edit" initialPost={post} />
 }
