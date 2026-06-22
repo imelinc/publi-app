@@ -114,7 +114,7 @@ export function CTASection({ isLoggedIn = false }: CTASectionProps) {
             </a>
           ) : (
             <a
-              href="/waitlist"
+              href="/register"
               className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl font-bold text-[15px] transition-opacity duration-150 hover:opacity-90"
               style={{ backgroundColor: "#ffb703", color: "#1a1a2e" }}
             >

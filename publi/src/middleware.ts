@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/login', '/waitlist', '/api/waitlist']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/waitlist', '/api/waitlist']
 
 function isProtected(pathname: string): boolean {
   // Todo lo que esté bajo el grupo (dashboard)
