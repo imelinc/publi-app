@@ -191,7 +191,7 @@ export function NetworksManager({ clientId }: NetworksManagerProps) {
                   <Button
                     size="sm"
                     onClick={() => {
-                      window.location.href = `/api/instagram/connect?clientId=${clientId}`
+                      window.open(`/api/instagram/connect?clientId=${clientId}`, '_blank')
                     }}
                     className="bg-[#0095b6] hover:bg-[#007a96] text-white h-8 text-[10px] font-bold rounded-xl px-3 transition-all cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-transparent"
                   >
