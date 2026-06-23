@@ -187,6 +187,7 @@ export default function ConfiguracionPage() {
         toast({ title: 'Error al guardar', description: 'Intentá de nuevo.' })
         return
       }
+      await fetchUserProfile()
       toast({ title: 'Workspace actualizado' })
     } catch {
       toast({ title: 'Error al guardar', description: 'No se pudo conectar con el servidor.' })
@@ -207,6 +208,7 @@ export default function ConfiguracionPage() {
         toast({ title: 'Error al guardar', description: 'Intentá de nuevo.' })
         return
       }
+      await fetchUserProfile()
       toast({ title: 'Nombre actualizado' })
     } catch {
       toast({ title: 'Error al guardar', description: 'No se pudo conectar con el servidor.' })

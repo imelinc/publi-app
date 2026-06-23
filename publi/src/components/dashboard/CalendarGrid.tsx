@@ -14,12 +14,11 @@ interface CalendarGridProps {
   onEventClick: (event: CalendarEvent) => void
 }
 
-const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 
 function getDaysInGrid(month: Date): Date[] {
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1)
-  let startDow = firstDay.getDay()
-  startDow = startDow === 0 ? 6 : startDow - 1
+  const startDow = firstDay.getDay()
   const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0)
   const days: Date[] = []
   for (let i = startDow; i > 0; i--) {
@@ -42,12 +41,12 @@ function getDaysInGrid(month: Date): Date[] {
 
 function getWeekDays(referenceDate: Date): Date[] {
   const day = referenceDate.getDay()
-  const mondayOffset = day === 0 ? -6 : 1 - day
-  const monday = new Date(referenceDate)
-  monday.setDate(referenceDate.getDate() + mondayOffset)
+  const sundayOffset = -day
+  const sunday = new Date(referenceDate)
+  sunday.setDate(referenceDate.getDate() + sundayOffset)
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
+    const d = new Date(sunday)
+    d.setDate(sunday.getDate() + i)
     return d
   })
 }
@@ -114,8 +113,8 @@ export function CalendarGrid({
   const days = viewMode === "month" ? monthDays : weekDays
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-md shadow-sm">
-      <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100/80">
+    <div className="flex flex-col flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 backdrop-blur-md shadow-sm">
+      <div className="grid grid-cols-7 bg-slate-100/50 border-b border-slate-200">
         {DAY_LABELS.map((label) => (
           <div
             key={label}
@@ -125,7 +124,7 @@ export function CalendarGrid({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 flex-1 overflow-auto divide-x divide-y divide-gray-100/80 border-b border-r border-gray-100/80">
+      <div className="grid grid-cols-7 flex-1 overflow-auto divide-x divide-y divide-slate-200 border-b border-r border-slate-200">
         {days.map((date, i) => {
           const isCurrentMonth =
             date.getMonth() === currentMonth.getMonth() &&
@@ -145,10 +144,12 @@ export function CalendarGrid({
             <div
               key={i}
               onClick={() => onDayClick(date)}
-              className={`min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 hover:bg-slate-50/60 relative group flex flex-col justify-between ${
-                isToday ? "bg-primary/2" : "bg-white"
-              } ${
-                !isCurrentMonth && viewMode === "month" ? "opacity-35 bg-gray-50/40" : ""
+              className={`min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 relative group flex flex-col justify-between ${
+                isToday
+                  ? "bg-[#0095b6]/5 hover:bg-[#0095b6]/8"
+                  : isCurrentMonth
+                    ? "bg-white hover:bg-slate-50"
+                    : "bg-slate-50/40 opacity-70 text-gray-400"
               }`}
             >
               <div>
