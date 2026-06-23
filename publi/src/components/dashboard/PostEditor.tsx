@@ -11,6 +11,16 @@ import { NETWORK_META } from '@/lib/networks'
 import { AiPanel } from './AiPanel'
 import { CropDialog } from './CropDialog'
 import { PlanUpgradeDialog } from './PlanUpgradeDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface PostEditorProps {
   clientId: string
@@ -50,6 +60,7 @@ export function PostEditor({
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null)
   const [cropImageIndex, setCropImageIndex] = useState<number>(-1)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
+  const [confirmSwitchOpen, setConfirmSwitchOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
@@ -349,13 +360,14 @@ export function PostEditor({
               type="button"
               onClick={() => {
                 if (isCustomized) {
-                  const confirmClear = window.confirm(
-                    "¿Seguro que querés volver a usar el mismo copy para todas las redes? Esto borrará los textos individuales y se usará el copy unificado."
+                  const hasCustomizedChanges = Object.keys(customDescriptions).some(
+                    (key) => customDescriptions[key as Network] !== description
                   )
-                  if (confirmClear) {
-                    const fallbackCopy = activeEditorTab ? (customDescriptions[activeEditorTab] ?? description) : description
-                    onDescriptionChange(fallbackCopy)
+                  if (!hasCustomizedChanges) {
+                    onDescriptionChange(description)
                     onIsCustomizedChange(false)
+                  } else {
+                    setConfirmSwitchOpen(true)
                   }
                 }
               }}
@@ -691,6 +703,39 @@ export function PostEditor({
         open={upgradeDialogOpen}
         onClose={() => setUpgradeDialogOpen(false)}
       />
+
+      {/* Diálogo premium de confirmación de des-personalización */}
+      <AlertDialog open={confirmSwitchOpen} onOpenChange={setConfirmSwitchOpen}>
+        <AlertDialogContent className="rounded-3xl border border-slate-100 shadow-2xl p-6 max-w-md bg-white">
+          <AlertDialogHeader className="flex flex-col items-center text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-500 ring-8 ring-amber-500/10 mb-4 animate-pulse">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <AlertDialogTitle className="text-lg font-extrabold text-gray-900">
+              ¿Volver al copy unificado?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-500 leading-relaxed font-semibold mt-2">
+              Se perderán los textos personalizados que escribiste para cada red y se usará el copy unificado. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 gap-2 sm:gap-0 flex justify-center">
+            <AlertDialogCancel className="rounded-xl font-bold border-slate-200 hover:bg-slate-50 cursor-pointer flex-1">
+              Mantener personalizados
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const fallbackCopy = activeEditorTab ? (customDescriptions[activeEditorTab] ?? description) : description
+                onDescriptionChange(fallbackCopy)
+                onIsCustomizedChange(false)
+                setConfirmSwitchOpen(false)
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold cursor-pointer flex-1 border border-transparent"
+            >
+              Sí, unificar copy
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

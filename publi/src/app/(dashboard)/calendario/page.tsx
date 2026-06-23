@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,7 +26,12 @@ import {
   Clock,
   Trash2,
   RefreshCw,
+  Clock4,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react"
+import { NETWORK_META } from "@/lib/networks"
+import { cn } from "@/lib/utils"
 
 export default function CalendarioPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -104,24 +111,24 @@ export default function CalendarioPage() {
       return monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
     } else {
       const day = currentMonth.getDay()
-      const mondayOffset = day === 0 ? -6 : 1 - day
-      const monday = new Date(currentMonth)
-      monday.setDate(currentMonth.getDate() + mondayOffset)
+      const sundayOffset = -day
+      const sunday = new Date(currentMonth)
+      sunday.setDate(currentMonth.getDate() + sundayOffset)
       
-      const sunday = new Date(monday)
-      sunday.setDate(monday.getDate() + 6)
+      const saturday = new Date(sunday)
+      saturday.setDate(sunday.getDate() + 6)
       
-      const startDay = monday.getDate()
-      const endDay = sunday.getDate()
+      const startDay = sunday.getDate()
+      const endDay = saturday.getDate()
       
-      if (monday.getMonth() === sunday.getMonth()) {
-        const monthStr = monday.toLocaleDateString("es-AR", { month: "long" })
-        const yearStr = monday.getFullYear()
+      if (sunday.getMonth() === saturday.getMonth()) {
+        const monthStr = sunday.toLocaleDateString("es-AR", { month: "long" })
+        const yearStr = sunday.getFullYear()
         return `Semana del ${startDay} al ${endDay} de ${monthStr} de ${yearStr}`
       } else {
-        const startMonthStr = monday.toLocaleDateString("es-AR", { month: "short" })
-        const endMonthStr = sunday.toLocaleDateString("es-AR", { month: "long" })
-        const endYearStr = sunday.getFullYear()
+        const startMonthStr = sunday.toLocaleDateString("es-AR", { month: "short" })
+        const endMonthStr = saturday.toLocaleDateString("es-AR", { month: "long" })
+        const endYearStr = saturday.getFullYear()
         return `Semana del ${startDay} de ${startMonthStr} al ${endDay} de ${endMonthStr} de ${endYearStr}`
       }
     }
@@ -256,64 +263,124 @@ export default function CalendarioPage() {
             if (!open) setSelectedPost(null)
           }}
         >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{selectedPost.title}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
+          <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl border border-slate-100 shadow-2xl bg-white">
+            {/* Gradient Header matching brand color */}
+            <div
+              className="px-6 pt-6 pb-5 relative overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, ${selectedPost.clientColor}18 0%, ${selectedPost.clientColor}08 100%)`,
+              }}
+            >
+              <div
+                className="absolute -right-8 -top-8 w-28 h-28 rounded-full opacity-[0.05] blur-xl"
+                style={{ backgroundColor: selectedPost.clientColor }}
+              />
+              <div className="flex items-center gap-3">
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-xs shadow-3xs shrink-0"
                   style={{ backgroundColor: selectedPost.clientColor }}
                 >
                   {selectedPost.clientName.slice(0, 2).toUpperCase()}
                 </div>
-                <span className="text-sm text-gray-600">
-                  {selectedPost.clientName}
+                <div className="space-y-0.5">
+                  <DialogTitle className="text-base font-extrabold text-gray-900 leading-tight">
+                    {selectedPost.title}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-gray-500 font-semibold">
+                    Publicación de {selectedPost.clientName}
+                  </DialogDescription>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Copy / Description Container */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Copy de publicación</span>
+                <div className="text-xs text-slate-700 leading-relaxed font-semibold bg-slate-50/50 border border-slate-150 p-4 rounded-2xl italic shadow-3xs whitespace-pre-wrap">
+                  {selectedPost.description || 'Sin copy redactado'}
+                </div>
+              </div>
+
+              {/* Grid: Networks & Time */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Redes */}
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Canales de difusión</span>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {selectedPost.networks.map((n) => {
+                      const meta = NETWORK_META[n]
+                      return (
+                        <span
+                          key={n}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold bg-white border border-slate-150 text-slate-700 shadow-3xs"
+                        >
+                          {meta && (
+                            <img src={meta.icon} alt="" width={10} height={10} className="size-3 object-contain shrink-0" />
+                          )}
+                          {meta ? meta.label : n}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Fecha programada */}
+                {(selectedPost.scheduledAt || selectedPost.publishedAt) && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Fecha y Hora</span>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 pt-1">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>
+                        {new Date(
+                          (selectedPost.scheduledAt || selectedPost.publishedAt) as string
+                        ).toLocaleDateString("es-AR", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Badge */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Estado</span>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-3xs mt-1",
+                    selectedPost.status === "scheduled"
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : selectedPost.status === "published"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-slate-50 text-slate-700 border-slate-200"
+                  )}
+                >
+                  <span className={cn("size-1.5 rounded-full shrink-0",
+                    selectedPost.status === "scheduled" ? "bg-blue-500" :
+                    selectedPost.status === "published" ? "bg-emerald-500 animate-pulse" :
+                    "bg-slate-400"
+                  )} />
+                  {selectedPost.status === "scheduled"
+                    ? "Programada"
+                    : selectedPost.status === "published"
+                      ? "Publicada"
+                      : "Borrador"}
                 </span>
               </div>
-              <p className="text-sm text-gray-600">
-                {selectedPost.description}
-              </p>
-              <div className="flex gap-2">
-                {selectedPost.networks.map((n) => (
-                  <span
-                    key={n}
-                    className="text-xs bg-gray-100 px-2 py-1 rounded"
-                  >
-                    {n}
-                  </span>
-                ))}
-              </div>
-              {(selectedPost.scheduledAt || selectedPost.publishedAt) && (
-                <p className="text-xs text-gray-400">
-                  {new Date(
-                    (selectedPost.scheduledAt || selectedPost.publishedAt) as string
-                  ).toLocaleDateString("es-AR", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              )}
-              <span
-                className={`inline-block text-xs px-2 py-1 rounded ${
-                  selectedPost.status === "scheduled"
-                    ? "bg-blue-100 text-blue-700"
-                    : selectedPost.status === "published"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {selectedPost.status === "scheduled"
-                  ? "Programada"
-                  : selectedPost.status === "published"
-                    ? "Publicada"
-                    : "Borrador"}
-              </span>
             </div>
+
+            <DialogFooter className="px-6 pb-6 pt-3 border-t border-slate-50">
+              <Button
+                onClick={() => setSelectedPost(null)}
+                className="w-full bg-[#0095b6] hover:bg-[#007a94] text-white rounded-xl font-bold h-10 text-xs shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer border border-transparent"
+              >
+                Cerrar
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
@@ -325,115 +392,159 @@ export default function CalendarioPage() {
             if (!open) setSelectedEvent(null)
           }}
         >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+          <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl border border-slate-100 shadow-2xl bg-white">
+            {/* Gradient Header matching event color */}
+            <div
+              className="px-6 pt-6 pb-5 relative overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, ${selectedEvent.color}18 0%, ${selectedEvent.color}08 100%)`,
+              }}
+            >
+              <div
+                className="absolute -right-8 -top-8 w-28 h-28 rounded-full opacity-[0.05] blur-xl"
+                style={{ backgroundColor: selectedEvent.color }}
+              />
+              <div className="flex items-center gap-3">
                 <div
-                  className="w-3 h-3 rounded-full shrink-0"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-3xs"
                   style={{ backgroundColor: selectedEvent.color }}
-                />
-                {selectedEvent.title}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {selectedEventClient && (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                    style={{ backgroundColor: selectedEventClient.color }}
-                  >
-                    {selectedEventClient.initials}
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {selectedEventClient.name}
+                >
+                  <span className="text-white text-base">
+                    {selectedEvent.type === "deadline" ? "⏰" : "📅"}
                   </span>
                 </div>
-              )}
+                <div className="space-y-0.5">
+                  <DialogTitle className="text-base font-extrabold text-gray-900 leading-tight">
+                    {selectedEvent.title}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-gray-500 font-semibold">
+                    {selectedEvent.type === "deadline" ? "Fecha límite establecida" : "Evento calendarizado"}
+                  </DialogDescription>
+                </div>
+              </div>
+            </div>
 
+            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Description */}
               {selectedEvent.description && (
-                <p className="text-sm text-gray-600">
-                  {selectedEvent.description}
-                </p>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Descripción</span>
+                  <div className="text-xs text-slate-700 leading-relaxed font-semibold bg-slate-50/50 border border-slate-150 p-4 rounded-2xl italic shadow-3xs">
+                    {selectedEvent.description}
+                  </div>
+                </div>
               )}
 
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    {(() => {
-                      // `selectedEvent.date` puede ser:
-                      //  - 'YYYY-MM-DD' si isAllDay
-                      //  - ISO completo con hora si !isAllDay
-                      // En el primer caso, parseamos el mediodía local para evitar saltos de día por timezone.
-                      const raw = selectedEvent.date ?? ""
-                      const d = raw.includes("T")
-                        ? new Date(raw)
-                        : new Date(raw + "T12:00:00")
-                      return isNaN(d.getTime())
-                        ? raw
-                        : d.toLocaleDateString("es-AR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
-                    })()}
-                  </span>
-                </div>
-
-                {!selectedEvent.isAllDay && (
-                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      {(() => {
-                        const start = new Date(selectedEvent.date)
-                        if (isNaN(start.getTime())) return ""
-                        const fmt = (d: Date) =>
-                          `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
-                        if (selectedEvent.type === "deadline") {
-                          return `Hasta las ${fmt(start)}`
-                        }
-                        if (selectedEvent.endAt) {
-                          const end = new Date(selectedEvent.endAt)
-                          if (!isNaN(end.getTime())) {
-                            return `${fmt(start)} – ${fmt(end)}`
-                          }
-                        }
-                        return fmt(start)
-                      })()}
-                    </span>
+              {/* Grid: Client & Time details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Cliente */}
+                {selectedEventClient && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Asociado a cliente</span>
+                    <div className="flex items-center gap-2 pt-1">
+                      <div
+                        className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[9px] font-bold shadow-3xs"
+                        style={{ backgroundColor: selectedEventClient.color }}
+                      >
+                        {selectedEventClient.initials}
+                      </div>
+                      <span className="text-xs font-bold text-slate-700">
+                        {selectedEventClient.name}
+                      </span>
+                    </div>
                   </div>
                 )}
 
-                <span
-                  className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium ${
-                    selectedEvent.type === "deadline"
-                      ? "bg-red-50 text-red-600"
-                      : "bg-blue-50 text-blue-600"
-                  }`}
-                >
-                  {selectedEvent.type === "deadline" ? "Deadline" : "Evento"}
-                </span>
-              </div>
+                {/* Fecha */}
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Fecha programada</span>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 pt-1">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>
+                      {(() => {
+                        const raw = selectedEvent.date ?? ""
+                        const d = raw.includes("T")
+                          ? new Date(raw)
+                          : new Date(raw + "T12:00:00")
+                        return isNaN(d.getTime())
+                          ? raw
+                          : d.toLocaleDateString("es-AR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                      })()}
+                    </span>
+                  </div>
+                </div>
 
-              <div className="pt-2 border-t border-gray-100">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
-                  onClick={async () => {
-                    try {
-                      await deleteEvent(selectedEvent.id)
-                    } catch {
-                      // El error ya se maneja en el store / se puede agregar toast
-                    }
-                    setSelectedEvent(null)
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-1.5" />
-                  Eliminar evento
-                </Button>
+                {/* Horario (Si no es todo el día) */}
+                {!selectedEvent.isAllDay && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Horario</span>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 pt-1">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>
+                        {(() => {
+                          const start = new Date(selectedEvent.date)
+                          if (isNaN(start.getTime())) return ""
+                          const fmt = (d: Date) =>
+                            `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+                          if (selectedEvent.type === "deadline") {
+                            return `Hasta las ${fmt(start)}`
+                          }
+                          if (selectedEvent.endAt) {
+                            const end = new Date(selectedEvent.endAt)
+                            if (!isNaN(end.getTime())) {
+                              return `${fmt(start)} – ${fmt(end)}`
+                            }
+                          }
+                          return fmt(start)
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tipo de evento badge */}
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Tipo</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold border shadow-3xs mt-1",
+                      selectedEvent.type === "deadline"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : "bg-blue-50 text-blue-700 border-blue-200"
+                    )}
+                  >
+                    {selectedEvent.type === "deadline" ? "Deadline" : "Evento"}
+                  </span>
+                </div>
               </div>
             </div>
+
+            <DialogFooter className="px-6 pb-6 pt-3 border-t border-slate-50 flex flex-col-reverse sm:flex-row justify-between gap-2.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 rounded-xl font-bold h-10 text-xs cursor-pointer transition-all shadow-3xs"
+                onClick={async () => {
+                  try {
+                    await deleteEvent(selectedEvent.id)
+                  } catch {}
+                  setSelectedEvent(null)
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Eliminar evento
+              </Button>
+              <Button
+                onClick={() => setSelectedEvent(null)}
+                className="bg-[#0095b6] hover:bg-[#007a94] text-white rounded-xl font-bold h-10 text-xs shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer border border-transparent flex-1"
+              >
+                Listo
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

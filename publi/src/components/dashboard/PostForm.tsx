@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Copy, Check, Send, Clock4, AlertCircle, CheckCircle2, Trash2, Lock } from 'lucide-react'
+import { Sparkles, Copy, Check, Send, Clock4, AlertCircle, CheckCircle2, Trash2, Lock, FileText, Globe, Calendar, UserCheck } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store/use-app-store'
 import type { Network, PostStatus, Post } from '@/types'
 import { PostEditor } from '@/components/dashboard/PostEditor'
@@ -1022,7 +1023,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
 
       {/* Dialog unificado: pide título + confirma según la acción */}
       <Dialog open={!!dialogAction} onOpenChange={(open) => !open && setDialogAction(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl border border-slate-100 shadow-2xl bg-white">
           {(() => {
             // Configuración por acción
             const clientName = client?.name ?? 'el cliente seleccionado'
@@ -1108,55 +1109,118 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             const c = dialogAction ? config[dialogAction] : null
             if (!c) return null
 
-            return (
-              <>
-                <DialogHeader>
-                  <DialogTitle>{c.title}</DialogTitle>
-                  <DialogDescription>{c.description}</DialogDescription>
-                </DialogHeader>
+            // Definir theme basado en la acción para diseño premium
+            let theme = {
+              bg: 'from-[#0095b6]/10 to-[#00b4d8]/5',
+              iconBg: 'bg-[#0095b6]/10 text-[#0095b6]',
+              icon: <FileText className="h-5 w-5" />,
+              color: '#0095b6'
+            }
+            if (dialogAction === 'publish') {
+              theme = {
+                bg: 'from-[#0095b6]/15 to-[#00b4d8]/5',
+                iconBg: 'bg-[#0095b6]/15 text-[#0095b6]',
+                icon: <Globe className="h-5 w-5" />,
+                color: '#0095b6'
+              }
+            } else if (dialogAction === 'schedule') {
+              theme = {
+                bg: 'from-purple-500/10 to-indigo-500/5',
+                iconBg: 'bg-purple-500/10 text-purple-600',
+                icon: <Calendar className="h-5 w-5" />,
+                color: '#8b5cf6'
+              }
+            } else if (dialogAction === 'approval') {
+              theme = {
+                bg: 'from-[#ffb703]/10 to-amber-500/5',
+                iconBg: 'bg-[#ffb703]/10 text-amber-600',
+                icon: <UserCheck className="h-5 w-5" />,
+                color: '#ffb703'
+              }
+            }
 
-                <div className="mt-2">
-                  <Label
-                    htmlFor="dialog-title-input"
-                    className="text-sm font-medium text-gray-700 mb-2 block"
-                  >
-                    Título <span className="text-red-400">*</span>
-                  </Label>
-                  <Input
-                    id="dialog-title-input"
-                    autoFocus
-                    value={titleDraftInput}
-                    onChange={(e) => setTitleDraftInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && titleDraftInput.trim() && !saving) {
-                        handleConfirmDialog()
-                      }
-                    }}
-                    placeholder="ej: Lanzamiento campaña primavera"
-                    maxLength={120}
+            return (
+              <div className="flex flex-col">
+                {/* Gradient Header */}
+                <div className={cn("px-6 pt-6 pb-5 relative overflow-hidden bg-gradient-to-br", theme.bg)}>
+                  <div
+                    className="absolute -right-8 -top-8 w-28 h-28 rounded-full opacity-[0.08] blur-xl"
+                    style={{ backgroundColor: theme.color }}
                   />
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    Nombre interno para encontrarlo después. No se muestra a tu audiencia.
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className={cn("h-11 w-11 flex items-center justify-center rounded-xl shrink-0 shadow-3xs", theme.iconBg)}>
+                      {theme.icon}
+                    </div>
+                    <div className="space-y-0.5">
+                      <DialogTitle className="text-base font-extrabold text-gray-900">
+                        {c.title}
+                      </DialogTitle>
+                      <DialogDescription className="text-xs text-gray-500 font-medium">
+                        Confirmá los detalles de la publicación
+                      </DialogDescription>
+                    </div>
+                  </div>
                 </div>
 
-                <DialogFooter>
+                <div className="px-6 py-5 space-y-4">
+                  {/* Action Description */}
+                  <div className="text-xs text-gray-600 leading-relaxed font-semibold bg-slate-50/70 border border-slate-150/50 rounded-xl p-3.5 shadow-3xs">
+                    {c.description}
+                  </div>
+
+                  {/* Title input field */}
+                  <div className="space-y-1.5">
+                    <Label
+                      htmlFor="dialog-title-input"
+                      className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block"
+                    >
+                      Título de la publicación <span className="text-red-400">*</span>
+                    </Label>
+                    <Input
+                      id="dialog-title-input"
+                      autoFocus
+                      value={titleDraftInput}
+                      onChange={(e) => setTitleDraftInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && titleDraftInput.trim() && !saving) {
+                          handleConfirmDialog()
+                        }
+                      }}
+                      placeholder="ej: Lanzamiento campaña primavera"
+                      maxLength={120}
+                      className="h-10 rounded-xl border border-slate-200 bg-white focus-visible:ring-primary focus-visible:border-primary text-sm font-semibold transition-all shadow-3xs"
+                    />
+                    <p className="text-[10px] text-gray-400 font-medium">
+                      Nombre interno para encontrarlo después. No se muestra a tu audiencia.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <DialogFooter className="px-6 pb-6 pt-0 gap-2 sm:gap-0">
                   <Button
                     variant="outline"
                     onClick={() => setDialogAction(null)}
                     disabled={saving}
+                    className="rounded-xl font-bold h-10 text-xs cursor-pointer"
                   >
                     Cancelar
                   </Button>
                   <Button
                     onClick={handleConfirmDialog}
                     disabled={!titleDraftInput.trim() || saving}
-                    className={c.confirmClass}
+                    className={cn(
+                      "rounded-xl font-bold h-10 text-xs shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer border border-transparent",
+                      dialogAction === 'publish' ? 'bg-[#0095b6] hover:bg-[#007a94] text-white' :
+                      dialogAction === 'schedule' ? 'bg-purple-600 hover:bg-purple-700 text-white' :
+                      dialogAction === 'approval' ? 'bg-amber-500 hover:bg-amber-600 text-white' :
+                      'bg-[#0095b6] hover:bg-[#007a94] text-white'
+                    )}
                   >
                     {c.confirmLabel}
                   </Button>
                 </DialogFooter>
-              </>
+              </div>
             )
           })()}
         </DialogContent>
