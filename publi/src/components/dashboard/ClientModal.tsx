@@ -172,7 +172,7 @@ export function ClientModal({ open, onClose, client, onSave }: ClientModalProps)
           </div>
         </div>
 
-        <div className="px-6 py-5">
+        <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
           {step === 1 && (
             <div className="flex flex-col gap-5">
               {/* Live avatar preview */}
