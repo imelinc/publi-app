@@ -132,7 +132,7 @@ export default function EditarBorradorPage({ params }: PageProps) {
           {error ?? 'El post no existe o no tenés acceso.'}
         </p>
         <button
-          onClick={() => router.push('/calendario')}
+          onClick={() => window.location.href = '/calendario'}
           className="text-sm text-[#0095b6] hover:underline"
         >
           Volver al calendario
