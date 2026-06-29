@@ -96,17 +96,47 @@ const FUNNY_MESSAGES = [
   "Casi listo, puliendo los últimos detalles..."
 ]
 
-const FUN_FACTS = [
-  "¿Sabías que la primera foto en Instagram se subió el 16 de julio de 2010 y era un perro?",
-  "¿Sabías que el hashtag nació en Twitter en 2007 gracias a Chris Messina?",
-  "¿Sabías que Instagram tiene más de 2.000 millones de usuarios activos al mes?",
-  "¿Sabías que el mejor horario general para publicar suele ser entre las 6 PM y 9 PM?",
-  "¿Sabías que las publicaciones con al menos un hashtag reciben un 12.6% más de interacción?",
-  "¿Sabías que el primer correo electrónico de la historia se envió en 1971 por Ray Tomlinson?",
-  "¿Sabías que la pizza es la comida más fotografiada en Instagram a nivel mundial?",
-  "¿Sabías que las publicaciones en carrusel tienen el mayor ratio de engagement promedio en Instagram?",
-  "¿Sabías que el 80% de los usuarios de Instagram siguen al menos a una cuenta de empresa?",
-  "¿Sabías que la fuente tipográfica de Instagram se llama Billabong?"
+const FUN_FACTS: { fact: string; source: string }[] = [
+  {
+    fact: "¿Sabías que la primera foto en Instagram se subió el 16 de julio de 2010 y era un perro?",
+    source: "Centro de Prensa de Instagram"
+  },
+  {
+    fact: "¿Sabías que el hashtag nació en Twitter en 2007 gracias a Chris Messina?",
+    source: "Chris Messina (Creador del Hashtag)"
+  },
+  {
+    fact: "¿Sabías que Instagram tiene más de 2.000 millones de usuarios activos al mes?",
+    source: "Meta Investor Relations"
+  },
+  {
+    fact: "¿Sabías que el mejor horario general para publicar suele ser entre las 6 PM y 9 PM?",
+    source: "Later Blog"
+  },
+  {
+    fact: "¿Sabías que las publicaciones con al menos un hashtag reciben un 12.6% más de interacción?",
+    source: "Simply Measured"
+  },
+  {
+    fact: "¿Sabías que el primer correo electrónico de la historia se envió en 1971 por Ray Tomlinson?",
+    source: "Ray Tomlinson (Pionero de Internet)"
+  },
+  {
+    fact: "¿Sabías que la pizza es la comida más fotografiada en Instagram a nivel mundial?",
+    source: "Instagram Food Trends"
+  },
+  {
+    fact: "¿Sabías que las publicaciones en carrusel tienen el mayor ratio de engagement promedio en Instagram?",
+    source: "Socialinsider Study"
+  },
+  {
+    fact: "¿Sabías que el 80% de los usuarios de Instagram siguen al menos a una cuenta de empresa?",
+    source: "Instagram Business"
+  },
+  {
+    fact: "¿Sabías que la fuente tipográfica de Instagram se llama Billabong?",
+    source: "Instagram Brand Identity"
+  }
 ]
 
 interface PostFormProps {
@@ -1344,8 +1374,13 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                 💡 Dato curioso
               </span>
               <p className="text-xs text-gray-600 leading-relaxed italic min-h-[36px]">
-                {FUN_FACTS[factIndex]}
+                "{FUN_FACTS[factIndex]?.fact}"
               </p>
+              {FUN_FACTS[factIndex]?.source && (
+                <p className="text-[10px] text-gray-400 text-right mt-1.5 font-medium">
+                  — {FUN_FACTS[factIndex].source}
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>
