@@ -279,6 +279,8 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     customDescriptions: getInitialCustomDescriptions(),
   })
 
+  const isNavigatingRef = useRef(false)
+
   // Al iniciar la publicación o programación, inicializamos los índices de forma aleatoria y rotamos mensajes
   useEffect(() => {
     if (publishing || scheduling) {
@@ -332,6 +334,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
   // beforeunload: prevenir cierre/refresh con cambios sin guardar o publicando/programando
   useEffect(() => {
     function handler(e: BeforeUnloadEvent) {
+      if (isNavigatingRef.current) return
       // Re-leemos el store en cada call para no quedar con stale value
       if (useAppStore.getState().hasUnsavedChanges || publishing || scheduling) {
         e.preventDefault()
@@ -582,6 +585,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       if (action === 'draft') {
         await saveOrUpdate('draft', finalTitle)
         toast({ title: savedPost ? 'Borrador actualizado' : 'Borrador guardado' })
+        isNavigatingRef.current = true
         window.location.href = '/calendario'
       } else if (action === 'publish') {
         // Guardamos como 'draft' primero; publishPostNow se encarga de actualizar
@@ -604,6 +608,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
                 : '¡Publicación publicada!',
             })
           }
+          isNavigatingRef.current = true
           window.location.href = '/calendario'
         } finally {
           setPublishing(false)
@@ -613,6 +618,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         try {
           await saveOrUpdate('scheduled', finalTitle)
           toast({ title: '¡Publicación programada!' })
+          isNavigatingRef.current = true
           window.location.href = '/calendario'
         } finally {
           setScheduling(false)
@@ -649,6 +655,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
     try {
       await deletePost(savedPost.id)
       toast({ title: 'Borrador eliminado' })
+      isNavigatingRef.current = true
       window.location.href = '/calendario'
     } catch (err) {
       toast({
