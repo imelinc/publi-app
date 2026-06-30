@@ -28,7 +28,7 @@ const SUGGESTIONS = [
   'Escribime un copy para anunciar un producto nuevo',
   '¿Qué hashtags uso para llegar a más gente?',
   '¿Cuál es el mejor horario para publicar?',
-  'Dame una estrategia de contenido para el mes',
+  'Dame una idea de imagen para que la genere la IA para anunciar el lanzamiento de nuestra app',
   'Reescribí este texto con tono más dinámico: [tu texto]',
 ]
 
