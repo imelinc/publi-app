@@ -50,9 +50,10 @@ export function MiniCalendar({ posts, events = [] }: MiniCalendarProps) {
 
   const postsByDay = weekDays.map((day) => {
     const dateStr = toDateString(day)
-    return posts.filter((p) => {
+    return (posts || []).filter((p) => {
+      if (!p) return false
       const postDate = p.scheduledAt ?? p.publishedAt
-      return postDate !== null && postDate.startsWith(dateStr)
+      return typeof postDate === 'string' && postDate.startsWith(dateStr)
     })
   })
 

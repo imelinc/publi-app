@@ -27,11 +27,12 @@ function getWeekRange(weekOffset: number): { start: Date; end: Date } {
 }
 
 function countPublishedInWeek(posts: Post[], start: Date, end: Date): number {
-  return posts.filter((p) => {
-    if (p.status !== 'published') return false
+  return (posts || []).filter((p) => {
+    if (!p || p.status !== 'published') return false
     const dateStr = p.scheduledAt ?? p.createdAt
+    if (!dateStr) return false
     const d = new Date(dateStr)
-    return d >= start && d <= end
+    return !isNaN(d.getTime()) && d >= start && d <= end
   }).length
 }
 
@@ -55,10 +56,12 @@ export function StatsChart({ posts, period }: StatsChartProps) {
         const dayEnd = new Date(dayStart)
         dayEnd.setHours(23, 59, 59, 999)
 
-        const count = posts.filter((p) => {
+        const count = (posts || []).filter((p) => {
+          if (!p) return false
           const dateStr = p.scheduledAt ?? p.createdAt
+          if (!dateStr) return false
           const d = new Date(dateStr)
-          return d >= dayStart && d <= dayEnd
+          return !isNaN(d.getTime()) && d >= dayStart && d <= dayEnd
         }).length
 
         return {
