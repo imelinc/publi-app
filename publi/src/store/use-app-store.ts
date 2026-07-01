@@ -469,9 +469,11 @@ export function getDraftPosts(posts: Post[]): Post[] {
 }
 
 export function getPostsForDate(posts: Post[], date: Date): Post[] {
+  if (!posts || !Array.isArray(posts)) return []
   const dateStr = date.toISOString().split('T')[0]
   return posts.filter((p) => {
+    if (!p) return false
     const postDate = p.scheduledAt ?? p.publishedAt
-    return postDate !== null && postDate.startsWith(dateStr)
+    return typeof postDate === 'string' && postDate.startsWith(dateStr)
   })
 }

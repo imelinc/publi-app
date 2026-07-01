@@ -586,7 +586,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
         await saveOrUpdate('draft', finalTitle)
         toast({ title: savedPost ? 'Borrador actualizado' : 'Borrador guardado' })
         isNavigatingRef.current = true
-        window.location.href = '/calendario'
+        router.push('/calendario')
       } else if (action === 'publish') {
         // Guardamos como 'draft' primero; publishPostNow se encarga de actualizar
         // el status a 'published' o 'failed' según el resultado real de Instagram.
@@ -609,7 +609,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
             })
           }
           isNavigatingRef.current = true
-          window.location.href = '/calendario'
+          router.push('/calendario')
         } finally {
           setPublishing(false)
         }
@@ -619,7 +619,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
           await saveOrUpdate('scheduled', finalTitle)
           toast({ title: '¡Publicación programada!' })
           isNavigatingRef.current = true
-          window.location.href = '/calendario'
+          router.push('/calendario')
         } finally {
           setScheduling(false)
         }
@@ -656,7 +656,7 @@ export function PostForm({ mode, initialPost = null }: PostFormProps) {
       await deletePost(savedPost.id)
       toast({ title: 'Borrador eliminado' })
       isNavigatingRef.current = true
-      window.location.href = '/calendario'
+      router.push('/calendario')
     } catch (err) {
       toast({
         title: 'No se pudo eliminar',

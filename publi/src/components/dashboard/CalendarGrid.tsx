@@ -61,9 +61,10 @@ function formatDateKey(date: Date): string {
 
 function getPostsForDay(posts: Post[], date: Date): Post[] {
   const dateStr = formatDateKey(date)
-  return posts.filter((p) => {
+  return (posts || []).filter((p) => {
+    if (!p) return false
     const postDate = p.scheduledAt ?? p.publishedAt
-    return postDate !== null && postDate.startsWith(dateStr)
+    return typeof postDate === 'string' && postDate.startsWith(dateStr)
   })
 }
 
@@ -196,8 +197,8 @@ export function CalendarGrid({
 
                   {dayPosts.slice(0, postsToShow).map((post) => {
                     const color = post.clientColor
-                    const firstNetwork = post.networks[0] as Network | undefined
-                    const iconPath = firstNetwork ? NETWORK_META[firstNetwork].icon : ""
+                    const firstNetwork = post.networks?.[0] as Network | undefined
+                    const iconPath = firstNetwork && NETWORK_META[firstNetwork] ? NETWORK_META[firstNetwork].icon : ""
                     const isStory = post.contentFormat === 'story'
                     const leftBorderColor = isStory ? "#ffb703" : color
                     return (
