@@ -114,7 +114,12 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   activeWorkspaceId: '',
-  setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+  setActiveWorkspace: (id) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activeWorkspaceId', id)
+    }
+    set({ activeWorkspaceId: id })
+  },
 
   hasUnsavedChanges: false,
   setHasUnsavedChanges: (v) => set({ hasUnsavedChanges: v }),

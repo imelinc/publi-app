@@ -76,8 +76,16 @@ export function Sidebar() {
   const color = activeClient?.color ?? '#0095b6'
 
   useEffect(() => {
-    if (clients.length > 0 && !activeWorkspaceId) {
-      setActiveWorkspace(clients[0].id)
+    if (clients.length > 0) {
+      const storedId = typeof window !== 'undefined' ? localStorage.getItem('activeWorkspaceId') : null
+      const storedClientExists = clients.some((c) => c.id === storedId)
+      if (storedId && storedClientExists) {
+        if (activeWorkspaceId !== storedId) {
+          setActiveWorkspace(storedId)
+        }
+      } else if (!activeWorkspaceId) {
+        setActiveWorkspace(clients[0].id)
+      }
     }
   }, [clients, activeWorkspaceId, setActiveWorkspace])
 
